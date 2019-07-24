@@ -1,6 +1,13 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+#include <gtk/gtk.h>
+#include <gtk/gtkwindow.h>
+#include <sys/time.h>
+#include <pthread.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <errno.h>
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
@@ -14,8 +21,6 @@
 #include <linux/input.h>
 #include <time.h>
 #include <linux/uinput.h>
-#include <stdio.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <X11/Xlib.h>
@@ -23,9 +28,9 @@
 #include <X11/extensions/XTest.h>
 
 #define TEXTSIZE (1024*1024)
-#define DOUBLECLICK (1)
-#define SLIDE (2)
-#define SINGLECLICK (3)
+#define SINGLECLICK (1)
+#define DOUBLECLICK (2)
+#define SLIDE (3)
 
 void show_utf8_prop(Display *dpy, Window w, Atom p, char *text);
 
@@ -42,5 +47,25 @@ void press(int fd, int keyCode);
 void release(int fd, int keyCode);
 void simulateKey(int fd,  int key[], int len);
 void err_exit(char *buf);
+void *GuiEntry(void *arg);
+void *DetectMouse(void *arg);
+int shmCreate(char **addr);
+void *newWindow(void * arg);
+
+struct clickDate {
+    GtkWidget *window;
+    GtkWidget *button;
+};
+
+struct Arg {
+    int argc;
+    char **argv;
+    char *addr;
+};
+
+
+#define GETEKYDIR ("/tmp")
+#define PROJECTID  (2333)
+#define SHMSIZE (1024)
 
 #endif

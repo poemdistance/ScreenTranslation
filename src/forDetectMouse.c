@@ -27,6 +27,7 @@ void delay() {
 
 }
 
+/*写数据到管道*/
 void writePipe(char *text, int fd) {
 
     int writelen;
@@ -45,7 +46,7 @@ void writePipe(char *text, int fd) {
         }
 
         int ret = write( fd, text, writelen );
-        printf("-------->require write len=%d, actul writelen=%d\n", writelen, ret);
+        printf("len=%d, actul writelen=%d\n", writelen, ret);
         if ( ret != writelen ) {
             fprintf(stderr, "writelen=%d,\
                     write error in forDetectMouse.c func: writePipe\n", ret);
@@ -54,19 +55,22 @@ void writePipe(char *text, int fd) {
     }
 }
 
+/*获取子进程状态，防止僵尸进程*/
 void handler(int signo) {
 
     pid_t pid;
     while( (pid=waitpid(-1, NULL, WNOHANG)) > 0);
 }
 
+/*判断当前聚焦窗口是否为终端*/
 int isTerminal(char *name) {
 
     int n = sizeof(termName) / sizeof(termName[0]);
     char *p = name;
 
-    /* appName 需要添加回车符，如果是自行复制的
-     * 否则此循环将导致越界访问*/
+    /*NOTE: 
+     * appName 需要添加回车符如果是自行赋值作为测试的,
+     * 否则此循环将导致越界访问内存*/
     while(*p++ != '\n');
     *(p-1) = '\0';
 
@@ -87,14 +91,15 @@ int previous( int n )
         return  3;
 }
 
-int isAction(int history[], int last, int Transpaction) {
+/*判断当前鼠标action*/
+int isAction(int history[], int last, int judgeType) {
     int m, n, j, q;
     m = previous(last);
     n = previous(m);
     j = previous(n);
     q = previous(j);
 
-    if(Transpaction == DOUBLECLICK &&
+    if(judgeType == DOUBLECLICK &&
             history[m] == 0 && history[n] == 1 &&
             history[j] == 0 && history[q] == 1 ) {
 
@@ -102,7 +107,7 @@ int isAction(int history[], int last, int Transpaction) {
         return 1;
     }
 
-    else if(Transpaction == SLIDE &&
+    else if(judgeType == SLIDE &&
             history[m] == 0 && history[n] == 1 &&
             history[j] == 1 && history[q] == 1
            ) {
@@ -115,14 +120,17 @@ int isAction(int history[], int last, int Transpaction) {
 }
 
 
-/*退出前加个回车*/
 void quit() {
 
+    /*退出前加个回车*/
     fprintf(stdout, "\n");
+
     if ( text != NULL )
         free(text);
+
     close(mousefd);
     close(fd_key);
+
     exit(0);
 }
 
@@ -173,6 +181,7 @@ void release(int fd, int keyCode)
     sync_key(&fd, &event, &len);
 }
 
+/*模拟键盘操作*/
 void simulateKey(int fd,  int key[], int len) {
 
     int i = 0;
@@ -182,5 +191,3 @@ void simulateKey(int fd,  int key[], int len) {
     for(i=len-1; i>=0; i--)
         release(fd, key[i]);
 }
-
-
