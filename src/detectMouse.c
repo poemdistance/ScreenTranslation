@@ -17,11 +17,12 @@
 
 #include "common.h"
 
-extern char *text ;
-extern FILE *fp ;
-extern int mousefd;
-extern int fd_key;
 extern char *shmaddr;
+
+char *text = NULL;
+FILE *fp = NULL;
+int mousefd;
+int fd_key = -1;
 extern int action;
 
 

@@ -1,13 +1,9 @@
 #include "common.h"
 
-extern int InNewWinFunc;
 extern char *shmaddr;
 extern int action;
-extern int HadDestroied;
-extern int CanNewWin;
 
-int destroy_newwin_by_clicked(GtkWidget *button, GtkWidget *window);
-int destroy_newwin_by_destroy(GtkWidget *window);
+int destroy_newwin(GtkWidget *window);
 void getShmDate(int (*index)[]);
 
 /*新建翻译结果窗口*/
@@ -17,7 +13,6 @@ void *newWindow(void * arg) {
 
     /* 置零action，用于下面翻译窗口弹不出时可以双击关闭*/
     action = 0; 
-    InNewWinFunc = 1;
 
     printf("new window func in newWindow.c\n");
 
@@ -36,7 +31,6 @@ void *newWindow(void * arg) {
 
             /*此处action只代表取消显示，应重置action*/
             action = 0;
-            InNewWinFunc = 0;
             return (void*)0;
         }
 
@@ -51,7 +45,6 @@ void *newWindow(void * arg) {
                 exit(0);
             }
             action = 0;
-            InNewWinFunc = 0;
             shmaddr[0] = CLEAR;
             return (void*)0;
         }
@@ -71,7 +64,7 @@ void *newWindow(void * arg) {
     GtkWidget *vbox;
     vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
 
-    g_signal_connect(newWin, "destroy", G_CALLBACK(destroy_newwin_by_destroy), newWin);
+    g_signal_connect(newWin, "destroy", G_CALLBACK(destroy_newwin), newWin);
 
     int index[2] = { 0 };
 
@@ -139,6 +132,7 @@ void *newWindow(void * arg) {
     storage[1] = explain;
     storage[2] = related;
 
+    /*主要完成加入回车符使单行句子不至于太长*/
     adjustStr(p, 57, storage);
 
     /*插入翻译结果*/
@@ -167,37 +161,14 @@ void *newWindow(void * arg) {
     gtk_main();
 
     /*退出窗口，设置新建窗口标志为0(不能新建)*/
-    CanNewWin = 0;
     printf("new window quit...\n");
 
     pthread_exit(NULL);
 }
 
-
-/* 发现在用结构体传值后强制转换类型前相关变量就进行了类型检测
- * 导致发生错误, 只能规规矩矩传进未修改的变量GtkWidget *window */
-int destroy_newwin_by_clicked(GtkWidget *button, GtkWidget *window) {
-
-    gtk_widget_destroy(window);
-    gtk_widget_destroy(button);
-    gtk_main_quit();
+int destroy_newwin(GtkWidget *window) {
 
     /*标记已退出newWindow函数*/
-    InNewWinFunc = 0;
-    printf("memset shmaddr in clicked\n");
-    memset(shmaddr, '\0', SHMSIZE);
-
-    /* 按了exit键后变成了单击事件，此时再双击会导致检测错误
-     * 应手动置0*/
-    printf("Set action = 0\n");
-    action = 0;
-    return TRUE;
-}
-
-int destroy_newwin_by_destroy(GtkWidget *window) {
-
-    /*标记已退出newWindow函数*/
-    InNewWinFunc = 0;
     printf("memset shmaddr in destroy\n");
     memset(shmaddr, '\0', SHMSIZE);
 

@@ -6,16 +6,8 @@
 
 char *shmaddr;
 int action = 0;
-int hideIcon = 0;
-int HadDestroied = 0;
-int InNewWinFunc = 0;
 int timeout_id_1;
 int timeout_id_2;
-
-char *text = NULL;
-FILE *fp = NULL;
-int mousefd;
-int fd_key = -1;
 int CanNewWin = 0;
 
 int main(int argc, char **argv)
@@ -52,9 +44,7 @@ int main(int argc, char **argv)
         pthread_join(t3, &thread_ret);
         printf("New window thread exit captured in All.c\n");
 
-        //   /*进入newWindown函数时不再创建入口图标线程*/
-        //   while(InNewWinFunc == 1)
-        //       usleep(100000);
+        CanNewWin = 0;
     }
 
     /*TODO:

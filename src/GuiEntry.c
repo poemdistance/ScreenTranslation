@@ -3,19 +3,18 @@
 
 extern char *shmaddr;
 extern int action;
-extern int HadDestroied;
-extern int InNewWinFunc;
 extern int timeout_id_1;
 extern int timeout_id_2;
 extern int CanNewWin;
+
+int HadDestroied;
+static int aboveWindow = 0;
 
 int quit_entry(void *arg);
 int quit_test(void *arg);
 void setNewWinFlag(GtkWidget *button, GtkWidget *window);
 void leave_event();
 void enter_event();
-
-static int aboveWindow = 0;
 
 void *GuiEntry(void *arg) {
 
