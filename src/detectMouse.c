@@ -122,8 +122,9 @@ void *DetectMouse(void *arg) {
                 }
 
                 /*按下左键*/
-                //if ( history[m] == 1 && history[n] == 0 ) {
-                if ( history[m] == 0 && history[n] == 1 ) {
+                /* 此处不要使用1 0的顺序，因为m n下标出现0 1可能是区域选择
+                 * 事件(SLIDE),这将导致SLIDE被一直误判*/
+                if ( history[m] == 1 && history[n] == 0 ) {
                     if ( releaseButton ) {
 
                         gettimeofday(&old, NULL);
@@ -221,29 +222,31 @@ void *DetectMouse(void *arg) {
 
             } /*if(FD_ISSET(mousefd,&readfds))*/
 
-            } /*while loop*/
+        } /*while loop*/
 
-        } /*if pid > 0*/
+    } /*if pid > 0*/
 
-        else { /*child process*/
+    else { /*child process*/
 
-            close(fd[1]); /*关闭写端口*/
+        close(fd[1]); /*关闭写端口*/
 
-            /*重映射标准输入为管道读端口*/
-            if ( fd[0] != STDIN_FILENO) {
-                if ( dup2( fd[0], STDIN_FILENO ) != STDIN_FILENO) {
-                    fprintf(stderr, "dup2 error");
-                    close(fd[0]);
-                    exit(1);
-                }
-            }
-
-            char * const cmd[3] = {"tranen","-s", (char*)0};
-            if ( execv( "./tranen", cmd ) < 0) {
-                fprintf(stderr, "Execv error\n");
+        /*重映射标准输入为管道读端口*/
+        if ( fd[0] != STDIN_FILENO) {
+            if ( dup2( fd[0], STDIN_FILENO ) != STDIN_FILENO) {
+                fprintf(stderr, "dup2 error");
+                close(fd[0]);
                 exit(1);
             }
         }
-        pthread_exit(NULL);
+
+        char * const cmd[3] = {"tranen","-s", (char*)0};
+        if ( execv( "./tranen", cmd ) < 0) {
+            fprintf(stderr, "Execv error\n");
+            exit(1);
+        }
+        printf("detectMouse.c 子进程已经退出...\n");
     }
+    pthread_exit(NULL);
+    printf("pthread_exit()...\n");
+}
 

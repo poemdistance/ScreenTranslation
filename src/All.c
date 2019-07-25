@@ -45,6 +45,9 @@ int main(int argc, char **argv)
         pthread_join(t1, &thread_ret);
         printf("GuiEntry thread exit captured in All.c\n");
 
+        if ( CanNewWin == 0 )
+            continue;
+
         pthread_create(&t3, NULL, newWindow, NULL);
         pthread_join(t3, &thread_ret);
         printf("New window thread exit captured in All.c\n");

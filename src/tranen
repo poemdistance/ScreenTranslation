@@ -36,16 +36,26 @@ def main(useShm):
                 In = ' '.join(list(sys.argv))
             else:
                 In = str(input('>> '))
+                if useShm:
+                    print("Python接收字符串: In = "+In)
 
             if In == '':
+                if useShm:
+                    #空字符串标识
+                    shm.write('3', 0)
                 continue
 
-        except:
-            print()
+        except Exception as e:
+            print("Python捕获异常")
+            print(e)
+            #退出标识
+            shm.write('4', 0)
             print('Good bye~')
             sys.exit()
 
         try:
+            if useShm:
+                print('准备获取翻译...')
             dataList = tran.getTran(In)
         except Exception as e:
             print(e)
@@ -81,6 +91,10 @@ def main(useShm):
 
         if useShm:
             #print("写入:"+string+'|')
+            for i in range(1, length-1):
+                cprint('    '+dataList[0][i][0], 'cyan')
+                string = string + dataList[0][i][0]
+
             shm.write(string+'|', 1)
             offset = len((string+'|').encode('utf8'))
         else:
@@ -95,7 +109,7 @@ def main(useShm):
                 string.replace('\n', '')
                 if useShm:
                     string +=  '|'
-                    #print("写入:"+string)
+                    print("写入:"+string)
                     shm.write(string, offset+1)
                     offset = len(string.encode('utf8')) + offset
                 else:
@@ -114,7 +128,7 @@ def main(useShm):
         if string:
             string.replace('\n', '')
             if useShm:
-                #print("写入:"+string)
+                print("写入:"+string)
                 shm.write(string, offset+1)
                 offset = len(string.encode('utf8')) + offset
             else:
@@ -185,7 +199,7 @@ def main(useShm):
                     print()
                     if useShm:
                         shm.write(string, offset+1)
-                        #print("写入:"+string)
+                        print("写入:"+string)
                         offset = len(string.encode('utf8')) + offset
                     else:
                         #优化显示的需要，让字符串在一行内不要显示的太长
@@ -206,7 +220,8 @@ def main(useShm):
             用于其他工程项目,在第一字节内写入1表示
             内容写入完毕
             '''
-            ##print(shm.read())
+            #print(shm.read())
+            print('翻译写入完成')
             shm.write('1', 0)
 
         if times == 1:

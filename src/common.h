@@ -31,6 +31,11 @@
 #define SINGLECLICK (1)
 #define DOUBLECLICK (2)
 #define SLIDE (3)
+#define EXITFLAG ('4')
+#define NULLCHAR ('3')
+#define ERRCHAR ('2')
+#define FINFLAG ('1')
+#define CLEAR   ('0')
 
 void show_utf8_prop(Display *dpy, Window w, Atom p, char *text);
 
@@ -51,6 +56,7 @@ void *GuiEntry(void *arg);
 void *DetectMouse(void *arg);
 int shmCreate(char **addr);
 void *newWindow(void * arg);
+void adjustStr(char *p[3], int len, char *storage[3]);
 
 struct clickDate {
     GtkWidget *window;
