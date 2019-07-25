@@ -7,7 +7,6 @@ const static char termName[3][19] =
     "konsole"
 };
 
-
 extern char *text;
 extern FILE *fp;
 extern int mousefd;
@@ -118,7 +117,6 @@ int isAction(int history[], int last, int judgeType) {
 
     return 0;
 }
-
 
 void quit() {
 

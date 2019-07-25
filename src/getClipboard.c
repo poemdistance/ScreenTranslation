@@ -2,8 +2,7 @@
  * 本程序功能：
  * 连接X server，获取剪贴板内容
  *
- * 注意Xdisplay 不能以root用户连接，否则报错:
- * No protocol specified*/
+ * 注意Xdisplay 不能以root用户连接，否则报错:No protocol specified*/
 
 #include <stdio.h>
 #include <string.h>

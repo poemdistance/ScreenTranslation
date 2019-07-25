@@ -1,5 +1,3 @@
-#gcc `pkg-config --cflags --libs gtk+-3.0` forDetectMouse.c getClipboard.c All.c -lX11 -lXtst -lXext -lpthread -ggdb
-
 CC = gcc
 CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -ggdb
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0`

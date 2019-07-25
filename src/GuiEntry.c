@@ -1,3 +1,6 @@
+/*GuiEntry.c
+ * 程序功能:
+ *  创建翻译入口图标*/
 
 #include "common.h"
 
@@ -21,7 +24,7 @@ void *GuiEntry(void *arg) {
     printf("Enter GuiEntry Function\n");
     aboveWindow = 0;
 
-    /*等待鼠标时间到来创建入口图标*/
+    /*等待鼠标事件到来创建入口图标*/
     while(1) {
         usleep(100000);
         if ( action == DOUBLECLICK || action == SLIDE  ) {
@@ -69,7 +72,7 @@ void *GuiEntry(void *arg) {
     g_signal_connect(GTK_BUTTON(button), "leave", G_CALLBACK(leave_event), NULL);
     g_signal_connect(GTK_BUTTON(button), "enter", G_CALLBACK(enter_event), NULL);
 
-    /*移动窗口*/
+    /*移动入口图标防止遮挡视线*/
     gint cx, cy;
     gtk_window_get_position(GTK_WINDOW(window), &cx, &cy);
     gtk_window_move(GTK_WINDOW(window), cx+20, cy-60);
@@ -112,7 +115,7 @@ int quit_test(void *arg) {
 
     printf("单击检测\n");
 
-    /*入口图标已在quit_entry中销毁,返回FALSE不在调用此函数*/
+    /*入口图标已在quit_entry中销毁,返回FALSE不再调用此函数*/
     if ( HadDestroied )
         return FALSE;
 
@@ -153,14 +156,16 @@ int quit_entry(void *arg) {
     if ( button &&  window && !HadDestroied ) {
 
         printf("GuiEntry: 超时销毁\n");
+
+        action  = 0;
         CanNewWin = 0;
         HadDestroied = 1;
+
         g_source_remove(timeout_id_1);
         g_source_remove(timeout_id_2);
         gtk_widget_destroy(button);
         gtk_widget_destroy(window);
         gtk_main_quit();
-        action  = 0;
         return FALSE;
     }
 
