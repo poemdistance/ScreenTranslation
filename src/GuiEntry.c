@@ -27,6 +27,15 @@ void *GuiEntry(void *arg) {
     /*等待鼠标事件到来创建入口图标*/
     while(1) {
         usleep(200000);
+
+        /*此处有一定几率发生双击后已经选中字符并复制翻译成功，
+         * 但线程还没有运行到这进行判断，结果后面判断来到之时鼠标
+         * 已经移动造成当前action不是双击或区域选择被直接返回没有创建
+         * 入口图标.
+         *
+         * 解决办法，用某标志位进行检测，当检测到复制翻译成功直接
+         * 跳出此while循环进行入口图标的创建*/
+
         if ( action == DOUBLECLICK || action == SLIDE ) {
             printf("Detect mouse action, creating icon entry\n");
 

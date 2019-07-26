@@ -98,7 +98,7 @@ void *newWindow(void * arg) {
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
 
     GdkPixbuf *src = gdk_pixbuf_new_from_file(\
-            "/home/rease/Pictures/silhouette_moon_boat_135277_3840x2160.jpg", NULL);
+            "./background.jpg", NULL);
 
     GdkPixbuf *dst = gdk_pixbuf_scale_simple(src, 550, 334, GDK_INTERP_BILINEAR);
     GtkWidget *image = gtk_image_new_from_pixbuf(dst);
@@ -138,7 +138,7 @@ void *newWindow(void * arg) {
 
     if ( shmaddr[0]  != ERRCHAR )
         /*主要完成加入回车符使单行句子不至于太长*/
-        adjustStr(p, 65, storage);
+        adjustStr(p, 75, storage);
     else  {
         shmaddr[0] = CLEAR;
         strcpy(storage[0], "翻译超时或出现其他错误");

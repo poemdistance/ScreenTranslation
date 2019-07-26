@@ -71,9 +71,13 @@ int isTerminal(char *name) {
     int n = sizeof(termName) / sizeof(termName[0]);
     char *p = name;
 
-    /*NOTE: 
+    /*TODO:
+     * NOTE: 
      * appName 需要添加回车符如果是自行赋值作为测试的,
-     * 否则此循环将导致越界访问内存*/
+     * 否则此循环将导致越界访问内存;
+     * 
+     * 呃，加个*p检测结尾字符其实也是可以的...
+     * */
     while(*p++ != '\n');
     *(p-1) = '\0';
 
