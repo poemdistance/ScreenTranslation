@@ -33,11 +33,14 @@ void *newWindow(void * arg) {
             action = 0;
             return (void*)0;
         }
+        if ( shmaddr[0] == ERRCHAR) {
+            printf("翻译过程出现错误\n");
+            printf("准备窗口错误提示\n");
+            break;
+        }
 
-        if ( shmaddr[0] == ERRCHAR || shmaddr[0] == NULLCHAR || shmaddr[0] == EXITFLAG) {
-            if ( shmaddr[0] == ERRCHAR)
-                printf("翻译过程出现错误\n");
-            else if ( shmaddr[0] == NULLCHAR)
+        if ( shmaddr[0] == NULLCHAR || shmaddr[0] == EXITFLAG) {
+            if ( shmaddr[0] == NULLCHAR)
                 printf("空字符串\n");
             else {
                 printf("Note: 翻译程序程序已退出,请不要再往下执行\n");
@@ -68,9 +71,10 @@ void *newWindow(void * arg) {
 
     int index[2] = { 0 };
 
-    /* 从共享内存中截取出部分翻译结果(3条结果),
-     * 后两条存于索引数组index中*/
-    getShmDate(&index);
+    if ( shmaddr[0] != ERRCHAR)
+        /* 从共享内存中截取出部分翻译结果(3条结果),
+         * 后两条存于索引数组index中*/
+        getShmDate(&index);
 
     printf("目标翻译:%s\n", &shmaddr[1]);
     printf("释义:%s\n", &shmaddr[index[0]]);
@@ -132,8 +136,13 @@ void *newWindow(void * arg) {
     storage[1] = explain;
     storage[2] = related;
 
-    /*主要完成加入回车符使单行句子不至于太长*/
-    adjustStr(p, 57, storage);
+    if ( shmaddr[0]  != ERRCHAR )
+        /*主要完成加入回车符使单行句子不至于太长*/
+        adjustStr(p, 65, storage);
+    else  {
+        shmaddr[0] = CLEAR;
+        strcpy(storage[0], "翻译超时或出现其他错误");
+    }
 
     /*插入翻译结果*/
     char doubleEnter[] = "\n\n";

@@ -26,9 +26,18 @@ void *GuiEntry(void *arg) {
 
     /*等待鼠标事件到来创建入口图标*/
     while(1) {
-        usleep(100000);
-        if ( action == DOUBLECLICK || action == SLIDE  ) {
+        usleep(200000);
+        if ( action == DOUBLECLICK || action == SLIDE ) {
             printf("Detect mouse action, creating icon entry\n");
+
+            if ( shmaddr[0] == EMPTYFLAG ) {
+                printf("空字符串,返回继续等待...\n");
+                shmaddr[0] = CLEAR;
+                action = 0;
+                CanNewWin = 0;
+                return (void*)0;
+            }
+
             break;
         }
     }
@@ -94,7 +103,10 @@ void *GuiEntry(void *arg) {
 void setNewWinFlag(GtkWidget *button, GtkWidget *window) {
 
     printf("setNewWinFlag\n");
-    CanNewWin = 1;
+    if ( shmaddr[0] == EMPTYFLAG )
+        CanNewWin = 0;
+    else 
+        CanNewWin = 1;
 
     /*退出时注意注销超时回调函数，否则下一次创建的
      * 入口图标可能刚好创建就超时导致不显示*/

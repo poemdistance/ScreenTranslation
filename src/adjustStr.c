@@ -22,7 +22,7 @@ void adjustStr(char *p[], int len, char *storage[]) {
             /*因为含中文字符的字符串长度到该截取时不一定刚刚好是求余为0
              * 所以给个阈值，让字符串一定能在某个长度范围内被截取, && j
              * 作用是防止第一个字符就被截取掉*/
-            if ( abs( len - (j % len) ) <= 1 && j)
+            if ( abs( len - (j % len) ) <= 2 && j)
             {
                 /*此处需要了解一下utf8编码格式
                  *

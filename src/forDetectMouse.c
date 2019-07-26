@@ -7,6 +7,7 @@ const static char termName[3][19] =
     "konsole"
 };
 
+extern char *shmaddr;
 extern char *text;
 extern FILE *fp;
 extern int mousefd;
@@ -51,6 +52,9 @@ void writePipe(char *text, int fd) {
                     write error in forDetectMouse.c func: writePipe\n", ret);
             perror("errno");
         }
+    } else {
+        fprintf(stdout, "所获取为空字符串...\n");
+        shmaddr[0] = EMPTYFLAG;
     }
 }
 

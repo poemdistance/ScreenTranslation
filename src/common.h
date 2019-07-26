@@ -30,6 +30,7 @@
 #define SINGLECLICK (1)
 #define DOUBLECLICK (2)
 #define SLIDE (3)
+#define EMPTYFLAG ('5')
 #define EXITFLAG ('4')
 #define NULLCHAR ('3')
 #define ERRCHAR ('2')
