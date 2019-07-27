@@ -1,6 +1,9 @@
 # 一. 程序功能
 ## (一). 目前功能
 1. 屏幕取词翻译 -- 英译中
+   
+   ![img](./gif_pic/iconEntry.png)<br><br>
+   ![img](./gif_pic/GUI.png)
 
 ## (二). 后期预计完成功能
 1. 中英互译
@@ -9,20 +12,26 @@
  
  <br> 
 
-# 二. 程序编译
+# 二. 程序编译安装
 1. 先将源码克隆到本地<br><br>
 2. cd到src目录<br><br>
-3. 终端执行命令**make** <br><br>
-     编译前**请先安装好C语言使用到的库**: Xlib X11 Xtst Xext gtk3开发环境(gtk.h, gtkwindow.h),安装命令如下(可能有遗漏)：<br><br> 
-
+3. 安装依赖  Xlib X11 Xtst Xext gtk3开发环境(gtk.h, gtkwindow.h)
+ 
              # For system base on Debian 
           $  sudo apt-get install build-essential gnome-devel libx11-dev libxtst-dev
 
              # For Arch Linux
-          $  sudo pacman -S gtk3  libxtst libx11        
+          $  sudo pacman -S gtk3  libxtst libx11      
+
+
+5. 终端执行命令 
+   
+          sudo sh prepare.sh && make
+          sudo cp stran /usr/bin/stran -v
+           
 <br> 
 
-# 三. 程序运行
+# 三. 程序运行与停止
 1. 运行**先决条件** <br>
      * **安装这个项目 https://github.com/poemdistance/google-translate 上的在线翻译程序**，其安装使用等相关事项见项目根目录的README. 确保此翻译程序能正常运行。<br><br>
      * **NOTE**: **电脑如果安装了wayland，需要禁用**，不然终端中无法正常使用xdotool,方法如下：<br>
@@ -40,19 +49,31 @@
        * 终端执行 ps -p \`xdotool getwindowfocus getwindowpid\` |awk '{print $NF}' | tail -n 1 
 
           将得到的终端应用名添加到**forDetectMouse.c**的**termName数组**中并拓展数组容量，否则在监测终端复制文字的时候发送的是Ctrl-C，而不是真正的复制快捷键Ctrl-Shift-C。 ( terminator, gnome-terminal以及konsol已经默认添加进了数组). <br><br>
-          ![img](./gif_pic/termName.png)
+          ![img](./gif_pic/termName.png) 
+     
+     * **与截图软件共存的问题**<br>
+         * 截图软件在进行区域选择的时候，同样会被程序捕捉到，这个时候如果发送Ctrl-C可能导致截图软件异常退出，程序在进行剪贴板内容获取的时候也会发生段错误，此时打印信息中已经包含了截图软件名称，可以将此名称添加到forDetectMouse的screenShotApp数组中，将程序重新编译安装运行即可(即二中的步骤4，但是可以不再运行`prepare.sh`)
+
+          数组如下(已经默认添加flameshot截图软件):<br><br> 
+          ![img](./gif_pic/screenShotappArray.png)
+           
 
 2. **如果终端使用了Smart copy，在没有选中任何文字的时候，可能会使模拟发送的Ctrl-Shift-C被终端视为Ctrl-C而导致运行中的程序意外结束，这不是本程序的Bug，可以将Smart Copy关闭防止此类危险情况发生**
 
-3. 直接运行编译后生成的可执行文件stran
-   * **./stran**
+3. 直接运行编译后生成的可执行文件stran 
+ 
+        $  stran 
     
-        这种情况会有很多输出信息，一般是拿来作为调试信息的
+      这种情况会有很多输出信息，一般是拿来作为调试信息的<br><br>
 
-   * **./stran > /dev/null &**
+        $  stran > /dev/null &
   
-        放置在后台执行，重定向输出到/dev/null <br>
-        停止运行:  **kill \`ps -aux | grep stran | head -n 1 |awk '{print $2}'|xargs`**
+     放置在后台执行，重定向输出到/dev/null <br> <br>
+
+     停止运行:   
+
+        $ kill `ps -aux | grep stran | head -n 1 |awk '{print $2}'|xargs` 
+
 
 <br> 
 
@@ -60,7 +81,7 @@
 * [x] 终端演示，用双击以及区域选择进行取词翻译<br><br>
 ![gif](./gif_pic/1.gif) <br><br>
 
-* [x] 浏览器演示，用三击取段，单机取词以及区域选择取句翻译
+* [x] 浏览器演示，用三击取段，单击取词以及区域选择取句翻译
 
 ![gif](./gif_pic/2.gif) 
 
@@ -126,5 +147,3 @@
 * 由于欠缺一丢丢美工的能力，界面，呃... 
 
 <br>
-
-# 八. 有没有对Wayland比较熟悉的，有没有空帮我加一个对Wayland的支持...
