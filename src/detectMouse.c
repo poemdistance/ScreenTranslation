@@ -75,7 +75,7 @@ void *DetectMouse(void *arg) {
         mousefd = open("/dev/input/mice", O_RDONLY );
         if ( mousefd < 0 ) {
             fprintf(stderr, "Failed to open mice\
-                    \nPlease execute with superuser");
+                    \nTry to execute as superuser\n");
             exit(1);
         }
 
@@ -197,7 +197,12 @@ void *DetectMouse(void *arg) {
 
                     pclose(fp);
 
-                    if ( isTerminal(appName) == 1)
+                    fprintf(stdout, "Focus window application: %s\n", appName);
+
+                    if ( isApp("screenShotApp", appName) == 1)
+                        continue;
+
+                    if ( isApp("terminal", appName) == 1)
                         simulateKey(fd_key, Ctrl_Shift_C, 3);
                     else
                         simulateKey(fd_key, Ctrl_C, 2);

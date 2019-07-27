@@ -1,10 +1,15 @@
 #include "common.h" 
 
-const static char termName[3][19] =
+const static char termName[][20] =
 {
     "terminator",
     "gnome-terminal-",
     "konsole"
+};
+
+
+const static char screenShotApp[][20] = {
+    "flameshot"
 };
 
 extern char *shmaddr;
@@ -66,9 +71,19 @@ void handler(int signo) {
 }
 
 /*判断当前聚焦窗口是否为终端*/
-int isTerminal(char *name) {
+int isApp( char *appName ,char *name ) {
 
-    int n = sizeof(termName) / sizeof(termName[0]);
+    int n = 0;
+    const char (*app)[20] = NULL;
+    if ( strcmp ( appName, "screenShotApp" ) == 0 ) {
+        n = sizeof(screenShotApp) / sizeof(screenShotApp[0]);
+        app = screenShotApp;
+    }
+    else if ( strcmp ( appName, "terminal" ) == 0 ) {
+        n = sizeof(termName) / sizeof(termName[0]);
+        app = termName;
+    }
+
     char *p = name;
 
     /*TODO:
@@ -82,7 +97,7 @@ int isTerminal(char *name) {
     *(p-1) = '\0';
 
     for ( int i = 0; i < n; i++ ) {
-        if ( strcmp ( termName[i], name ) == 0 )
+        if ( strcmp ( app[i], name ) == 0 )
             return 1;
     }
     return -1;
