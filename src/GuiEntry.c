@@ -73,7 +73,7 @@ void *GuiEntry(void *arg) {
 
     /*TODO:添加文件存在性检测*/
     /*添加图标*/
-    GtkWidget *image = gtk_image_new_from_file("./tran.png");
+    GtkWidget *image = gtk_image_new_from_file("/home/rease/.stran/tran.png");
     gtk_button_set_image(GTK_BUTTON(button), image);
     gtk_container_add(GTK_CONTAINER(window), button);
     gtk_widget_set_app_paintable(window, TRUE);

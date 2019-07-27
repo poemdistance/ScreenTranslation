@@ -98,7 +98,7 @@ void *newWindow(void * arg) {
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
 
     GdkPixbuf *src = gdk_pixbuf_new_from_file(\
-            "./background.jpg", NULL);
+            "/home/rease/.stran/background.jpg", NULL);
 
     GdkPixbuf *dst = gdk_pixbuf_scale_simple(src, 550, 334, GDK_INTERP_BILINEAR);
     GtkWidget *image = gtk_image_new_from_pixbuf(dst);
