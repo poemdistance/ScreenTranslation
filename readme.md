@@ -13,8 +13,13 @@
 1. 先将源码克隆到本地<br><br>
 2. cd到src目录<br><br>
 3. 终端执行命令**make** <br><br>
-     编译前**请先安装好C语言使用到的库**: Xlib X11 Xtst Xext gtk3开发环境(gtk.h, gtkwindow.h)
+     编译前**请先安装好C语言使用到的库**: Xlib X11 Xtst Xext gtk3开发环境(gtk.h, gtkwindow.h),安装命令如下(可能有遗漏)：<br><br> 
 
+             # For system base on Debian 
+          $  sudo apt-get install build-essential gnome-devel libx11-dev libxtst-dev
+
+             # For Arch Linux
+          $  sudo pacman -S gtk3  libxtst libx11        
 <br> 
 
 # 三. 程序运行
@@ -37,9 +42,9 @@
           将得到的终端应用名添加到**forDetectMouse.c**的**termName数组**中并拓展数组容量，否则在监测终端复制文字的时候发送的是Ctrl-C，而不是真正的复制快捷键Ctrl-Shift-C。 ( terminator, gnome-terminal以及konsol已经默认添加进了数组). <br><br>
           ![img](./gif_pic/termName.png)
 
-3. **如果终端使用了Smart copy，在没有选中任何文字的时候，可能会使模拟发送的Ctrl-Shift-C被终端视为Ctrl-C而导致运行中的程序意外结束，这不是本程序的Bug，可以将Smart Copy关闭防止此类危险情况发生**
+2. **如果终端使用了Smart copy，在没有选中任何文字的时候，可能会使模拟发送的Ctrl-Shift-C被终端视为Ctrl-C而导致运行中的程序意外结束，这不是本程序的Bug，可以将Smart Copy关闭防止此类危险情况发生**
 
-2. 直接运行编译后生成的可执行文件stran
+3. 直接运行编译后生成的可执行文件stran
    * **./stran**
     
         这种情况会有很多输出信息，一般是拿来作为调试信息的
@@ -77,5 +82,49 @@
 
 <br> 
 
-# 六. 关于UI不太赏心悦目的问题 
-* 由于欠缺一丢丢美工的能力，界面，呃...
+# 六. 程序运行异常问题
+
+1. 如果程序提取到用鼠标获取的结果一直是同一个或者为空，但是用键盘Ctrl-c操作能够获取到对应新的文本,换而言之就是鼠标取词不起作用，这说明打开的键盘设备文件是错的，模拟发送的Ctrl-c不会被捕捉到，此时可以用如下命令得到真正的键盘设备: <br> 
+    
+         cat  /var/log/Xorg.xx.log | grep keyboard | grep event | tail -n 1  
+
+    (请将Xorg.xx.log替代为你当前系统的实际日志文件)，其输出类似:<br> 
+
+        [275.556] (II) event3  - AT Translated Set 2 keyboard: device removed 
+
+    可以看到，当前我系统使用的键盘设备文件是`/dev/input/event3`<br> 
+    当然，我们也可以用其他方法来查明。
+
+    **最后找到DetectMouse.c中/dev/input/eventX这条语句，将eventX修改成你实际得到的结果重新编译运行即可**
+  
+   
+2. 如果**运行报错failed to open mice的问题**，这个是因为没有权限打开文件进行读写导致的，可以有如下解决办法：    
+    * **方法一: 添加当前用户到/dev/input/mice的用户组中**：<br>
+        * a. 先查明此文件设备所在用户组,使用命令:<br> 
+  
+                ls -l /dev/input/mic
+
+           b. 得到结果类似如下:<br>  
+
+                crw-rw---- 1 root input 13, 63 Jul 27 09:09 /dev/input/mice
+
+           c. 其中的input即是其所在用户组，得到后使用如下命令**添加用户到input用户组并重启系统**:<br> 
+
+                sudo usermod -aG input userName
+            
+            **Note**: **如果设备文件没有用户组，请先手动设置规则添加，网上很多相关内容，这里不赘述.** <br><br>
+
+    * **方法二: 使用sudo执行此程序**: <br> 
+     
+           sudo ./main 
+
+         中途测试过程中以root用户或者说sudo执行时Xdisplay发生过 No protocol specified的错误，所以此方法不一定奏效，但也可能是当时系统忘记关闭Wayland导致的。
+
+<br>
+
+# 七. 关于UI不太赏心悦目的问题 
+* 由于欠缺一丢丢美工的能力，界面，呃... 
+
+<br>
+
+# 八. 有没有对Wayland比较熟悉的，有没有空帮我加一个对Wayland的支持...
