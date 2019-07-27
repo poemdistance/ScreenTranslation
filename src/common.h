@@ -43,7 +43,7 @@ int getClipboard(char *text);
 void delay();
 void writePipe(char *text, int fd);
 void handler(int signo);
-int isTerminal(char *name);
+int isApp(char *appName, char *name);
 int previous( int n );
 int isAction(int history[], int last, int action);
 void quit();
