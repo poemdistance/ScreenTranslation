@@ -32,8 +32,8 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     *releaseButton = 1;
 
     if ( fd_key < 0 )
-        if ((fd_key = open("/dev/input/event3", O_RDWR)) >= 0 ) 
-            printf("open event3 successful\n");
+        if ((fd_key = open("/dev/input/event3", O_RDWR)) < 0 ) 
+            err_exit("opened keyboard device fail");
 
 
     /*需每次都执行才能判断当前的窗口是什么*/
@@ -84,5 +84,4 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     memset(*history, 0, sizeof(*history));
 
     printf("TEST POINT\n");
-
 }

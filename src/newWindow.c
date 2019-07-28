@@ -145,7 +145,7 @@ void *newWindow(void * arg) {
 
     if ( shmaddr[0]  != ERRCHAR )
         /*主要完成加入回车符使单行句子不至于太长*/
-        adjustStr(p, 75, storage);
+        adjustStr(p, 65, storage);
     else  {
         shmaddr[0] = CLEAR;
         strcpy(storage[0], "翻译超时或出现其他错误");

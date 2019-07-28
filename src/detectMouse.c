@@ -68,21 +68,20 @@ void *DetectMouse(void *arg) {
         mousefd = open("/dev/input/mice", O_RDONLY );
         if ( mousefd < 0 ) {
             fprintf(stderr, "Failed to open mice\
-                    \nTry to execute as superuser\n");
+                    \nTry to execute as superuser or add current user to group which /dev/input/mice belong to\n");
             exit(1);
         }
 
         int history[4] = { 0 };
         int i = 0, n = 0, m = 0;
 
-        /*捕捉ctrl-c退出信号*/
         signal(SIGINT, quit);
 
-
         while(1) {
-            // 设置最长等待时间
+
+            /*超时时间*/
             tv.tv_sec = 0;
-            tv.tv_usec = 600000;
+            tv.tv_usec = 500000;
 
             FD_ZERO( &readfds );
             FD_SET( mousefd, &readfds );
@@ -128,9 +127,9 @@ void *DetectMouse(void *arg) {
                     gettimeofday(&old, NULL);
 
                     /* lasttime为双击最后一次的按下按键时间;
-                     * 如果上次双击时间到现在不超过700ms，则断定为3击事件;
+                     * 如果上次双击时间到现在不超过600ms，则断定为3击事件;
                      * 3击会选中一整段，或一整句，此种情况也应该复制文本*/
-                    if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 700 \
+                    if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 600 \
                             && lasttime != 0 && action == DOUBLECLICK) {
 
                         CanCopy = 1;
@@ -159,6 +158,7 @@ void *DetectMouse(void *arg) {
                 /*双击超过700ms的丢弃掉*/
                 if ( abs (newtime - oldtime) > 700)  {
                     memset(history, 0, sizeof(history));
+                    notify(&history, &thirdClick, &releaseButton, fd);
                     continue;
                 }
                 /*更新最后一次有效双击事件的发生时间*/
@@ -199,6 +199,7 @@ void *DetectMouse(void *arg) {
             exit(1);
         }
         printf("detectMouse.c 子进程已经退出...\n");
+        exit(1);
     }
     pthread_exit(NULL);
     printf("pthread_exit()...\n");

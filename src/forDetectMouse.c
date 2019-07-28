@@ -18,6 +18,7 @@ extern FILE *fp;
 extern int mousefd;
 extern int fd_key;
 extern int action;
+extern int shmid;
 
 void err_exit(char *buf) {
     fprintf(stderr, "%s\n", buf);
@@ -94,8 +95,9 @@ int isApp( char *appName ,char *name ) {
      * 
      * 呃，加个*p检测结尾字符其实也是可以的...
      * */
-    while(*p++ != '\n');
-    *(p-1) = '\0';
+    while(*p && *p++ != '\n');
+    if ( *p )
+        *(p-1) = '\0';
 
     for ( int i = 0; i < n; i++ ) {
         if ( strcmp ( app[i], name ) == 0 )
@@ -152,6 +154,16 @@ void quit() {
 
     close(mousefd);
     close(fd_key);
+
+    if ( shmdt(shmaddr) < 0)
+        err_exit("shmdt error");
+
+    if (shmctl(shmid, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error");
+    else {
+        printf("Finally\n");
+        printf("remove shared memory identifier successful\n");
+    }
 
     exit(0);
 }

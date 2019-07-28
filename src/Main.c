@@ -9,6 +9,7 @@ int action = 0;
 int timeout_id_1;
 int timeout_id_2;
 int CanNewWin = 0;
+int shmid;
 
 int main(int argc, char **argv)
 {
@@ -17,7 +18,6 @@ int main(int argc, char **argv)
     struct Arg arg;
 
     char *addr;
-    int shmid;
     shmid = shmCreate(&addr);
     shmaddr = addr;
 
@@ -52,13 +52,4 @@ int main(int argc, char **argv)
      * remember to handle it*/
     pthread_join(t2, &thread_ret); 
 
-    if ( shmdt(shmaddr) < 0)
-        err_exit("shmdt error");
-
-    if (shmctl(shmid, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error");
-    else {
-        printf("Finally\n");
-        printf("remove shared memory identifier successful\n");
-    }
 }
