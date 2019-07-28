@@ -21,6 +21,7 @@ extern int action;
 
 void err_exit(char *buf) {
     fprintf(stderr, "%s\n", buf);
+    perror("errno");
     exit(1);
 }
 

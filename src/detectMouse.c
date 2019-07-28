@@ -23,6 +23,9 @@ char *text = NULL;
 FILE *fp = NULL;
 int mousefd;
 int fd_key = -1;
+
+static int CanNewEntry  = 0;
+
 extern int action;
 
 
@@ -123,7 +126,7 @@ void *DetectMouse(void *arg) {
                 }
 
                 /*按下左键*/
-                /* 此处不要使用1 0的顺序，因为m n下标出现0 1可能是区域选择
+                /* 此处不要改变1 0的顺序，因为m n下标出现0 1可能是区域选择
                  * 事件(SLIDE),这将导致SLIDE被一直误判*/
                 if ( history[m] == 1 && history[n] == 0 ) {
                     if ( releaseButton ) {
@@ -134,8 +137,10 @@ void *DetectMouse(void *arg) {
                          * 如果上次双击时间到现在不超过700ms，则断定为3击事件;
                          * 3击会选中一整段，或一整句，此种情况也应该复制文本*/
                         if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 700 \
-                                && lasttime != 0 && action == DOUBLECLICK)
+                                && lasttime != 0 && action == DOUBLECLICK) {
                             thirdClick = 1; /*3击标志*/
+                            CanNewEntry = 1;
+                        }
                         else { /*不是3击事件则按单击处理，更新oldtime*/
                             oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                             thirdClick = 0;

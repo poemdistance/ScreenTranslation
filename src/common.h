@@ -72,6 +72,6 @@ struct Arg {
 
 #define GETEKYDIR ("/tmp")
 #define PROJECTID  (2333)
-#define SHMSIZE (1024)
+#define SHMSIZE (1024*1024)
 
 #endif
