@@ -90,9 +90,9 @@ void *DetectMouse(void *arg) {
 
             /*超时*/
             if(retval==0) {
-                if ( CanCopy )
-                    notify(&history, &thirdClick, &releaseButton, fd);
-                else 
+            //    if ( CanCopy )
+            //        notify(&history, &thirdClick, &releaseButton, fd);
+            //    else 
                     continue;
             }
 

@@ -23,6 +23,9 @@ extern int shmid;
 void err_exit(char *buf) {
     fprintf(stderr, "%s\n", buf);
     perror("errno");
+
+    /*TODO*/
+    //quit();
     exit(1);
 }
 
@@ -86,7 +89,9 @@ int isApp( char *appName ,char *name ) {
         app = termName;
     }
 
-    char *p = name;
+    char storage[100];
+    strcpy(storage, name);
+    char *p = storage;
 
     /*TODO:
      * NOTE: 
@@ -96,12 +101,16 @@ int isApp( char *appName ,char *name ) {
      * 呃，加个*p检测结尾字符其实也是可以的...
      * */
     while(*p && *p++ != '\n');
-    if ( *p )
-        *(p-1) = '\0';
+    printf("%d %d\n", *p, *(p-1));
+    *(p-1) = '\0';
+
+    printf("%s\n", name);
 
     for ( int i = 0; i < n; i++ ) {
-        if ( strcmp ( app[i], name ) == 0 )
+        if ( strcmp ( app[i], storage ) == 0 ) {
+            printf("-----------yes \n");
             return 1;
+        }
     }
     return -1;
 }
@@ -146,6 +155,8 @@ int isAction(int history[], int last, int judgeType) {
 
 void quit() {
 
+    printf("quit...\n");
+
     /*退出前加个回车*/
     fprintf(stdout, "\n");
 
@@ -165,7 +176,7 @@ void quit() {
         printf("remove shared memory identifier successful\n");
     }
 
-    exit(0);
+    exit(1);
 }
 
 /*同步键盘*/

@@ -54,16 +54,20 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     if ( isApp("screenShotApp", appName) == 1)
         return;
 
-    if ( isApp("terminal", appName) == 1)
+    if ( isApp("terminal", appName) == 1) {
+        printf("send key ctrl-shift-c\n");
         simulateKey(fd_key, Ctrl_Shift_C, 3);
-    else
+    }
+    else {
+        printf("send key ctrl-c\n");
         simulateKey(fd_key, Ctrl_C, 2);
-
+    }
     delay();
 
     if ( text == NULL )
         /*free in forDetectMouse.c*/
-        text = malloc(TEXTSIZE);
+        if (( text = malloc(TEXTSIZE)) == NULL)
+            err_exit("malloc failed in notify.c");
 
     memset(text, 0, TEXTSIZE);
 
