@@ -3,7 +3,7 @@ CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -ggdb
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntry.o \
-			detectMouse.o shmCreate.o newWindow.o adjustStr.o Main.o
+			notify.o detectMouse.o shmCreate.o newWindow.o adjustStr.o Main.o
 
 stran : $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDLIBS) $(CFLAGS) -o $@

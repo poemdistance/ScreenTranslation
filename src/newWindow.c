@@ -13,6 +13,8 @@ void *newWindow(void * arg) {
 
     /* 置零action，用于下面翻译窗口弹不出时可以双击关闭*/
     action = 0; 
+    
+    int time = 0;
 
     printf("new window func in newWindow.c\n");
 
@@ -52,6 +54,11 @@ void *newWindow(void * arg) {
             return (void*)0;
         }
         usleep(400000);
+        time++;
+        if ( time >= 4 ) {
+            shmaddr[0] = ERRCHAR;
+            break;
+        }
     }
 
     /*新建并设置窗口基本属性*/
@@ -127,9 +134,9 @@ void *newWindow(void * arg) {
     p[1] = &shmaddr[index[0]];
     p[2] = &shmaddr[index[1]];
 
-    char result[1024] = { '\0' };
+    char result[4096] = { '\0' };
     char explain[4096] = { '\0' };
-    char related[2048] = { '\0' };
+    char related[4096] = { '\0' };
 
     char *storage[3] = { NULL };
     storage[0] = result;

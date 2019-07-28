@@ -57,6 +57,7 @@ void *DetectMouse(void *arg);
 int shmCreate(char **addr);
 void *newWindow(void * arg);
 void adjustStr(char *p[3], int len, char *storage[3]);
+void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
 
 struct clickDate {
     GtkWidget *window;

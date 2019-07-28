@@ -9,6 +9,7 @@ extern int action;
 extern int timeout_id_1;
 extern int timeout_id_2;
 extern int CanNewWin;
+extern int CanNewEntry;
 
 int HadDestroied;
 static int aboveWindow = 0;
@@ -26,17 +27,8 @@ void *GuiEntry(void *arg) {
 
     /*等待鼠标事件到来创建入口图标*/
     while(1) {
-        usleep(200000);
 
-        /*此处有一定几率发生双击后已经选中字符并复制翻译成功，
-         * 但线程还没有运行到这进行判断，结果后面判断来到之时鼠标
-         * 已经移动造成当前action不是双击或区域选择被直接返回没有创建
-         * 入口图标.
-         *
-         * 解决办法，用某标志位进行检测，当检测到复制翻译成功直接
-         * 跳出此while循环进行入口图标的创建*/
-
-        if ( action == DOUBLECLICK || action == SLIDE ) {
+        if (CanNewEntry || action == DOUBLECLICK) {
             printf("Detect mouse action, creating icon entry\n");
 
             if ( shmaddr[0] == EMPTYFLAG ) {
@@ -44,17 +36,19 @@ void *GuiEntry(void *arg) {
                 shmaddr[0] = CLEAR;
                 action = 0;
                 CanNewWin = 0;
+                CanNewEntry = 0;
                 return (void*)0;
             }
-
             break;
         }
+        usleep(200000);
     }
 
     GtkWidget *window;
 
     /*入口图标销毁标志置0，表示处于显示状态*/
     HadDestroied = 0;
+    CanNewEntry = 0;
 
     gtk_init(NULL, NULL);
 
@@ -100,7 +94,7 @@ void *GuiEntry(void *arg) {
     struct clickDate cd;
     cd.window = window;
     cd.button = button;
-    timeout_id_1 = g_timeout_add(2000, quit_entry, &cd);
+    timeout_id_1 = g_timeout_add(960, quit_entry, &cd);
     timeout_id_2 = g_timeout_add(600, quit_test, &cd);
 
     gtk_main();
@@ -141,12 +135,21 @@ int quit_test(void *arg) {
         return FALSE;
 
     /*不在窗口上的单击定义为销毁窗口命令*/
-    if (!HadDestroied && (action == SINGLECLICK) && window && !aboveWindow) {
+    if (!HadDestroied && !aboveWindow && \
+            (action == SINGLECLICK || action == DOUBLECLICK) ) {
 
         if ( action == SINGLECLICK  && !aboveWindow) {
             printf("GuiEntry: 单击销毁\n");
+
             CanNewWin = 0;
-            action = 0;
+
+            /*单击销毁action置0
+             * 双击销毁则可能新选中了文本，再新建一个入口*/
+            if ( action == SINGLECLICK )
+                action = 0;
+            else if (action == DOUBLECLICK)
+                CanNewEntry = 1;
+
             HadDestroied = 1;
 
             g_source_remove(timeout_id_2);
@@ -177,6 +180,11 @@ int quit_entry(void *arg) {
     if ( button &&  window && !HadDestroied ) {
 
         printf("GuiEntry: 超时销毁\n");
+
+        /*如果超时销毁的时候恰好又遇到双击选中文本
+         * 也应该新建入口图标*/
+        if ( action == DOUBLECLICK)
+            CanNewEntry = 1;
 
         action  = 0;
         CanNewWin = 0;

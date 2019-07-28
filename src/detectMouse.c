@@ -4,13 +4,9 @@
  *    并设置action为相应的值:DOUBLECLICK,SINGLECLICK
  *    SLIDE
  *
- * 2. 模拟键盘发送CTRL-C或者CTRL-SHIFT-C进行复制操作
+ * 2. Fork一个子进程，父进程通过管道将剪贴板内容送子进程
  *
- * 3. 通过Xserver获取剪贴板内容
- *
- * 4. Fork一个子进程，父进程通过管道将剪贴板内容送子进程
- *
- * 5. 从定向子进程标准输入为管道读取端，事exec执行的python翻译
+ * 3. 从定向子进程标准输入为管道读取端，事exec执行的python翻译
  *    程序直接从管道中读取翻译源数据
  * */
 
@@ -19,12 +15,10 @@
 
 extern char *shmaddr;
 
-char *text = NULL;
-FILE *fp = NULL;
 int mousefd;
-int fd_key = -1;
 
-static int CanNewEntry  = 0;
+int CanCopy = 0;
+int CanNewEntry  = 0;
 
 extern int action;
 
@@ -34,7 +28,6 @@ void *DetectMouse(void *arg) {
     struct sigaction sa;
     int retval ;
     char buf[3];
-    char appName[100];
     int releaseButton = 1;
     fd_set readfds;
     struct timeval tv;
@@ -47,9 +40,6 @@ void *DetectMouse(void *arg) {
     int fd[2];
     int status;
     pid_t pid;
-
-    int Ctrl_Shift_C[] = {KEY_LEFTCTRL, KEY_LEFTSHIFT, KEY_C};
-    int Ctrl_C[] = {KEY_LEFTCTRL, KEY_C};
 
     if ( (status = pipe(fd)) != 0 ) {
         fprintf(stderr, "create pipe fail\n");
@@ -91,147 +81,100 @@ void *DetectMouse(void *arg) {
 
         while(1) {
             // 设置最长等待时间
-            tv.tv_sec = 5;
-            tv.tv_usec = 0;
+            tv.tv_sec = 0;
+            tv.tv_usec = 600000;
 
             FD_ZERO( &readfds );
             FD_SET( mousefd, &readfds );
+
             retval = select( mousefd+1, &readfds, NULL, NULL, &tv );
+
+            /*超时*/
             if(retval==0) {
+                if ( CanCopy )
+                    notify(&history, &thirdClick, &releaseButton, fd);
+                else 
+                    continue;
+            }
+
+            if(read(mousefd, buf, 3) <= 0) {
                 continue;
             }
-            if(FD_ISSET(mousefd,&readfds)) {
 
-                // 读取鼠标设备中的数据
-                if(read(mousefd, buf, 3) <= 0) {
+            /*循环写入鼠标数据到数组*/
+            history[i++] = buf[0] & 0x07;
+            if ( i == 4 )
+                i = 0;
+
+            /*m为最后得到的鼠标键值*/
+            m = previous(i);
+            n = previous(m);
+
+            //printf("current action=%d\n", action);
+            //printf("%d %d\n", history[m], history[n]);
+
+            /*没有按下按键并活动鼠标,标志releaseButton=1*/
+            if ( history[m] == 0 && history[n] == 0 ) {
+                releaseButton = 1;
+                action = 0;
+            }
+
+            /*按下左键*/
+            /* 此处不要改变1 0的顺序，因为m n下标出现0 1可能是区域选择
+             * 事件(SLIDE),这将导致SLIDE被一直误判*/
+            if ( history[m] == 1 && history[n] == 0 ) {
+                if ( releaseButton ) {
+
+                    gettimeofday(&old, NULL);
+
+                    /* lasttime为双击最后一次的按下按键时间;
+                     * 如果上次双击时间到现在不超过700ms，则断定为3击事件;
+                     * 3击会选中一整段，或一整句，此种情况也应该复制文本*/
+                    if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 700 \
+                            && lasttime != 0 && action == DOUBLECLICK) {
+
+                        CanCopy = 1;
+                        thirdClick = 1;
+                        CanNewEntry = 1;
+                    }
+                    else { /*不是3击事件则按单击处理，更新oldtime*/
+                        oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
+                        thirdClick = 0;
+                        action = SINGLECLICK;
+                    }
+                    releaseButton = 0;
+
+                    /*非3击事件，则为单击，更新oldtime后返回检测鼠标新一轮事件*/
+                    if ( !thirdClick && !CanCopy)
+                        continue;
+                }
+            }
+
+            /*检测检测是否可能为双击,以及判断时间间隔(应跳过确定的3击事件)*/
+            if ( isAction(history, i, DOUBLECLICK) && !thirdClick && !CanCopy)  {
+                releaseButton = 1;
+                gettimeofday( &now, NULL );
+                newtime = (now.tv_usec + now.tv_sec*1000000) / 1000;
+
+                /*双击超过700ms的丢弃掉*/
+                if ( abs (newtime - oldtime) > 700)  {
+                    memset(history, 0, sizeof(history));
                     continue;
                 }
+                /*更新最后一次有效双击事件的发生时间*/
+                lasttime = newtime;
 
-                /*循环写入鼠标数据到数组*/
-                history[i++] = buf[0] & 0x07;
-                if ( i == 4 )
-                    i = 0;
+                /*虽然可以复制了，但是还要再判断以下是否可能会有3击*/
+                CanCopy = 1;
+                CanNewEntry = 1;
+                continue;
+            }
 
-                /*m为最后得到的鼠标键值*/
-                m = previous(i);
-                n = previous(m);
+            if ( isAction( history, i, SLIDE ) )
+                CanCopy = 1;
 
-                //printf("current action=%d\n", action);
-                //printf("%d %d\n", history[m], history[n]);
-
-                /*没有按下按键并活动鼠标,标志releaseButton=1*/
-                if ( history[m] == 0 && history[n] == 0 ) {
-                    releaseButton = 1;
-                    action = 0;
-                }
-
-                /*按下左键*/
-                /* 此处不要改变1 0的顺序，因为m n下标出现0 1可能是区域选择
-                 * 事件(SLIDE),这将导致SLIDE被一直误判*/
-                if ( history[m] == 1 && history[n] == 0 ) {
-                    if ( releaseButton ) {
-
-                        gettimeofday(&old, NULL);
-
-                        /* lasttime为双击最后一次的按下按键时间;
-                         * 如果上次双击时间到现在不超过700ms，则断定为3击事件;
-                         * 3击会选中一整段，或一整句，此种情况也应该复制文本*/
-                        if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 700 \
-                                && lasttime != 0 && action == DOUBLECLICK) {
-                            thirdClick = 1; /*3击标志*/
-                            CanNewEntry = 1;
-                        }
-                        else { /*不是3击事件则按单击处理，更新oldtime*/
-                            oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
-                            thirdClick = 0;
-                            action = SINGLECLICK;
-                        }
-                        releaseButton = 0;
-
-                        /*非3击事件，则为单击，更新oldtime后返回检测鼠标新一轮事件*/
-                        if ( !thirdClick )
-                            continue;
-                    }
-                }
-
-                /*检测检测是否可能为双击,以及判断时间间隔(应跳过确定的3击事件)*/
-                if ( isAction(history, i, DOUBLECLICK) && !thirdClick)  {
-                    releaseButton = 1;
-                    gettimeofday( &now, NULL );
-                    newtime = (now.tv_usec + now.tv_sec*1000000) / 1000;
-
-                    /*双击超过700ms的丢弃掉*/
-                    if ( abs (newtime - oldtime) > 700)  {
-                        memset(history, 0, sizeof(history));
-                        continue;
-                    }
-                    /*更新最后一次有效双击事件的发生时间*/
-                    lasttime = newtime;
-                }
-
-                /*双击,3击或者按住左键滑动区域选择事件处理*/
-                if ( isAction(history, i, DOUBLECLICK)
-                        || isAction(history, i, SLIDE)
-                        || (thirdClick == 1)) {
-
-                    if ( thirdClick == 1 ) {
-                        thirdClick = 0;
-
-                        /* 通知已释放左键，让检测程序能继续更新oldtime
-                         * 否则下次releaseButton只能在双击事件检测里执行
-                         * 造成oldtime长时未更新导致每次执行3击后的双击
-                         * 都被视为超时*/
-                        releaseButton = 1;
-                    }
-
-                    if ( fd_key < 0 )
-                        if ((fd_key = open("/dev/input/event3", O_RDWR)) >= 0 ) 
-                            printf("open event3 successful\n");
-
-
-                    /*需每次都执行才能判断当前的窗口是什么*/
-                    fp = popen("ps -p `xdotool getwindowfocus getwindowpid`\
-                            | awk '{print $NF}' | tail -n 1", "r");
-
-                    memset ( appName, 0, sizeof(appName) );
-
-                    if ( fread(appName, sizeof(appName), 1, fp) < 0) {
-                        fprintf(stderr, "fread error\n");
-                        continue;
-                    }
-
-                    pclose(fp);
-
-                    fprintf(stdout, "Focus window application: %s\n", appName);
-
-                    if ( isApp("screenShotApp", appName) == 1)
-                        continue;
-
-                    if ( isApp("terminal", appName) == 1)
-                        simulateKey(fd_key, Ctrl_Shift_C, 3);
-                    else
-                        simulateKey(fd_key, Ctrl_C, 2);
-
-                    delay();
-
-                    if ( text == NULL )
-                        /*free in forDetectMouse.c*/
-                        text = malloc(TEXTSIZE);
-
-                    memset(text, 0, TEXTSIZE);
-
-                    getClipboard(text);
-
-
-                    memset(shmaddr, '\0', SHMSIZE);
-                    writePipe(text, fd[1]);
-
-                    /*清除鼠标记录*/
-                    memset(history, 0, sizeof(history));
-
-                }/*双击,3击或者区域选择事件处理*/
-
-            } /*if(FD_ISSET(mousefd,&readfds))*/
+            if ( CanCopy )
+                notify(&history, &thirdClick, &releaseButton, fd);
 
         } /*while loop*/
 
