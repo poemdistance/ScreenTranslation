@@ -104,11 +104,8 @@ int isApp( char *appName ,char *name ) {
     printf("%d %d\n", *p, *(p-1));
     *(p-1) = '\0';
 
-    printf("%s\n", name);
-
     for ( int i = 0; i < n; i++ ) {
         if ( strcmp ( app[i], storage ) == 0 ) {
-            printf("-----------yes \n");
             return 1;
         }
     }

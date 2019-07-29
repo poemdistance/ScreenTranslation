@@ -3,17 +3,30 @@
 extern char *shmaddr;
 extern int action;
 
+int InNewWin = 0;
+extern int CanNewEntry;
+
 int destroy_newwin(GtkWidget *window);
 void getShmDate(int (*index)[]);
+void get_paragraph();
+
+struct GtkText {
+    GtkTextIter *iter;
+    GtkTextBuffer *buf;
+    int index[2];
+    char **storage;
+};
 
 /*新建翻译结果窗口*/
 void *newWindow(void * arg) {
+
+    InNewWin = 1;
 
     int flag = 0;
 
     /* 置零action，用于下面翻译窗口弹不出时可以双击关闭*/
     action = 0; 
-    
+
     int time = 0;
 
     printf("new window func in newWindow.c\n");
@@ -68,7 +81,7 @@ void *newWindow(void * arg) {
     gtk_window_set_default_size(GTK_WINDOW(newWin), 550, 334);
     gtk_window_set_title(GTK_WINDOW(newWin), "");
     gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_MOUSE);
-    gtk_window_set_resizable(GTK_WINDOW(newWin), FALSE);
+    //gtk_window_set_resizable(GTK_WINDOW(newWin), FALSE);
 
     /*新建box容纳文字显示*/
     GtkWidget *vbox;
@@ -83,7 +96,7 @@ void *newWindow(void * arg) {
          * 后两条存于索引数组index中*/
         getShmDate(&index);
 
-    printf("目标翻译:%s\n", &shmaddr[1]);
+    printf("目标翻译:%s\n", &shmaddr[ACTUALSTART]);
     printf("释义:%s\n", &shmaddr[index[0]]);
     printf("相关:%s\n", &shmaddr[index[1]]);
 
@@ -127,10 +140,9 @@ void *newWindow(void * arg) {
     gtk_text_buffer_create_tag(buf, "gray_background", "background", "#ffffff", NULL);
     gtk_text_buffer_get_iter_at_offset(buf, &iter, 0);
 
-
     /*调整字符串*/
     char *p[3] ={ NULL };
-    p[0] = &shmaddr[1];
+    p[0] = &shmaddr[ACTUALSTART];
     p[1] = &shmaddr[index[0]];
     p[2] = &shmaddr[index[1]];
 
@@ -168,6 +180,18 @@ void *newWindow(void * arg) {
         }
     }
 
+    GtkWidget *button = gtk_button_new_with_label("Refresh");
+    gtk_layout_put(GTK_LAYOUT(layout), button, 440, 260);
+
+    struct GtkText gt;
+    gt.buf = buf;
+    gt.iter = &iter;
+    gt.index[0] = index[0];
+    gt.index[1] = index[1];
+    gt.storage = storage;
+
+    g_signal_connect(button, "clicked", G_CALLBACK(get_paragraph), (void*)&gt);
+
     gtk_widget_set_opacity(image, 0.7);
     gtk_widget_set_opacity(view, 0.6);
     //gtk_widget_set_opacity(vbox, 0.4);
@@ -195,16 +219,19 @@ int destroy_newwin(GtkWidget *window) {
     /* 按了exit键后变成了单击事件，此时再双击会导致检测错误
      * 应手动置0*/
     action = 0;
+    InNewWin = 0;
+    CanNewEntry = 0;
+
     return FALSE;
 }
 
 void getShmDate(int (*index)[]) {
 
-    char *p = &shmaddr[1];
-    int i = 1;  /*同p一致指向第一个下标字符*/
+    char *p = &shmaddr[ACTUALSTART];
+    int i = ACTUALSTART;  /*同p一致指向同一个下标字符*/
     int charNum = 0;
 
-    printf("原始数据:%s\n", &shmaddr[1]);
+    printf("原始数据:%s\n", &shmaddr[ACTUALSTART]);
 
     while ( *p && i < SHMSIZE) 
     {
@@ -220,5 +247,67 @@ void getShmDate(int (*index)[]) {
         i++;
     }
     shmaddr[0] = '\0';
-    printf("%d %d %d\n", (*index)[0], (*index)[1], (*index)[2]);
+    *(p+1) = '\0';
+    printf("%d %d\n", (*index)[0], (*index)[1]);
+}
+
+void get_paragraph(GtkWidget *button, gpointer *arg) {
+
+    GtkTextIter *iter, start, end;
+    iter = ((struct GtkText*)arg)->iter;
+    GtkTextBuffer *buf = ((struct GtkText*)arg)->buf;
+
+    gtk_text_buffer_get_start_iter(buf, &start);
+    gtk_text_buffer_get_end_iter(buf, &end);
+
+    gtk_text_buffer_delete(buf, &start, &end);
+    gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
+
+    char result[4096] = { '\0' };
+    char explain[4096] = { '\0' };
+    char related[4096] = { '\0' };
+
+    char *storage[3] = { NULL };
+    storage[0] = result;
+    storage[1] = explain;
+    storage[2] = related;
+
+    int index[2] = { 0 };
+
+    printf("1-------------%s\n", &shmaddr[ACTUALSTART]);
+    printf("2-------------%s\n", ((struct GtkText*)arg)->storage[0] );
+
+    if (strcmp ( &shmaddr[ACTUALSTART], ((struct GtkText*)arg)->storage[0] ) != 0) {
+
+        index[0] = index[1] = 0;
+        getShmDate(&index);
+
+        char *p[3] ={ NULL };
+        p[0] = &shmaddr[ACTUALSTART];
+        p[1] = &shmaddr[index[0]];
+        p[2] = &shmaddr[index[1]];
+
+        adjustStr(p, 65, storage);
+
+    } else {
+        storage[0] = ((struct GtkText*)arg)->storage[0] ;
+        storage[1] = ((struct GtkText*)arg)->storage[1] ;
+        storage[2] = ((struct GtkText*)arg)->storage[2] ;
+    }
+    /*插入翻译结果*/
+    char doubleEnter[] = "\n\n";
+    char enter[] = "\n";
+    for ( int i=0; i<3; i++ ) {
+        printf("storage[]=%s\n", storage[i]);
+        if ( storage[i][0] != '\0') {
+
+            gtk_text_buffer_insert_with_tags_by_name(buf, iter, storage[i], -1, 
+                    "blue-font", "gray_background", "bold-style", "Uneditable", "font-size", NULL);
+
+            if ( i<2 && storage[i+1][0] != '\0')
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, doubleEnter, -1, NULL, NULL);
+            else 
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+        }
+    }
 }

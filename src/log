@@ -1,14 +1,26 @@
 Using SharedMemory
+>> Python捕获异常
+EOF when reading a line
+Good bye~
+Python捕获异常
+EOF when reading a line
+Good bye~
+Using SharedMemory
+>> Python接收字符串: In = -lXext
+准备获取翻译...
+<urlopen error timed out>
+[34m<proxy>[0m
+<urlopen error _ssl.c:1039: The handshake operation timed out>
 >> Python接收字符串: In = terminated
 准备获取翻译...
-
-写入:终止|
-写入:bring to an end.|
-写入:verb:办到,满期 | 
-
-写入:concluded,over,ended,all over,complete,
-翻译写入完成
-
+[34m<proxy>[0m
+<urlopen error _ssl.c:1039: The handshake operation timed out>
+[34m<proxy>[0m
+<urlopen error _ssl.c:1039: The handshake operation timed out>
+>> Python捕获异常
+EOF when reading a line
+Good bye~
+Using SharedMemory
 >> Python捕获异常
 EOF when reading a line
 Good bye~

@@ -87,5 +87,5 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     /*清除鼠标记录*/
     memset(*history, 0, sizeof(*history));
 
-    printf("TEST POINT\n");
+    printf("memset histor[4]\n");
 }

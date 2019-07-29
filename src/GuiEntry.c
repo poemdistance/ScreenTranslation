@@ -29,7 +29,7 @@ void *GuiEntry(void *arg) {
     while(1) {
 
         if (CanNewEntry || action == DOUBLECLICK) {
-            printf("Detect mouse action, creating icon entry\n");
+            printf("Detect mouse action, creating icon entry CanNewEntry = %d action=%d\n", CanNewEntry, action);
 
             if ( shmaddr[0] == EMPTYFLAG ) {
                 printf("空字符串,返回继续等待...\n");
@@ -87,7 +87,7 @@ void *GuiEntry(void *arg) {
     /*移动入口图标防止遮挡视线*/
     gint cx, cy;
     gtk_window_get_position(GTK_WINDOW(window), &cx, &cy);
-    gtk_window_move(GTK_WINDOW(window), cx+20, cy-60);
+    gtk_window_move(GTK_WINDOW(window), cx+20, cy-40);
     gtk_widget_show_all(window);
 
     /*添加超时和单击销毁图标回调函数*/

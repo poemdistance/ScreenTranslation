@@ -14,6 +14,7 @@
 #include "common.h"
 
 extern char *shmaddr;
+extern int InNewWin;
 
 int mousefd;
 
@@ -73,7 +74,7 @@ void *DetectMouse(void *arg) {
         }
 
         int history[4] = { 0 };
-        int i = 0, n = 0, m = 0;
+        int i = 0, n = 0, m = 0/*, j=0, x=0*/;
 
         signal(SIGINT, quit);
 
@@ -90,15 +91,22 @@ void *DetectMouse(void *arg) {
 
             /*超时*/
             if(retval==0) {
-            //    if ( CanCopy )
-            //        notify(&history, &thirdClick, &releaseButton, fd);
-            //    else 
-                    continue;
+                //    if ( CanCopy )
+                //        notify(&history, &thirdClick, &releaseButton, fd);
+                //    else 
+                continue;
             }
 
             if(read(mousefd, buf, 3) <= 0) {
                 continue;
             }
+
+            /*打开翻译窗口后不再判断鼠标动作
+             * NOTE: 这句要放在读鼠标设备的语句之后,防止窗口关闭后旧数据
+             * 被读进history误判，而把任何时候的数据都读完了,
+             * 其他代码逻辑才不会被旧数据影响*/
+            if ( InNewWin == 1 )
+                continue;
 
             /*循环写入鼠标数据到数组*/
             history[i++] = buf[0] & 0x07;
@@ -108,9 +116,10 @@ void *DetectMouse(void *arg) {
             /*m为最后得到的鼠标键值*/
             m = previous(i);
             n = previous(m);
+            //j = previous(n);
+            //x = previous(j);
 
-            //printf("current action=%d\n", action);
-            //printf("%d %d\n", history[m], history[n]);
+            //printf("%d %d %d %d\n", history[m], history[n], history[j], history[x]);
 
             /*没有按下按键并活动鼠标,标志releaseButton=1*/
             if ( history[m] == 0 && history[n] == 0 ) {
@@ -158,7 +167,6 @@ void *DetectMouse(void *arg) {
                 /*双击超过700ms的丢弃掉*/
                 if ( abs (newtime - oldtime) > 700)  {
                     memset(history, 0, sizeof(history));
-                    notify(&history, &thirdClick, &releaseButton, fd);
                     continue;
                 }
                 /*更新最后一次有效双击事件的发生时间*/
@@ -167,6 +175,7 @@ void *DetectMouse(void *arg) {
                 /*虽然可以复制了，但是还要再判断以下是否可能会有3击*/
                 CanCopy = 1;
                 CanNewEntry = 1;
+                notify(&history, &thirdClick, &releaseButton, fd);
                 continue;
             }
 

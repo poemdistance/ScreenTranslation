@@ -36,6 +36,7 @@
 #define ERRCHAR ('2')
 #define FINFLAG ('1')
 #define CLEAR   ('0')
+#define ACTUALSTART (10)
 
 void show_utf8_prop(Display *dpy, Window w, Atom p, char *text);
 
