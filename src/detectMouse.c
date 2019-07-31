@@ -141,7 +141,7 @@ void *DetectMouse(void *arg) {
                     if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 600 \
                             && lasttime != 0 && action == DOUBLECLICK) {
 
-                        CanCopy = 1;
+                        notify(&history, &thirdClick, &releaseButton, fd);
                         thirdClick = 1;
                         CanNewEntry = 1;
                     }
@@ -173,16 +173,12 @@ void *DetectMouse(void *arg) {
                 lasttime = newtime;
 
                 /*虽然可以复制了，但是还要再判断以下是否可能会有3击*/
-                CanCopy = 1;
                 CanNewEntry = 1;
                 notify(&history, &thirdClick, &releaseButton, fd);
                 continue;
             }
 
             if ( isAction( history, i, SLIDE ) )
-                CanCopy = 1;
-
-            if ( CanCopy )
                 notify(&history, &thirdClick, &releaseButton, fd);
 
         } /*while loop*/

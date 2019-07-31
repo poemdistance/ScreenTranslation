@@ -94,6 +94,7 @@ int getClipboard(char *text)
      * returns the window id associated(关联) with the window
      * that currently owns the specified selection*/
     owner = XGetSelectionOwner(dpy, sel);
+    printf("owner is 0x%lx\n", owner);
 
     if (owner == None)
     {
@@ -143,6 +144,7 @@ int getClipboard(char *text)
         /*
          * copies the first event from the event queue into the specified 
          * XEvent structure and then removes it from the queue*/
+        printf("wait next event\n");
 
         XNextEvent(dpy, &ev);
 
@@ -160,6 +162,9 @@ int getClipboard(char *text)
                     return -1;
 
                 } else {
+                    char *name;
+                    name = XGetAtomName(dpy, ((XSelectionRequestEvent*)&ev)->target);
+                    XFree(name);
                     show_utf8_prop(dpy, target_window, target_property, text);
                     return 1;
                 }

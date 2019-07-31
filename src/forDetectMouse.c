@@ -19,6 +19,7 @@ extern int mousefd;
 extern int fd_key;
 extern int action;
 extern int shmid;
+extern char *lastText;
 
 void err_exit(char *buf) {
     fprintf(stderr, "%s\n", buf);
@@ -41,6 +42,7 @@ void delay() {
 void writePipe(char *text, int fd) {
 
     int writelen;
+    char *p  = NULL;
 
     /*排除空字符和纯回车字符*/
     if ( strcmp( text, " ") != 0 && strcmp( text, "\n") != 0 ) {
@@ -50,20 +52,32 @@ void writePipe(char *text, int fd) {
             if ( text[i] == '\n')
                 text[i] = ' ';
         }
+
+        p = text;
+        while ( *p ) {
+            if ( *p != ' ' ) {
+                if ( *p == '\0' ) {
+                    shmaddr[0] = EMPTYFLAG;
+                    return;
+                }
+            }
+            p++;
+        }
+
         if ( text[writelen-1] != '\n')  {
             text = strcat(text, "\n");
             writelen++;
         }
 
         int ret = write( fd, text, writelen );
-        printf("len=%d, actul writelen=%d\n", writelen, ret);
+
         if ( ret != writelen ) {
             fprintf(stderr, "writelen=%d,\
                     write error in forDetectMouse.c func: writePipe\n", ret);
             perror("errno");
         }
     } else {
-        fprintf(stdout, "所获取为空字符串...\n");
+        fprintf(stdout, "Null character...\n");
         shmaddr[0] = EMPTYFLAG;
     }
 }
@@ -93,15 +107,7 @@ int isApp( char *appName ,char *name ) {
     strcpy(storage, name);
     char *p = storage;
 
-    /*TODO:
-     * NOTE: 
-     * appName 需要添加回车符如果是自行赋值作为测试的,
-     * 否则此循环将导致越界访问内存;
-     * 
-     * 呃，加个*p检测结尾字符其实也是可以的...
-     * */
     while(*p && *p++ != '\n');
-    printf("%d %d\n", *p, *(p-1));
     *(p-1) = '\0';
 
     for ( int i = 0; i < n; i++ ) {
@@ -159,6 +165,9 @@ void quit() {
 
     if ( text != NULL )
         free(text);
+
+    if ( lastText != NULL )
+        free(lastText);
 
     close(mousefd);
     close(fd_key);

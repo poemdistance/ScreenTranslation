@@ -26,6 +26,7 @@
 #include <X11/keysym.h>
 #include <X11/extensions/XTest.h>
 
+#define NOTACTIONTEXT ("NOTACTIONTEXT")
 #define TEXTSIZE (1024*1024)
 #define SINGLECLICK (1)
 #define DOUBLECLICK (2)
@@ -59,6 +60,9 @@ int shmCreate(char **addr);
 void *newWindow(void * arg);
 void adjustStr(char *p[3], int len, char *storage[3]);
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
+
+void * 
+sendToClipboard( void *arg );
 
 struct clickDate {
     GtkWidget *window;
