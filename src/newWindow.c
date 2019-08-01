@@ -7,7 +7,7 @@ int InNewWin = 0;
 extern int CanNewEntry;
 
 int destroy_newwin(GtkWidget *window);
-void getShmDate(int (*index)[]);
+void getShmDate(int *index);
 void get_paragraph();
 
 struct GtkText {
@@ -29,7 +29,7 @@ void *newWindow(void * arg) {
 
     int time = 0;
 
-    printf("new window func in newWindow.c\n");
+    printf("准备判断是否新建窗口");
 
     /*等待python端的翻译数据全部写入共享内存*/
     while( shmaddr[0] != FINFLAG) {
@@ -91,14 +91,12 @@ void *newWindow(void * arg) {
 
     int index[2] = { 0 };
 
+    printf("直接获取的源数据%s\n", &shmaddr[ACTUALSTART]);
+
     if ( shmaddr[0] != ERRCHAR)
         /* 从共享内存中截取出部分翻译结果(3条结果),
          * 后两条存于索引数组index中*/
-        getShmDate(&index);
-
-    printf("目标翻译:%s\n", &shmaddr[ACTUALSTART]);
-    printf("释义:%s\n", &shmaddr[index[0]]);
-    printf("相关:%s\n", &shmaddr[index[1]]);
+        getShmDate(index);
 
     /*创建layout用于显示背景图片,以及放置文本*/
     GtkWidget * layout = gtk_layout_new(NULL, NULL);
@@ -117,16 +115,17 @@ void *newWindow(void * arg) {
     gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
 
-    GdkPixbuf *src = gdk_pixbuf_new_from_file(\
-            "/home/rease/.stran/background.jpg", NULL);
+    //GdkPixbuf *src = gdk_pixbuf_new_from_file(
+            //"/home/rease/.stran/background.jpg", NULL);
+            //"", NULL);
 
-    GdkPixbuf *dst = gdk_pixbuf_scale_simple(src, 550, 334, GDK_INTERP_BILINEAR);
-    GtkWidget *image = gtk_image_new_from_pixbuf(dst);
-    gtk_layout_put(GTK_LAYOUT(layout), image, 0, 0);
+    //GdkPixbuf *dst = gdk_pixbuf_scale_simple(src, 550, 334, GDK_INTERP_BILINEAR);
+    //GtkWidget *image = gtk_image_new_from_pixbuf(dst);
+    //gtk_layout_put(GTK_LAYOUT(layout), image, 0, 0);
     gtk_layout_put(GTK_LAYOUT(layout), vbox, 10, 10);
 
-    g_object_unref(src);
-    g_object_unref(dst);
+    //g_object_unref(src);
+    //g_object_unref(dst);
 
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
     gtk_text_view_set_buffer((GtkTextView*)view, buf);
@@ -167,7 +166,7 @@ void *newWindow(void * arg) {
     char doubleEnter[] = "\n\n";
     char enter[] = "\n";
     for ( int i=0; i<3; i++ ) {
-        printf("storage[]=%s\n", storage[i]);
+        printf("storage[%d]=%s\n", i, storage[i]);
         if ( storage[i][0] != '\0') {
 
             gtk_text_buffer_insert_with_tags_by_name(buf, &iter, storage[i], -1, 
@@ -192,16 +191,13 @@ void *newWindow(void * arg) {
 
     g_signal_connect(button, "clicked", G_CALLBACK(get_paragraph), (void*)&gt);
 
-    gtk_widget_set_opacity(image, 0.7);
-    gtk_widget_set_opacity(view, 0.6);
+    //gtk_widget_set_opacity(image, 0.7);
+    //gtk_widget_set_opacity(view, 1);
     //gtk_widget_set_opacity(vbox, 0.4);
 
     /*显示*/
     gtk_widget_show_all(newWin);
     gtk_main();
-
-    /*退出窗口，设置新建窗口标志为0(不能新建)*/
-    printf("new window quit...\n");
 
     pthread_exit(NULL);
 }
@@ -209,7 +205,6 @@ void *newWindow(void * arg) {
 int destroy_newwin(GtkWidget *window) {
 
     /*标记已退出newWindow函数*/
-    printf("memset shmaddr in destroy\n");
     memset(shmaddr, '\0', SHMSIZE);
 
     //gtk_window_close(GTK_WINDOW(window));
@@ -225,30 +220,28 @@ int destroy_newwin(GtkWidget *window) {
     return FALSE;
 }
 
-void getShmDate(int (*index)[]) {
+void getShmDate(int *index) {
 
     char *p = &shmaddr[ACTUALSTART];
     int i = ACTUALSTART;  /*同p一致指向同一个下标字符*/
     int charNum = 0;
 
-    printf("原始数据:%s\n", &shmaddr[ACTUALSTART]);
-
-    while ( *p && i < SHMSIZE) 
+    while ( *p ) 
     {
         if ( *p == '|' ) 
         {
             *p = '\0';
-            if ( charNum >= 3 ) /*截取到第三个分隔符*/
+            if ( charNum >= 2 ) /*截取到第三个分隔符*/ {
+                printf("已找到第三个分隔符，跳出循环\n");
                 break;
+            }
 
-            (*index)[charNum++] = i + 1; /*记录字符串下标*/
+            index[charNum++] = i + 1; /*记录字符串下标*/
         }
-        p++;
-        i++;
+        p++; i++;
     }
     shmaddr[0] = '\0';
     *(p+1) = '\0';
-    printf("%d %d\n", (*index)[0], (*index)[1]);
 }
 
 void get_paragraph(GtkWidget *button, gpointer *arg) {
@@ -274,13 +267,11 @@ void get_paragraph(GtkWidget *button, gpointer *arg) {
 
     int index[2] = { 0 };
 
-    printf("1-------------%s\n", &shmaddr[ACTUALSTART]);
-    printf("2-------------%s\n", ((struct GtkText*)arg)->storage[0] );
-
+    printf("\n比较字符串是否相等\n\n");
     if (strcmp ( &shmaddr[ACTUALSTART], ((struct GtkText*)arg)->storage[0] ) != 0) {
 
         index[0] = index[1] = 0;
-        getShmDate(&index);
+        getShmDate(index);
 
         char *p[3] ={ NULL };
         p[0] = &shmaddr[ACTUALSTART];

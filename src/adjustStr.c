@@ -9,6 +9,8 @@
  */
 void adjustStr(char *p[], int len, char *storage[]) {
 
+    printf("\nIn adjustStr fucntioin, test array address=%p\n\n", storage);
+
     for ( int i=0; i<3; i++ ) 
     {
         for ( int j=0, k=0; ; j++, k++ ) 
@@ -44,4 +46,6 @@ void adjustStr(char *p[], int len, char *storage[]) {
                     storage[i][++k] = '\n';
         }
     }
+
+    printf("\nOut adjustStr\n\n");
 }

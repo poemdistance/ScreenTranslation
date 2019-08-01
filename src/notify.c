@@ -82,8 +82,6 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     memset(text, 0, TEXTSIZE);
     getClipboard(text);
 
-    printf("-----------------%s----------------\n", text);
-
     CanCopy = 1;
     if ( strcmp(lastText, text ) == 0 )
     {

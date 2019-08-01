@@ -22,7 +22,6 @@ void enter_event();
 
 void *GuiEntry(void *arg) {
 
-    printf("Enter GuiEntry Function\n");
     aboveWindow = 0;
 
     /*等待鼠标事件到来创建入口图标*/
@@ -95,18 +94,16 @@ void *GuiEntry(void *arg) {
     struct clickDate cd;
     cd.window = window;
     cd.button = button;
-    timeout_id_1 = g_timeout_add(960, quit_entry, &cd);
+    timeout_id_1 = g_timeout_add(1200, quit_entry, &cd);
     timeout_id_2 = g_timeout_add(600, quit_test, &cd);
 
     gtk_main();
 
-    printf("GuiEntry function exit\n");
     pthread_exit(NULL);
 }
 
 void setNewWinFlag(GtkWidget *button, GtkWidget *window) {
 
-    printf("setNewWinFlag\n");
     if ( shmaddr[0] == EMPTYFLAG )
         CanNewWin = 0;
     else 
