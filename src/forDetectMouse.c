@@ -75,6 +75,7 @@ void writePipe(char *text, int fd) {
             fprintf(stderr, "writelen=%d,\
                     write error in forDetectMouse.c func: writePipe\n", ret);
             perror("errno");
+            exit(1);
         }
     } else {
         fprintf(stdout, "Null character...\n");
