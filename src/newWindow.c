@@ -64,6 +64,8 @@ void *newWindow(void * arg) {
             }
             action = 0;
             shmaddr[0] = CLEAR;
+            InNewWin = 0;
+            CanNewEntry = 0;
             return (void*)0;
         }
         usleep(400000);
