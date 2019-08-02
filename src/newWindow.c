@@ -29,7 +29,7 @@ void *newWindow(void * arg) {
 
     int time = 0;
 
-    printf("准备判断是否新建窗口");
+    printf("\n准备判断是否新建窗口\n\n");
 
     /*等待python端的翻译数据全部写入共享内存*/
     while( shmaddr[0] != FINFLAG) {
@@ -91,11 +91,11 @@ void *newWindow(void * arg) {
 
     int index[2] = { 0 };
 
-    printf("直接获取的源数据%s\n", &shmaddr[ACTUALSTART]);
+    printf("直接获取的源数据%s\n\n", &shmaddr[ACTUALSTART]);
 
+    /* 从共享内存中截取出部分翻译结果(3条结果),
+     * 后两条存于索引数组index中*/
     if ( shmaddr[0] != ERRCHAR)
-        /* 从共享内存中截取出部分翻译结果(3条结果),
-         * 后两条存于索引数组index中*/
         getShmDate(index);
 
     /*创建layout用于显示背景图片,以及放置文本*/
@@ -116,8 +116,8 @@ void *newWindow(void * arg) {
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
 
     //GdkPixbuf *src = gdk_pixbuf_new_from_file(
-            //"/home/rease/.stran/background.jpg", NULL);
-            //"", NULL);
+    //"/home/rease/.stran/background.jpg", NULL);
+    //"", NULL);
 
     //GdkPixbuf *dst = gdk_pixbuf_scale_simple(src, 550, 334, GDK_INTERP_BILINEAR);
     //GtkWidget *image = gtk_image_new_from_pixbuf(dst);
@@ -156,7 +156,7 @@ void *newWindow(void * arg) {
 
     if ( shmaddr[0]  != ERRCHAR )
         /*主要完成加入回车符使单行句子不至于太长*/
-        adjustStr(p, 65, storage);
+        adjustStr(p, 30, storage);
     else  {
         shmaddr[0] = CLEAR;
         strcpy(storage[0], "翻译超时或出现其他错误");
@@ -278,7 +278,7 @@ void get_paragraph(GtkWidget *button, gpointer *arg) {
         p[1] = &shmaddr[index[0]];
         p[2] = &shmaddr[index[1]];
 
-        adjustStr(p, 65, storage);
+        adjustStr(p, 30, storage);
 
     } else {
         storage[0] = ((struct GtkText*)arg)->storage[0] ;
