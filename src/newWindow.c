@@ -134,7 +134,7 @@ void *newWindow(void * arg) {
 
     /*注意属性值设置正确，不然桌面分分钟崩溃:(*/
     //gtk_text_buffer_create_tag(buf, "blue-font", "foreground", "#0055ff", NULL);
-    gtk_text_buffer_create_tag(buf, "blue-font", "foreground", "#0000ff", NULL);
+    gtk_text_buffer_create_tag(buf, "blue-font", "foreground", "#000000", NULL);
     gtk_text_buffer_create_tag(buf, "bold-style", "weight", PANGO_WEIGHT_BOLD, NULL);
     gtk_text_buffer_create_tag(buf, "Uneditable", "editable", FALSE, NULL);
     gtk_text_buffer_create_tag(buf, "font-size", "font", "13", NULL );
