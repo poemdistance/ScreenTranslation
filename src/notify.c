@@ -59,8 +59,13 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     fprintf(stdout, "Focus window application: %s\n", appName);
 
-    if ( isApp("screenShotApp", appName) == 1)
+    if ( isApp("screenShotApp", appName) == 1 )
         return;
+
+    if ( isApp("wantToIgnore", appName) == 1 ) {
+        printf("忽略此软件\n");
+        return;
+    }
 
     if ( isApp("terminal", appName) == 1) {
         printf("send key ctrl-shift-c\n");
