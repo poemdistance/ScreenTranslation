@@ -48,5 +48,4 @@ int main(int argc, char **argv)
      * The following codes will never be executed,
      * remember to handle it*/
     pthread_join(t2, &thread_ret); 
-
 }
