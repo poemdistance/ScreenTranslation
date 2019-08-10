@@ -17,9 +17,8 @@ FILE *fp = NULL;
 char *text = NULL;
 int NoneText = 0;
 char *lastText = NULL;
+int CanNewEntry;
 
-//extern int CanCopy;
-extern int CanNewEntry;
 extern char *shmaddr;
 extern int action;
 
@@ -34,6 +33,8 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
         if ( lastText == NULL ) 
             err_exit("malloc for lastText failed in notify.c");
     }
+
+    int thirdClickTmp = *thirdClick;
 
     if ( *thirdClick == 1 )
         *thirdClick = 0;
@@ -87,7 +88,6 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     memset(text, 0, TEXTSIZE);
     getClipboard(text);
 
-    //CanCopy = 1;
     if ( strcmp(lastText, text ) == 0 )
     {
         *text = '0';
@@ -95,7 +95,6 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
         static int i = 0;
         printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
         memset(*history, 0, sizeof(*history));
-        //CanCopy = 0;
         CanNewEntry = 0;
         return ;
     }
@@ -105,12 +104,10 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     memset(shmaddr, '\0', SHMSIZE);
     writePipe(text, fd[1]);
 
-    /*管道写完成，可以创建入口图标了
-     * 但是对于判断action==DOUBLECLICK进去的不用改写该标志变量
-     * 防止多次显示入口图标*/
-    if ( *thirdClick || action == SLIDE || action == DOUBLECLICK)
-        CanNewEntry = 1;
-    //CanCopy = 0;
+    /*管道写完成，可以创建入口图标了*/
+    if ( action == DOUBLECLICK || action == SLIDE )
+        if ( thirdClickTmp != 1 )
+            CanNewEntry = 1;
 
     /*清除鼠标记录*/
     memset(*history, 0, sizeof(*history));

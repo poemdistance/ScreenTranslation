@@ -27,9 +27,9 @@ void *GuiEntry(void *arg) {
     /*等待鼠标事件到来创建入口图标*/
     while(1) {
 
-        //if (CanNewEntry || action == DOUBLECLICK) {
         if (CanNewEntry) {
-            printf("Detect mouse action, creating icon entry CanNewEntry = %d action=%d\n", CanNewEntry, action);
+            printf("Detect mouse action, creating icon entry\
+                    CanNewEntry = %d action=%d\n", CanNewEntry, action);
 
             if ( shmaddr[0] == EMPTYFLAG) {
                 printf("空字符串,返回继续等待...\n");
