@@ -17,7 +17,6 @@ extern int InNewWin;
 
 int mousefd;
 
-//int CanCopy = 0;
 int CanNewEntry  = 0;
 
 extern int action;
@@ -68,7 +67,8 @@ void *DetectMouse(void *arg) {
         mousefd = open("/dev/input/mice", O_RDONLY );
         if ( mousefd < 0 ) {
             fprintf(stderr, "Failed to open mice\
-                    \nTry to execute as superuser or add current user to group which /dev/input/mice belong to\n");
+                    \nTry to execute as superuser or add \
+                    current user to group which /dev/input/mice belong to\n");
             exit(1);
         }
 
@@ -90,9 +90,6 @@ void *DetectMouse(void *arg) {
 
             /*超时*/
             if(retval==0) {
-                //    if ( CanCopy )
-                //        notify(&history, &thirdClick, &releaseButton, fd);
-                //    else 
                 continue;
             }
 
@@ -142,7 +139,6 @@ void *DetectMouse(void *arg) {
 
                         notify(&history, &thirdClick, &releaseButton, fd);
                         thirdClick = 1;
-                        //CanNewEntry = 1;
                     }
                     else { /*不是3击事件则按单击处理，更新oldtime*/
                         oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
@@ -152,13 +148,13 @@ void *DetectMouse(void *arg) {
                     releaseButton = 0;
 
                     /*非3击事件，则为单击，更新oldtime后返回检测鼠标新一轮事件*/
-                    if ( !thirdClick/* && !CanCopy*/)
+                    if ( !thirdClick)
                         continue;
                 }
             }
 
             /*检测检测是否可能为双击,以及判断时间间隔(应跳过确定的3击事件)*/
-            if ( isAction(history, i, DOUBLECLICK) && !thirdClick /*&& !CanCopy*/)  {
+            if ( isAction(history, i, DOUBLECLICK) && !thirdClick )  {
                 releaseButton = 1;
                 gettimeofday( &now, NULL );
                 newtime = (now.tv_usec + now.tv_sec*1000000) / 1000;
@@ -171,8 +167,6 @@ void *DetectMouse(void *arg) {
                 /*更新最后一次有效双击事件的发生时间*/
                 lasttime = newtime;
 
-                /*虽然可以复制了，但是还要再判断以下是否可能会有3击*/
-                //CanNewEntry = 1;
                 notify(&history, &thirdClick, &releaseButton, fd);
                 continue;
             }

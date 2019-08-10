@@ -12,6 +12,11 @@ const static char screenShotApp[][20] = {
     "flameshot"
 };
 
+const static char wantToIgnore[][20] = {
+    "VirtualBox",
+    "VirtualBoxVM"
+};
+
 extern char *shmaddr;
 extern char *text;
 extern FILE *fp;
@@ -102,6 +107,10 @@ int isApp( char *appName ,char *name ) {
     else if ( strcmp ( appName, "terminal" ) == 0 ) {
         n = sizeof(termName) / sizeof(termName[0]);
         app = termName;
+    } 
+    else if ( strcmp ( appName, "wantToIgnore" ) == 0) {
+        n = sizeof(wantToIgnore) / sizeof(wantToIgnore[0]);
+        app = wantToIgnore;
     }
 
     char storage[100];
