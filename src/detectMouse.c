@@ -1,12 +1,11 @@
 /*
  * 程序功能：
  * 1. 检测鼠标动作，捕捉双击，单击和区域选择事件，
- *    并设置action为相应的值:DOUBLECLICK,SINGLECLICK
- *    SLIDE
+ *    并设置action为相应的值:DOUBLECLICK,SINGLECLICK, SLIDE
  *
- * 2. Fork一个子进程，父进程通过管道将剪贴板内容送子进程
+ * 2. Fork一个子进程，父进程通过管道将剪贴板内容送入子进程
  *
- * 3. 从定向子进程标准输入为管道读取端，事exec执行的python翻译
+ * 3. 重定向子进程标准输入为管道读取端，使exec执行的python翻译
  *    程序直接从管道中读取翻译源数据
  * */
 
@@ -18,7 +17,7 @@ extern int InNewWin;
 
 int mousefd;
 
-int CanCopy = 0;
+//int CanCopy = 0;
 int CanNewEntry  = 0;
 
 extern int action;
@@ -143,7 +142,7 @@ void *DetectMouse(void *arg) {
 
                         notify(&history, &thirdClick, &releaseButton, fd);
                         thirdClick = 1;
-                        CanNewEntry = 1;
+                        //CanNewEntry = 1;
                     }
                     else { /*不是3击事件则按单击处理，更新oldtime*/
                         oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
@@ -153,13 +152,13 @@ void *DetectMouse(void *arg) {
                     releaseButton = 0;
 
                     /*非3击事件，则为单击，更新oldtime后返回检测鼠标新一轮事件*/
-                    if ( !thirdClick && !CanCopy)
+                    if ( !thirdClick/* && !CanCopy*/)
                         continue;
                 }
             }
 
             /*检测检测是否可能为双击,以及判断时间间隔(应跳过确定的3击事件)*/
-            if ( isAction(history, i, DOUBLECLICK) && !thirdClick && !CanCopy)  {
+            if ( isAction(history, i, DOUBLECLICK) && !thirdClick /*&& !CanCopy*/)  {
                 releaseButton = 1;
                 gettimeofday( &now, NULL );
                 newtime = (now.tv_usec + now.tv_sec*1000000) / 1000;
@@ -173,7 +172,7 @@ void *DetectMouse(void *arg) {
                 lasttime = newtime;
 
                 /*虽然可以复制了，但是还要再判断以下是否可能会有3击*/
-                CanNewEntry = 1;
+                //CanNewEntry = 1;
                 notify(&history, &thirdClick, &releaseButton, fd);
                 continue;
             }
