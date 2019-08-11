@@ -159,6 +159,7 @@ int getClipboard(char *text)
                 if (sev->property == None)
                 {
                     fprintf(stderr,"Conversion could not be performed.\n");
+                    XCloseDisplay(dpy);
                     return -1;
 
                 } else {
@@ -166,6 +167,7 @@ int getClipboard(char *text)
                     name = XGetAtomName(dpy, ((XSelectionRequestEvent*)&ev)->target);
                     XFree(name);
                     show_utf8_prop(dpy, target_window, target_property, text);
+                    XCloseDisplay(dpy);
                     return 1;
                 }
                 break;
