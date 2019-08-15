@@ -168,7 +168,7 @@ int getClipboard(char *text)
                     XFree(name);
                     show_utf8_prop(dpy, target_window, target_property, text);
                     XCloseDisplay(dpy);
-                    return 1;
+                    return 0;
                 }
                 break;
         }

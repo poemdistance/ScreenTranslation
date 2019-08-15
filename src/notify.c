@@ -28,11 +28,11 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     int Ctrl_C[] = {KEY_LEFTCTRL, KEY_C};
     char appName[100];
 
-    if ( lastText == NULL )  {
-        lastText = calloc( TEXTSIZE , 1);
-        if ( lastText == NULL ) 
-            err_exit("malloc for lastText failed in notify.c");
-    }
+    //if ( lastText == NULL )  {
+    //    lastText = calloc( TEXTSIZE , 1);
+    //    if ( lastText == NULL ) 
+    //        err_exit("malloc for lastText failed in notify.c");
+    //}
 
     int thirdClickTmp = *thirdClick;
 
@@ -86,20 +86,27 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
             err_exit("malloc failed in notify.c");
 
     memset(text, 0, TEXTSIZE);
-    getClipboard(text);
-
-    if ( strcmp(lastText, text ) == 0 )
-    {
-        *text = '0';
+    int retval = 0;
+    if ( (retval = getClipboard(text) ) == 1) {
+        printf("Not copy event\n");
         action = 0;
-        static int i = 0;
-        printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
         memset(*history, 0, sizeof(*history));
         CanNewEntry = 0;
         return ;
     }
 
-    strcpy(lastText, text);
+    //if ( strcmp(lastText, text ) == 0 )
+    //{
+    //    *text = '0';
+    //    action = 0;
+    //    static int i = 0;
+    //    printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
+    //    memset(*history, 0, sizeof(*history));
+    //    CanNewEntry = 0;
+    //    return ;
+    //}
+
+    //strcpy(lastText, text);
 
     memset(shmaddr, '\0', SHMSIZE);
     writePipe(text, fd[1]);
@@ -111,4 +118,6 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     /*清除鼠标记录*/
     memset(*history, 0, sizeof(*history));
+
+    system("sendToClipboard");
 }
