@@ -14,7 +14,10 @@ const static char screenShotApp[][20] = {
 
 const static char wantToIgnore[][20] = {
     "VirtualBox",
-    "VirtualBoxVM"
+    "VirtualBoxVM",
+    "vlc",
+    "qemu-system-arm",
+    "nautilus"
 };
 
 extern char *shmaddr;
