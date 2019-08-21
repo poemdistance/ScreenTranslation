@@ -9,16 +9,15 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntry.o \
 
 stran : $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDLIBS) $(CFLAGS) -o $@
-	$(CC) sendToClipboard.c -o sendToClipboard -lX11
+	#$(CC) sendToClipboard.c -o sendToClipboard -lX11
 
 #$@为目标集合，@<为依赖集合
 $(OBJECTS) : %.o : %.c
-	sudo sh prepare.sh
 	$(CC) -c $(LDLIBS) $(CFLAGS) $< -o $@  
 
 install:
-	sudo cp stran /usr/bin/stran
-	sudo cp sendToClipboard /usr/bin/sendToClipboard
+	sudo cp -v stran /usr/bin/stran
+	#sudo cp -v sendToClipboard /usr/bin/sendToClipboard
 
 clean:
 	rm -f *.o stran *.out core.* sendToClipboard

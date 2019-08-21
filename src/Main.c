@@ -24,7 +24,6 @@ int main(int argc, char **argv)
     arg.argc = argc;
     arg.argv = argv;
 
-    system("sendToClipboard");
     /*启动鼠标动作检测线程*/
     pthread_create(&t2, NULL, DetectMouse, (void*)&arg);
 

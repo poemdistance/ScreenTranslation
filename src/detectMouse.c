@@ -132,7 +132,7 @@ void *DetectMouse(void *arg) {
                     /* lasttime为双击最后一次的按下按键时间;
                      * 如果上次双击时间到现在不超过600ms，则断定为3击事件;
                      * 3击会选中一整段，或一整句，此种情况也应该复制文本*/
-                    if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 700 \
+                    if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 800 \
                             && lasttime != 0 && action == DOUBLECLICK) {
 
                         thirdClick = 1;
