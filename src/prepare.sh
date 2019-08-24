@@ -15,7 +15,7 @@ do
 done
 
 #修改文件路径
-needChangFile=("./newWindow.c" "./GuiEntry.c")
+needChangFile=("./newWindow.c" "./GuiEntrance.c")
 len=${#needChangFile[@]}-1
 src="\/home\/rease"
 dst="\/"$HOME
