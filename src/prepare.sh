@@ -22,7 +22,8 @@ dst="\/"$HOME
 
 for i in $(seq 0 $len)
 do
-    sed -i 's/$src/$dst/' ${needChangFile[i]}
+    echo
+    sed -n 's/$src/$dst/p' ${needChangFile[i]}
     echo "Changing the path to adapt the current user..."
 done
 

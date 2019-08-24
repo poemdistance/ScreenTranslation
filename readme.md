@@ -30,7 +30,10 @@
 
 5. 终端执行命令 
    
-          sudo bash prepare.sh && make && make install
+          mkdir ~/.stran
+          cp ../gif_pic/tran.png ../gif_pic/Switch.png ~/.stran -v
+          sudo bash prepare.sh 
+          sudo make && make install
           #如果gif_pic下的tran.png, Switch.png没有拷贝到~/.stran下，请自行创建拷贝
            
 <br> 
