@@ -1,4 +1,4 @@
-#include "common.h" 
+#include "common.h"
 
 const static char termName[][20] =
 {
@@ -17,17 +17,21 @@ const static char wantToIgnore[][20] = {
     "VirtualBoxVM",
     "vlc",
     "qemu-system-arm",
-    "nautilus"
+    "nautilus",
+    "eog",
+    "gimp-2.10"
 };
 
-extern char *shmaddr;
-extern char *text;
 extern FILE *fp;
-extern int mousefd;
-extern int fd_key;
 extern int action;
-extern int shmid;
+
 extern char *lastText;
+
+extern char *shmaddr_google;
+extern char *shmaddr_baidu;
+
+extern int shmid_google;
+extern int shmid_baidu;
 
 void err_exit(char *buf) {
     fprintf(stderr, "%s\n", buf);
@@ -65,7 +69,7 @@ void writePipe(char *text, int fd) {
         while ( *p ) {
             if ( *p != ' ' ) {
                 if ( *p == '\0' ) {
-                    shmaddr[0] = EMPTYFLAG;
+                    shmaddr_google[0] = EMPTYFLAG;
                     return;
                 }
             }
@@ -87,7 +91,7 @@ void writePipe(char *text, int fd) {
         }
     } else {
         fprintf(stdout, "Null character...\n");
-        shmaddr[0] = EMPTYFLAG;
+        shmaddr_google[0] = EMPTYFLAG;
     }
 }
 
@@ -169,34 +173,6 @@ int isAction(int history[], int last, int judgeType) {
     return 0;
 }
 
-void quit() {
-
-    printf("quit...\n");
-
-    /*退出前加个回车*/
-    fprintf(stdout, "\n");
-
-    if ( text != NULL )
-        free(text);
-
-    if ( lastText != NULL )
-        free(lastText);
-
-    close(mousefd);
-    close(fd_key);
-
-    if ( shmdt(shmaddr) < 0)
-        err_exit("shmdt error");
-
-    if (shmctl(shmid, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error");
-    else {
-        printf("Finally\n");
-        printf("remove shared memory identifier successful\n");
-    }
-
-    exit(1);
-}
 
 /*同步键盘*/
 void sync_key(

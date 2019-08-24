@@ -35,13 +35,13 @@ void show_utf8_prop(Display *dpy, Window w, Atom p, char *text)
     XGetWindowProperty(dpy, w, p, 0, size, False, AnyPropertyType,
             &da, &di, &dul, &dul, &prop_ret);
 
-    fprintf(stdout, "正在复制剪贴板内容\n");
+    fprintf(stdout, "\n正在复制剪贴板内容\n");
 
     /*TODO:如果是截图的时候发送了Ctrl-C到了这里会崩溃掉
      * 应该在判断聚焦窗口的时候排除掉截图软件*/
     strcpy(text, (char*)prop_ret);
 
-    fprintf(stdout, "复制完成\n");
+    fprintf(stdout, "复制完成\n\n");
     XFree(prop_ret);
 
     /* Signal the selection owner that we have successfully read the
@@ -94,7 +94,6 @@ int getClipboard(char *text)
      * returns the window id associated(关联) with the window
      * that currently owns the specified selection*/
     owner = XGetSelectionOwner(dpy, sel);
-    printf("owner is 0x%lx\n", owner);
 
     if (owner == None)
     {
@@ -144,8 +143,6 @@ int getClipboard(char *text)
         /*
          * copies the first event from the event queue into the specified 
          * XEvent structure and then removes it from the queue*/
-        printf("wait next event\n");
-
         XNextEvent(dpy, &ev);
 
         /* SelectionNotify:

@@ -4,23 +4,40 @@
 
 #include "common.h"
 
-char *shmaddr;
+char *shmaddr_google;
+char *shmaddr_baidu;
+
 int action = 0;
 int timeout_id_1;
 int timeout_id_2;
 int CanNewWin = 0;
-int shmid;
+
+int shmid_google;
+int shmid_baidu;
 
 int main(int argc, char **argv)
 {
     pthread_t t1, t2, t3;
     struct Arg arg;
 
-    char *addr;
-    shmid = shmCreate(&addr);
-    shmaddr = addr;
+    char *addr_google;
+    char *addr_baidu;
 
-    arg.addr = shmaddr;
+    shmid_google = shared_memory_for_google_translate(&addr_google);
+    shmid_baidu = shared_memory_for_baidu_translate(&addr_baidu);
+
+
+    shmaddr_google = addr_google;
+    shmaddr_baidu = addr_baidu;
+
+    memset(shmaddr_google, '0', (size_t)10);
+    memset(shmaddr_baidu, '0', (size_t)10);
+
+    memset(shmaddr_google, '\0', SHMSIZE-10);
+    memset(shmaddr_baidu, '\0', SHMSIZE-10);
+
+    arg.addr_google = shmaddr_google;
+    arg.addr_baidu = shmaddr_baidu;
     arg.argc = argc;
     arg.argv = argv;
 
@@ -32,7 +49,7 @@ int main(int argc, char **argv)
     while (1) {
 
         /*启动翻译入口图标线程*/
-        pthread_create(&t1, NULL, GuiEntry, (void*)&arg);
+        pthread_create(&t1, NULL, GuiEntrance, (void*)&arg);
         pthread_join(t1, &thread_ret);
 
         if ( CanNewWin == 0 )

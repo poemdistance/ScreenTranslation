@@ -2,9 +2,9 @@ CC = gcc
 CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -ggdb #-fsanitize=address 
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0`
 
-OBJECTS = forDetectMouse.o getClipboard.o GuiEntry.o \
+OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  notify.o detectMouse.o shmCreate.o newWindow.o\
-		  adjustStr.o Main.o
+		  separateData.o cleanup.o adjustStr.o Main.o
 
 
 stran : $(OBJECTS)

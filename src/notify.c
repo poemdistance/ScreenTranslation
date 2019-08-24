@@ -19,7 +19,7 @@ int NoneText = 0;
 char *lastText = NULL;
 int CanNewEntry;
 
-extern char *shmaddr;
+extern char *shmaddr_google;
 extern int action;
 
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
@@ -99,8 +99,8 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     {
         *text = '0';
         action = 0;
-        static int i = 0;
-        printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
+        //static int i = 0;
+        //printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
         memset(*history, 0, sizeof(*history));
         CanNewEntry = 0;
         return ;
@@ -108,7 +108,8 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     strcpy(lastText, text);
 
-    memset(shmaddr, '\0', SHMSIZE);
+    memset(shmaddr_google, '\0', SHMSIZE);
+    writePipe(text, fd[0]);
     writePipe(text, fd[1]);
 
     /*管道写完成，可以创建入口图标了*/

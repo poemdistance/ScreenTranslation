@@ -34,24 +34,50 @@ void *DetectMouse(void *arg) {
     double lasttime = 0;
     int thirdClick;
 
-    int fd[2];
+    int fd_google[2], fd_baidu[2], fd[2];
     int status;
-    pid_t pid;
+    pid_t pid_google = -1, pid_baidu = -1;
 
-    if ( (status = pipe(fd)) != 0 ) {
-        fprintf(stderr, "create pipe fail\n");
+    if ( (status = pipe(fd_google)) != 0 ) {
+        fprintf(stderr, "create pipe fail (google)\n");
         exit(1);
     }
 
-    if ( ( pid = fork() ) == -1 ) {
+    if ( (status = pipe(fd_baidu)) != 0 ) {
+        fprintf(stderr, "create pipe fail (baidu)\n");
+        exit(1);
+    }
+
+    if ( ( pid_google = fork() ) == -1 ) {
         fprintf(stderr, "fork fail\n");
         exit(1);
     }
 
-    if ( pid > 0 ) {
+    /*只能放在主进程中执行*/
+    if ( pid_google > 0 ) {
+
+        if ( ( pid_baidu = fork() ) == -1 ) {
+            fprintf(stderr, "fork fail\n");
+            exit(1);
+        }
+
+        /*让子进程中pid_google=-1,防止子进程执行到pid_google>0的代码段*/
+        if (pid_baidu == 0)
+            pid_google = -1;
+    }
+
+    if ( pid_google > 0 ) {
 
         /*父进程:关闭读端口*/
-        close(fd[0]);
+        close(fd_google[0]);
+        close(fd_baidu[0]);
+
+        fd[0] = fd_google[1];
+        fd[1] = fd_baidu[1];
+
+        printf("百度翻译提前建立连接\n");
+        char tmp[] = "@@@@@\n";
+        writePipe(tmp, fd_baidu[1]);
 
         sa.sa_handler = handler;
         sigemptyset(&sa.sa_mask);
@@ -174,30 +200,55 @@ void *DetectMouse(void *arg) {
 
         } /*while loop*/
 
-    } /*if pid > 0*/
+    } /*if pid_google > 0*/
 
-    else { /*child process*/
+    /*child process for google translate*/
+    if (pid_google == 0){ 
 
-        close(fd[1]); /*关闭写端口*/
+        close(fd_google[1]); /*关闭写端口*/
 
         /*重映射标准输入为管道读端口*/
-        if ( fd[0] != STDIN_FILENO) {
-            if ( dup2( fd[0], STDIN_FILENO ) != STDIN_FILENO) {
-                fprintf(stderr, "dup2 error");
-                close(fd[0]);
+        if ( fd_google[0] != STDIN_FILENO) {
+            if ( dup2( fd_google[0], STDIN_FILENO ) != STDIN_FILENO) {
+                fprintf(stderr, "dup2 error (google)");
+                close(fd_google[0]);
                 exit(1);
             }
         }
 
         char * const cmd[3] = {"tranen","-s", (char*)0};
         if ( execv( "/usr/bin/tranen", cmd ) < 0) {
-            fprintf(stderr, "Execv error\n");
+            fprintf(stderr, "Execv error (google)\n");
             exit(1);
         }
-        printf("detectMouse.c 子进程已经退出...\n");
+        printf("detectMouse.c (google)子进程已经退出...\n");
         exit(1);
     }
+
+    if ( pid_baidu == 0 ) {
+
+        close(fd_baidu[1]); /*关闭写端口*/
+
+        /*重映射标准输入为管道读端口*/
+        if ( fd_baidu[0] != STDIN_FILENO) {
+            if ( dup2( fd_baidu[0], STDIN_FILENO ) != STDIN_FILENO) {
+                fprintf(stderr, "dup2 error (baidu)");
+                close(fd_baidu[0]);
+                exit(1);
+            }
+        }
+
+        printf("执行百度翻译程序\n");
+        char * const cmd[3] = {"bdtran","-s", (char*)0};
+        if ( execv( "/usr/bin/bdtran", cmd ) < 0) {
+            fprintf(stderr, "Execv error (baidu)\n");
+            exit(1);
+        }
+        printf("detectMouse.c (baidu)子进程已经退出...\n");
+        exit(1);
+
+    }
+
     pthread_exit(NULL);
-    printf("pthread_exit()...\n");
 }
 
