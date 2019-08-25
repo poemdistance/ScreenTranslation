@@ -22,10 +22,63 @@ int CanNewEntry;
 extern char *shmaddr_google;
 extern int action;
 
+void send_Ctrl_Shift_C() {
+
+    Display *dpy;
+    unsigned int ctrl, shift, c;
+    dpy = XOpenDisplay(NULL);
+
+    ctrl = XKeysymToKeycode (dpy, XK_Control_L);
+    XTestFakeKeyEvent (dpy, ctrl, True, 0);
+    XFlush(dpy);
+
+    shift = XKeysymToKeycode (dpy, XK_Shift_L);
+    XTestFakeKeyEvent (dpy, shift, True, 0);
+    XFlush(dpy);
+
+    c = XKeysymToKeycode(dpy, XK_C);
+    XTestFakeKeyEvent(dpy, c, True, 0);
+    XFlush(dpy);
+
+    XTestFakeKeyEvent(dpy, c, False, 0);
+    XFlush(dpy);
+
+    XTestFakeKeyEvent(dpy, shift, False, 0);
+    XFlush(dpy);
+
+    XTestFakeKeyEvent(dpy, ctrl, False, 0);
+    XFlush(dpy);
+
+    XCloseDisplay(dpy);
+}
+
+void send_Ctrl_C() {
+
+    Display *dpy;
+    unsigned int ctrl, c;
+    dpy = XOpenDisplay(NULL);
+
+    ctrl = XKeysymToKeycode (dpy, XK_Control_L);
+    XTestFakeKeyEvent (dpy, ctrl, True, 0);
+    XFlush(dpy);
+
+    c = XKeysymToKeycode(dpy, XK_C);
+    XTestFakeKeyEvent(dpy, c, True, 0);
+    XFlush(dpy);
+
+    XTestFakeKeyEvent(dpy, c, False, 0);
+    XFlush(dpy);
+
+    XTestFakeKeyEvent(dpy, ctrl, False, 0);
+    XFlush(dpy);
+
+    XCloseDisplay(dpy);
+}
+
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
-    int Ctrl_Shift_C[] = {KEY_LEFTCTRL, KEY_LEFTSHIFT, KEY_C};
-    int Ctrl_C[] = {KEY_LEFTCTRL, KEY_C};
+    //int Ctrl_Shift_C[] = {KEY_LEFTCTRL, KEY_LEFTSHIFT, KEY_C};
+    //int Ctrl_C[] = {KEY_LEFTCTRL, KEY_C};
     char appName[100];
 
     if ( lastText == NULL )  {
@@ -70,12 +123,14 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     if ( isApp("terminal", appName) == 1) {
         printf("send key ctrl-shift-c\n");
-        simulateKey(fd_key, Ctrl_Shift_C, 3);
+        //simulateKey(fd_key, Ctrl_Shift_C, 3);
+        send_Ctrl_Shift_C();
         printf("Send key successful\n");
     }
     else {
         printf("send key ctrl-c\n");
-        simulateKey(fd_key, Ctrl_C, 2);
+        //simulateKey(fd_key, Ctrl_C, 2);
+        send_Ctrl_C();
         printf("Send key successful\n");
     }
     delay();

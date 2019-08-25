@@ -40,6 +40,8 @@
 
          sudo usermod -aG `ls -l /dev/input/mice | awk '{print $4}' | xargs` $USER  #需要重启
 
+        #make之前请特别注意一定要让notify.c里的键盘设备设置成自己电脑上的，不然程序虽然能运行，但无法正常复制文本。
+
           sudo make && make install
           #如果gif_pic下的tran.png, Switch.png没有拷贝到~/.stran下，请自行创建拷贝
            

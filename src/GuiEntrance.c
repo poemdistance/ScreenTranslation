@@ -76,7 +76,7 @@ void *GuiEntrance(void *arg) {
     g_object_unref(src);
     g_object_unref(dst);
 
-    //GtkWidget *image = gtk_image_new_from_file("/home/rease/.stran/tran.png");
+    //GtkWidget *image = gtk_image_new_from_file("/home/usernamee/.stran/tran.png");
     gtk_button_set_image(GTK_BUTTON(button), image);
     gtk_container_add(GTK_CONTAINER(window), button);
     gtk_widget_set_app_paintable(window, TRUE);

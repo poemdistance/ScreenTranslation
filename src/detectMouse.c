@@ -97,7 +97,7 @@ void *DetectMouse(void *arg) {
         }
 
         int history[4] = { 0 };
-        int i = 0, n = 0, m = 0/*, j=0, x=0*/;
+        int i = 0, n = 0, m = 0;
 
         signal(SIGINT, quit);
 
@@ -136,9 +136,11 @@ void *DetectMouse(void *arg) {
             /*m为最后得到的鼠标键值*/
             m = previous(i);
             n = previous(m);
+
+            /*LOG*/
+            //int j=0, x=0;
             //j = previous(n);
             //x = previous(j);
-
             //printf("%d %d %d %d\n", history[m], history[n], history[j], history[x]);
 
             /*没有按下按键并活动鼠标,标志releaseButton=1*/
