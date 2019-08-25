@@ -32,7 +32,14 @@
    
           mkdir ~/.stran
           cp ../gif_pic/tran.png ../gif_pic/Switch.png ~/.stran -v
-          sudo bash prepare.sh 
+
+          echo $HOME         #记下这个结果输出
+          sed -i 's/\/home\/rease/<上一个命令的输出结果>/g' GuiEntrance.c newWindow.c  #不要带上尖括号，并在斜杠前加反斜杠
+
+          #如: sed -i 's/\/home\/rease/\/home\/username/g' GuiEntrance.c newWindow.c 
+
+          sudo bash prepare.sh            #需要重启
+
           sudo make && make install
           #如果gif_pic下的tran.png, Switch.png没有拷贝到~/.stran下，请自行创建拷贝
            
