@@ -1,0 +1,6 @@
+[submodule "google-translate"]
+	path = google-translate
+	url = https://github.com/poemdistance/google-translate
+[submodule "baidu-translate"]
+	path = baidu-translate
+	url = https://github.com/poemdistance/baidu-translate
