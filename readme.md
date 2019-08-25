@@ -38,7 +38,7 @@
 
           #如: sed -i 's/\/home\/rease/\/home\/username/g' GuiEntrance.c newWindow.c 
 
-          sudo bash prepare.sh            #需要重启
+         sudo usermod -aG `ls -l /dev/input/mice | awk '{print $4}' | xargs` $USER  #需要重启
 
           sudo make && make install
           #如果gif_pic下的tran.png, Switch.png没有拷贝到~/.stran下，请自行创建拷贝
