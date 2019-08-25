@@ -1,9 +1,17 @@
 # 一. 程序功能
 ## (一). 目前功能
-1. 屏幕取词翻译 -- 中英互译
+### 1. 屏幕取词翻译 -- 中英互译 
    
+  #### Ubuntu 19.04 测试通过:
+
+   ![img](./gif_pic/ubuntu.png)
+
+  #### Arch Linux 测试通过:
+
    ![img](./gif_pic/iconEntry.png)<br><br>
    ![img](./gif_pic/GUI.png) 
+
+
 
 ### 按键功能说明: 
 * 切换谷歌百度翻译
@@ -17,34 +25,65 @@
  <br> 
 
 # 二. 程序编译安装
-1. 先将源码克隆到本地<br><br>
-2. cd到src目录<br><br>
+1. 先将源码克隆到本地 
+
+        $ git clone https://github.com/poemdistance/ScreenTranslation --recursive
+
+2. cd到src目录  
+
+        $ cd ScreenTranslation/src
+   
 3. 安装依赖  Xlib X11 Xtst Xext gtk3开发环境(gtk.h, gtkwindow.h)
  
-             # For system base on Debian 
-          $  sudo apt-get install build-essential gnome-devel libx11-dev libxtst-dev
+   * For system base on Debian  (Ubuntu, Kali etc.)
 
-             # For Arch Linux
-          $  sudo pacman -S gtk3  libxtst libx11      
+          $ sudo apt-get install build-essential gnome-devel libx11-dev libxtst-dev
+          $ sudo apt-get install python3-pip
+          $ sudo apt-get install xdotool
+
+   * For Arch Linux 
+
+          $  sudo pacman -S gtk3  libxtst libx11  xdotool    
 
 
-5. 终端执行命令 
+4. 终端执行命令完成项目安装 <br>
    
-          mkdir ~/.stran
-          cp ../gif_pic/tran.png ../gif_pic/Switch.png ~/.stran -v
+   * 复制资源文件 
 
-          echo $HOME         #记下这个结果输出
-          sed -i 's/\/home\/rease/<上一个命令的输出结果>/g' GuiEntrance.c newWindow.c  #不要带上尖括号，并在斜杠前加反斜杠
+          $ mkdir ~/.stran
+          $ cp ../gif_pic/tran.png ../gif_pic/Switch.png ~/.stran -v 
 
-          #如: sed -i 's/\/home\/rease/\/home\/username/g' GuiEntrance.c newWindow.c 
+   * 修改源码适应用户 
+  
+          $ echo $HOME         #记下这个结果输出 
 
-         sudo usermod -aG `ls -l /dev/input/mice | awk '{print $4}' | xargs` $USER  #需要重启
+          $ sed -i 's/\/home\/rease/<上一个命令的输出结果>/g' GuiEntrance.c newWindow.c  
+          #不要带上尖括号. 记得在斜杠前加反斜杠
 
-        #make之前请特别注意一定要让notify.c里的键盘设备设置成自己电脑上的，不然程序虽然能运行，但无法正常复制文本。
+          #如: sed -i 's/\/home\/rease/\/home\/username/g' GuiEntrance.c newWindow.c  
 
-          sudo make && make install
-          #如果gif_pic下的tran.png, Switch.png没有拷贝到~/.stran下，请自行创建拷贝
-           
+   * 添加用户到 `/dev/input/mice` 所在组: 
+    
+         $ sudo usermod -aG `ls -l /dev/input/mice | awk '{print $4}' | xargs` $USER  
+         #需要重启
+
+   * 编译源码并安装 
+    
+          $ sudo make && make install
+
+5. 依赖项目安装
+
+      a. 返回项目根目录 `ScreenTranslation/` 
+   
+     b. 依次 cd 进 `baidu-translate/` 以及 `google-translate/` 
+         
+    c. 执行以下命令完成百度翻译和谷歌翻译命令行版本的安装
+
+         $ pip3 install -r requirements.txt
+
+         $ sudo ./setup.py install 
+
+                      
 <br> 
 
 # 三. 程序运行与停止
@@ -58,7 +97,7 @@
            WaylandEnable=false
            ``` 
      * **相关依赖**： 
-         1. C语言库: Xlib X11 Xtst Xext gtk3开发环境 (不知道有没有漏掉什么...,等我到其他机器测试完发现有遗漏再来补充)
+         1. C语言库: Xlib X11 Xtst Xext gtk3开发环境
          2. 终端命令行工具: xdotool, ps, awk, tail 
    
      * **使程序在终端正常运行请完成如下步骤:**<br>
@@ -71,8 +110,25 @@
          * 截图软件在进行区域选择的时候，同样会被程序捕捉到，这个时候如果发送Ctrl-C可能导致截图软件异常退出，程序在进行剪贴板内容获取的时候也会发生段错误，此时打印信息中已经包含了截图软件名称，可以将此名称添加到forDetectMouse的screenShotApp数组中，将程序重新编译安装运行即可(即二中的步骤4，但是可以不再运行`prepare.sh`)
 
           数组如下(已经默认添加flameshot截图软件):<br><br> 
-          ![img](./gif_pic/screenShotappArray.png)
+          ![img](./gif_pic/screenShotappArray.png) 
+
+          <br>
            
+      * **在某些应用中禁用取词翻译** <br>
+
+          找到`fordetectMouse.c`中的如下内容:
+
+            const static char wantToIgnore[][20] = {
+              "VirtualBox",
+              "VirtualBoxVM",
+              "vlc",
+              "qemu-system-arm",
+              "nautilus",
+              "eog",
+              "gimp-2.10"
+            };
+
+         **将需要忽略的应用名称添加进数组保存，重新编译项目并安装。**
 
 2. **如果终端使用了Smart copy，在没有选中任何文字的时候，可能会使模拟发送的Ctrl-Shift-C被终端视为Ctrl-C而导致运行中的程序意外结束，这不是本程序的Bug，可以将Smart Copy关闭防止此类危险情况发生**
 
@@ -113,25 +169,25 @@
 
 # 六. 程序运行异常问题
 
-1. 如果程序提取到用鼠标获取的结果一直是同一个或者为空，但是用键盘Ctrl-c操作能够获取到对应新的文本,换而言之就是鼠标取词不起作用，这说明打开的键盘设备文件是错的，模拟发送的Ctrl-c不会被捕捉到，此时可以用如下命令得到真正的键盘设备: <br> 
+1. <del>如果程序提取到用鼠标获取的结果一直是同一个或者为空，但是用键盘Ctrl-c操作能够获取到对应新的文本,换而言之就是鼠标取词不起作用，这说明打开的键盘设备文件是错的，模拟发送的Ctrl-c不会被捕捉到，此时可以用如下命令得到真正的键盘设备: <br> </del>
     
          cat  /var/log/Xorg.xx.log | grep keyboard | grep event | tail -n 1  
 
-    (请将Xorg.xx.log替代为你当前系统的实际日志文件)，其输出类似:<br> 
+   <del> (请将Xorg.xx.log替代为你当前系统的实际日志文件)，其输出类似:<br> </del>
 
         [275.556] (II) event3  - AT Translated Set 2 keyboard: device removed 
 
-    可以看到，当前我系统使用的键盘设备文件是`/dev/input/event3`<br> 
-    当然，我们也可以用其他方法来查明。
+   <del> 可以看到，当前我系统使用的键盘设备文件是`/dev/input/event3`<br> 
+    当然，我们也可以用其他方法来查明。</del>
 
-    **最后找到DetectMouse.c中/dev/input/eventX这条语句，将eventX修改成你实际得到的结果重新编译运行即可**
+    <del>**最后找到DetectMouse.c中/dev/input/eventX这条语句，将eventX修改成你实际得到的结果重新编译运行即可**</del>
   
    
 2. 如果**运行报错failed to open mice的问题**，这个是因为没有权限打开文件进行读写导致的，可以有如下解决办法：    
     * **方法一: 添加当前用户到/dev/input/mice的用户组中**：<br>
         * a. 先查明此文件设备所在用户组,使用命令:<br> 
   
-                ls -l /dev/input/mic
+                $ ls -l /dev/input/mice
 
            b. 得到结果类似如下:<br>  
 
@@ -139,13 +195,13 @@
 
            c. 其中的input即是其所在用户组，得到后使用如下命令**添加用户到input用户组并重启系统**:<br> 
 
-                sudo usermod -aG input userName
+                $ sudo usermod -aG input $USER
             
             **Note**: **如果设备文件没有用户组，请先手动设置规则添加，网上很多相关内容，这里不赘述.** <br><br>
 
     * **方法二: 使用sudo执行此程序**: <br> 
      
-           sudo ./main 
+           sudo stran 
 
          中途测试过程中以root用户或者说sudo执行时Xdisplay发生过 No protocol specified的错误，所以此方法不一定奏效，但也可能是当时系统忘记关闭Wayland导致的。
 
