@@ -22,12 +22,12 @@ extern char *text;
 
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
 
-int lines = 0;
+int lines_baidu = 0;
 int maxlen_baidu = 0;
 
 void separateData(int *index, int len) {
 
-    lines = 0;
+    lines_baidu = 0;
 
     if ( baidu_result[0] == NULL)
         err_exit("Doesn't init memory yet\n");
@@ -100,7 +100,7 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
         if ( source[j] == '\n') {
 
-            lines++;
+            lines_baidu++;
             validDot = 1;
             start = j;
             nowlen = 0;
@@ -134,7 +134,7 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         //printf("nowlen=%d\n", nowlen);
         if ( nowlen == len ) {
             storage[++k] = '\n';
-            lines++;
+            lines_baidu++;
             nowlen = 0;
 
             if ( addSpace ) {

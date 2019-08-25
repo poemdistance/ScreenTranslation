@@ -2,6 +2,7 @@
 
 
 int maxlen_google=0;
+int lines_google = 0;
 
 /*字符串调整函数:
  * 向每超过一定长度的字符串中添加回车字符,避免单行过长
@@ -14,20 +15,25 @@ void adjustStr(char *p[], int len, char *storage[]) {
 
     //printf("\nIn adjustStr function");
 
-    maxlen_google = 0;
-
     int nowlen = 0;
     int asciich = 0;
     for ( int i=0; i<3; i++ ) 
     {
         nowlen = 0;
+
         for ( int j=0, k=0; True ; j++, k++ ) 
         {
             storage[i][k] = p[i][j];
 
             /*读到结尾字符时退出内层for循环，处理下一个字符串*/
-            if ( p[i][j] == '\0' )
+            if ( p[i][j] == '\0' ) {
+                if ( j != 0 && i != 0) {
+                    strcat ( storage[i], "\n" );
+                    lines_google++;
+                    printf("lines_google++\n");
+                }
                 break;
+            }
 
             /*此处需要了解一下utf8编码格式
              *
@@ -60,6 +66,7 @@ void adjustStr(char *p[], int len, char *storage[]) {
 
             if ( nowlen == len ) {
                 storage[i][++k] = '\n';
+                lines_google++;
                 nowlen = 0;
             }
         }
