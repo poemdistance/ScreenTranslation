@@ -39,6 +39,7 @@
 #define CLEAR   ('0')
 #define ACTUALSTART (10)
 #define BAIDUSIZE (6)
+#define GOOGLESIZE (3)
 #define LINELEN (28)
 
 void show_utf8_prop(Display *dpy, Window w, Atom p, char *text);
@@ -62,11 +63,15 @@ int shared_memory_for_google_translate(char **addr);
 int shared_memory_for_baidu_translate(char **addr);
 void *newWindow(void * arg);
 void adjustStr(char *p[3], int len, char *storage[3]);
+int adjustStrForScrolledWin(int len, char *source);
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
 
 void * 
 sendToClipboard( void *arg );
 void separateData(int *index, int len);
+void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
+int countLines ( int len, char *source );
+int countCharNums ( char *source );
 
 struct clickDate {
     GtkWidget *window;
@@ -85,5 +90,18 @@ struct Arg {
 #define PROJECTID  (2333)
 #define PROJECTID2  (2334)
 #define SHMSIZE (1024*1024)
+
+#define PhoneticFlag ( shmaddr_baidu[1] - '0' )
+#define NumZhTranFlag ( shmaddr_baidu[2] - '0')
+#define NumEnTranFlag ( shmaddr_baidu[3] - '0')
+#define OtherWordFormFlag ( shmaddr_baidu[4] - '0')
+#define NumAudioFlag ( shmaddr_baidu[5] - '0')
+
+#define SourceInput ((char *)( baidu_result[0] ))
+#define Phonetic ((char *)( baidu_result[1] ))
+#define ZhTrans ((char *)( baidu_result[2] ))
+#define EnTrans ((char *)( baidu_result[3] ))
+#define OtherWordForm ((char *)( baidu_result[4] ))
+#define Audios ((char *)( baidu_result[5] ))
 
 #endif
