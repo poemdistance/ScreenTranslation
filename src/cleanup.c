@@ -7,6 +7,7 @@ extern int shmid_google;
 extern int shmid_baidu;
 
 extern char *baidu_result[BAIDUSIZE];
+extern char *google_result[GOOGLESIZE];
 
 extern int mousefd;
 
@@ -52,6 +53,10 @@ void quit() {
     if ( baidu_result[0] != NULL)
         for (int i=0; i<BAIDUSIZE; i++)
             free(baidu_result[i]);
+
+    if ( google_result[0] != NULL)
+        for (int i=0; i<GOOGLESIZE; i++)
+            free(google_result[i]);
 
     printf("\n");
 
