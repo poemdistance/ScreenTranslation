@@ -2,30 +2,18 @@
 
 extern char *shmaddr_baidu;
 
-#define PhoneticFlag ( shmaddr_baidu[1] - '0' )
-#define NumZhTranFlag ( shmaddr_baidu[2] - '0')
-#define NumEnTranFlag ( shmaddr_baidu[3] - '0')
-#define OtherWordFormFlag ( shmaddr_baidu[4] - '0')
-#define NumAudioFlag ( shmaddr_baidu[5] - '0')
-
-
 extern char *baidu_result[BAIDUSIZE];
-
-#define SourceInput ((char *)( baidu_result[0] ))
-#define Phonetic ((char *)( baidu_result[1] ))
-#define ZhTrans ((char *)( baidu_result[2] ))
-#define EnTrans ((char *)( baidu_result[3] ))
-#define OtherWordForm ((char *)( baidu_result[4] ))
-#define Audios ((char *)( baidu_result[5] ))
 
 extern char *text;
 
-void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
-
 int lines_baidu = 0;
 int maxlen_baidu = 0;
+int strcatFlag = 1;
 
 void separateData(int *index, int len) {
+
+    if ( index[0] == 0)
+        return;
 
     lines_baidu = 0;
 
@@ -74,8 +62,9 @@ void separateData(int *index, int len) {
             adjustStrForBaidu(len, baidu_result[n], 0, 0);
     }
 
-    for ( int i=0; i<BAIDUSIZE; i++ )
-        printf("%s\n", baidu_result[i]);
+    /*打印提取结果*/
+    //for ( int i=0; i<BAIDUSIZE; i++ )
+    //printf("%s\n", baidu_result[i]);
 }
 
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
@@ -88,7 +77,19 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
     int start = 0;
     int validDot = 1;
 
-    char storage[4096*2] = { '\0' };
+    long int srclen = 0;
+    srclen = strlen(source);
+    //fprintf(stdout, "\033[0;31m srclen=%ld\033[0m\n",  srclen );
+
+    if ( srclen > 1024 * 1024 ) {
+
+        fprintf(stderr, "\033[0;31m\n源数据过长，临时数组无法容纳，"\
+                "待处理此类情况..., 准备退出...\033[0m\n\n");
+        quit();
+    }
+
+    /*Be careful here which might be cause stack overflow*/
+    char storage[1024*1024] = { '\0' };
 
     for ( int j=0, k=0; True ; j++, k++ ) 
     {
@@ -107,11 +108,16 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
             continue;
         }
 
-        if (addSpace && validDot && source[j] == '.' && source[j+1] != '\n') {
+        /*语句末有一个结束符号也是点，不是有效点，不能进这个if执行逻辑*/
+        if (addSpace && validDot && source[j] == '.' \
+                && source[j+1] != '\n' && source[j+1] != ' ' ) {
 
             prefixLen = (j+1-start)*2;
+            //printf("\033[0;34mj=%d start=%d prefixLen=%d\033[0m\n", j, start, prefixLen);
             nowlen = (j-start)/2;
             validDot = 0;
+
+            //printf("\033[0;32m j=%d start=%d nowlen=%d \033[0m\n\n",j, start, nowlen);
         }
 
         if ( (((source[j] & 0xff) >> 6) & 0x03) == 2  
@@ -127,12 +133,12 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
             asciich = 0;
         }
 
-        if (nowlen && nowlen > maxlen_baidu ) {
-
+        //printf("\033[0;32m  nowlen=%d \033[0m\n\n", nowlen);
+        if (nowlen && nowlen > maxlen_baidu )
             maxlen_baidu = nowlen;
-        }
-        //printf("nowlen=%d\n", nowlen);
-        if ( nowlen == len ) {
+
+        if ( nowlen == len && strcatFlag ) {
+            //printf("\033[0;32mAdd Enter\033[0m\n");
             storage[++k] = '\n';
             lines_baidu++;
             nowlen = 0;
@@ -144,6 +150,7 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
                     nowlen++;
                 }
                 nowlen /= 2;
+                //printf("\033[0;32m  (in if)nowlen=%d \033[0m\n\n", nowlen);
             }
         }
     }
@@ -151,6 +158,6 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
     if ( copy )
         strcpy(source, storage);
 
-    //printf("maxlen_baidu=%d\n", maxlen_baidu);
-    //printf("Out adjustStrForBaidu\n");
+    if ( maxlen_baidu > 28 )
+        fprintf(stderr, "\033[0;31m maxlen_baidu=%d 超过预期值\033[0m\n\n", maxlen_baidu);
 }
