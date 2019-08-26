@@ -4,7 +4,8 @@ LDLIBS = `pkg-config --cflags --libs gtk+-3.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  notify.o detectMouse.o shmCreate.o newWindow.o\
-		  separateData.o cleanup.o adjustStr.o Main.o
+		  separateData.o cleanup.o adjustStr.o Main.o\
+		  countLines.o countCharNums.o adjustStrForScrolledWin.o
 
 
 stran : $(OBJECTS)
