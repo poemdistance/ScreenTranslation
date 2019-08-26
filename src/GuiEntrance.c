@@ -9,7 +9,7 @@ extern int action;
 extern int timeout_id_1;
 extern int timeout_id_2;
 extern int CanNewWin;
-extern int CanNewEntry;
+extern int CanNewEntrance;
 
 int HadDestroied;
 static int aboveWindow = 0;
@@ -27,16 +27,16 @@ void *GuiEntrance(void *arg) {
     /*等待鼠标事件到来创建入口图标*/
     while(1) {
 
-        if (CanNewEntry) {
+        if (CanNewEntrance) {
             printf("\nDetect mouse action, creating icon entry\
-                    CanNewEntry = %d action=%d\n", CanNewEntry, action);
+                    CanNewEntrance = %d action=%d\n", CanNewEntrance, action);
 
             if ( shmaddr_google[0] == EMPTYFLAG) {
                 printf("空字符串,返回继续等待...\n");
                 shmaddr_google[0] = CLEAR;
                 action = 0;
                 CanNewWin = 0;
-                CanNewEntry = 0;
+                CanNewEntrance = 0;
                 return (void*)0;
             }
             break;
@@ -48,7 +48,7 @@ void *GuiEntrance(void *arg) {
 
     /*入口图标销毁标志置0，表示处于显示状态*/
     HadDestroied = 0;
-    CanNewEntry = 0;
+    CanNewEntrance = 0;
     action = 0;
 
     gtk_init(NULL, NULL);
@@ -155,7 +155,7 @@ int quit_test(void *arg) {
             if ( action == SINGLECLICK )
                 action = 0;
             else if (action == DOUBLECLICK)
-                CanNewEntry = 1;
+                CanNewEntrance = 1;
 
             HadDestroied = 1;
 
@@ -191,7 +191,7 @@ int quit_entry(void *arg) {
         /*如果超时销毁的时候恰好又遇到双击选中文本
          * 也应该新建入口图标*/
         if ( action == DOUBLECLICK)
-            CanNewEntry = 1;
+            CanNewEntrance = 1;
 
         action  = 0;
         CanNewWin = 0;

@@ -17,7 +17,7 @@ FILE *fp = NULL;
 char *text = NULL;
 int NoneText = 0;
 char *lastText = NULL;
-int CanNewEntry;
+int CanNewEntrance;
 
 extern char *shmaddr_google;
 extern int action;
@@ -146,7 +146,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
         printf("Not copy event\n");
         action = 0;
         memset(*history, 0, sizeof(*history));
-        CanNewEntry = 0;
+        CanNewEntrance = 0;
         return ;
     }
 
@@ -157,7 +157,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
         //static int i = 0;
         //printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
         memset(*history, 0, sizeof(*history));
-        CanNewEntry = 0;
+        CanNewEntrance = 0;
         return ;
     }
 
@@ -170,7 +170,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     /*管道写完成，可以创建入口图标了*/
     if ( action == DOUBLECLICK || action == SLIDE )
         if ( thirdClickTmp != 1 )
-            CanNewEntry = 1;
+            CanNewEntrance = 1;
 
     /*清除鼠标记录*/
     memset(*history, 0, sizeof(*history));

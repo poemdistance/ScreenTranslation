@@ -13,7 +13,7 @@ int lines_google = 0;
  */
 void adjustStr(char *p[], int len, char *storage[]) {
 
-    //printf("\nIn adjustStr function");
+    printf("\nIn adjustStr function");
 
     int nowlen = 0;
     int asciich = 0;
@@ -27,7 +27,7 @@ void adjustStr(char *p[], int len, char *storage[]) {
 
             /*读到结尾字符时退出内层for循环，处理下一个字符串*/
             if ( p[i][j] == '\0' ) {
-                if ( j != 0 && i != 0) {
+                if ( j != 0 && i != 0 ) {
                     strcat ( storage[i], "\n" );
                     lines_google++;
                     printf("lines_google++\n");
@@ -72,5 +72,5 @@ void adjustStr(char *p[], int len, char *storage[]) {
         }
     }
 
-    //printf("\nOut adjustStr\n\n");
+    printf("\nOut adjustStr\n\n");
 }
