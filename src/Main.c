@@ -46,6 +46,20 @@ int main(int argc, char **argv)
 
     void *thread_ret;
 
+
+    /* 捕获终止(Terminate)程序信号，并调用退出函数清理相关资源,
+     * 如释放内存，终止翻译端程序*/
+    struct sigaction sa;
+    sa.sa_handler = quit;
+    sigemptyset ( &sa.sa_mask );
+    if ( sigaction ( SIGTERM, &sa, NULL ) == -1) {
+        printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n");
+        perror("sigaction");
+        exit(1);
+    }
+
+    signal(SIGINT, quit);
+
     while (1) {
 
         /*启动翻译入口图标线程*/
