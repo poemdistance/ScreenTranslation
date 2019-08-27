@@ -6,12 +6,14 @@ extern char *shmaddr_baidu;
 char *baidu_result[BAIDUSIZE] = { NULL };
 char *google_result[GOOGLESIZE] = { NULL };
 
+/* 用于和detectMouse通信，当已经新建翻译结果显示窗口时，
+ * 不再检测鼠标动作*/
 int InNewWin = 0;
 
+/* 用于切换百度和谷歌翻译结果的显示, -1和0互为取反运算*/
 int show = -1;
 int scrollShow = -1;
 
-extern int CanNewEntrance;
 extern int action;
 
 extern int lines_baidu;
@@ -89,7 +91,13 @@ void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpoint
 
 void adjustDispalyForNewWin( GtkWidget *window, GdkEvent *event, gpointer scroll );
 
+void adjustWinSize(GtkWidget *button, gpointer *arg, int which);
+
 void setWinSize ( int maxlen, int lines, char *addr );
+
+void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd);
+
+int getLinesOfGoogleTrans ( int *index_google );
 
 GtkWidget *newSwitchButton() {
 
@@ -107,14 +115,28 @@ GtkWidget *newSwitchButton() {
     return button;
 }
 
+int getLinesOfGoogleTrans ( int *index_google ) {
+
+    int lines = 0;
+
+    /* 显示时多了空行，index有值代表含有对应的结果，
+     * 总共就是两行，lines+2*/
+    for ( int i=0; i<2; i++ )
+        if (index_google[i] != 0)
+            lines += 2;
+
+    /*长度小于30会显示原始输入，lines应该再加1*/
+    if ( strlen(&shmaddr_google[ACTUALSTART]) < 30)
+        lines++;
+
+    return lines;
+}
+
 /*新建翻译结果窗口*/
 void *newWindow(void * arg) {
 
     show = -1;
     InNewWin = 1;
-
-    /* 置零action，用于下面翻译窗口弹不出时可以双击关闭*/
-    action = 0; 
 
     printf("\n准备判断是否新建一般窗口\n\n");
     int ret = waitForContinue();
@@ -131,8 +153,6 @@ void *newWindow(void * arg) {
     //gtk_window_set_resizable(GTK_WINDOW(newWin), FALSE);
 
     g_signal_connect(newWin, "destroy", G_CALLBACK(destroyNewWin), newWin);
-
-    printDebugInfo();
 
     /*创建layout用于显示背景图片,以及放置文本*/
     GtkWidget * layout = gtk_layout_new(NULL, NULL);
@@ -160,6 +180,8 @@ void *newWindow(void * arg) {
     gtk_container_add (GTK_CONTAINER(scroll), view);
     gtk_layout_put(GTK_LAYOUT(layout), scroll, 0, 0);
 
+    printDebugInfo();
+
     /*设置字体相关属性*/
     setFontProperties(buf, &iter);
 
@@ -175,7 +197,7 @@ void *newWindow(void * arg) {
 
     printf("百度翻译分隔符索引结果: ");
     for (int i=0; i<13; i++)
-        printf("%d ", index_baidu[i]);
+        printf("\033[0;33m%d \033[0m ", index_baidu[i]);
     printf("\n");
 
     /*初始化百度翻译结果存储空间*/
@@ -221,15 +243,7 @@ void *newWindow(void * arg) {
 
         adjustStr(p, 28, google_result);
 
-        /* 显示时多了空行，index有值代表含有对应的结果，
-         * 总共就是两行，lines+2*/
-        for ( int i=0; i<2; i++ )
-            if (index_google[i] != 0)
-                lines_google += 2;
-
-        /*长度小于30会显示原始输入，lines应该再加1*/
-        if ( strlen(&shmaddr_google[ACTUALSTART]) < 30)
-            lines_google++;
+        lines_google = getLinesOfGoogleTrans ( index_google );
 
         /* 如果只有单个翻译结果，在原始数据显示情况下，要计算其显示长度是否超过翻译结果的
          * 如果是，则替换之*/
@@ -237,9 +251,7 @@ void *newWindow(void * arg) {
             if ( ret/2 > maxlen_google )
                 maxlen_google = ret / 2;
 
-        printf("\033[;32m");
-        printf("maxlen_google=%d lines=%d\n", maxlen_google,lines_google);
-        printf("\033[0m");
+        printf("\033[0;maxlen_google=%d lines=%d34m\033[0m\n", maxlen_google,lines_google);
 
         /*存于全局变量*/
         gw.width = 14 * maxlen_google + 60;
@@ -308,6 +320,7 @@ int destroyNewWin(GtkWidget *window) {
     memset(shmaddr_google, '\0', SHMSIZE-10);
     memset(shmaddr_baidu, '\0', SHMSIZE-10);
 
+    /* TODO:谷歌结果存放空间未填充0*/
     for ( int i=0; i<BAIDUSIZE; i++ )
         memset( baidu_result[i], '\0', SHMSIZE / BAIDUSIZE );
 
@@ -319,11 +332,13 @@ int destroyNewWin(GtkWidget *window) {
     gtk_widget_destroy(window);
     gtk_main_quit();
 
-    /* 按了exit键后变成了单击事件，此时再双击会导致检测错误
-     * 应手动置0*/
+    /* TODO:按了exit键后变成了单击事件，此时再双击会导致检测错误
+     * 应手动置0 ( 当前可以不用这个了，这是以前用过的,不过先放着
+     * 可能以后用得着，可以当个提醒 )*/
     action = 0;
+
+    /* 已退出翻译结果窗口，重置标志变量*/
     InNewWin = 0;
-    CanNewEntrance = 0;
 
     return FALSE;
 }
@@ -340,7 +355,7 @@ void getIndex(int *index, char *addr) {
         if ( *p == '|' ) 
         {
             *p = '\0';
-            if ( addr != shmaddr_baidu && charNum >= 2 ) /*截取到第三个分隔符*/ {
+            if ( addr == shmaddr_google && charNum >= 2 ) /*截取到第三个分隔符*/ {
                 printf("已完成分割字符索引\n");
                 break;
             }
@@ -349,9 +364,11 @@ void getIndex(int *index, char *addr) {
         }
         p++; i++;
     }
-    addr[0] = '\0';
-}
 
+    /* 清除翻译结果写入完成标志*/
+    if ( addr[0] == '1')
+        addr[0] = '\0';
+}
 
 int waitForContinue() {
 
@@ -392,11 +409,12 @@ int waitForContinue() {
             shmaddr_google[0] = CLEAR;
             shmaddr_baidu[0] = CLEAR;
             InNewWin = 0;
-            CanNewEntrance = 0;
             return 1;
         }
         usleep(400000);
         time++;
+
+        /* 超时时间1.6S ( 2 * 400000ms )*/
         if ( time >= 2 ) {
             shmaddr_google[0] = ERRCHAR;
             shmaddr_baidu[0] = ERRCHAR;
@@ -410,13 +428,17 @@ int waitForContinue() {
         quit();
     }
 
-    /*原始数据超过一定长度，在ScrolledWin中显示*/
+    action = 0;
+
+    /*原始数据超过一定长度，在ScrolledWin中显示, 并返回1，
+     * 不再执行newWin函数*/
     if ( strlen (text) > 130 ) 
         return newScrolledWin();
 
     return 0;
 }
 
+/* 初始化百度翻译结果存储空间*/
 void initMemoryBaidu() {
 
     if (baidu_result[0] != NULL)
@@ -430,6 +452,7 @@ void initMemoryBaidu() {
     }
 }
 
+/* 类上*/
 void initMemoryGoogle() {
 
     if (google_result[0] != NULL)
@@ -443,13 +466,63 @@ void initMemoryGoogle() {
     }
 }
 
-void adjustWinSize(GtkWidget *button, gpointer *arg, int which);
+/* 重新从共享内存获取百度翻译结果并设置窗口大小*/
+void reGetBaiduTransAndSetWin (gpointer *arg, int which ) { 
+
+    printf("\033[0;34m重新从共享内存获取百度翻译数据 \033[0m\n");
+    maxlen_baidu = 0;
+    lines_baidu = 0;
+
+    int index_baidu[13] = { 0 };
+    for ( int i=0; i<13; i++ )
+        printf("\033[0;35m%d \033[0m ", index_baidu[i]);
+    printf("\n");
+
+    getIndex(index_baidu, shmaddr_baidu);
+
+    separateData(index_baidu, 28);
+
+    setWinSize ( maxlen_baidu, lines_baidu, shmaddr_baidu );
+
+    //adjustWinSize ( ((struct GtkText*)arg)->button, arg, which );
+
+    printf("\033[0;32mmaxlen=%d lines_baidu=%d bw.width=%f bw.height=%f\033[0m\n", maxlen_baidu, \
+            lines_baidu, bw.width, bw.height);
+
+}
 
 void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
 
     if ( !which ) 
     {
-        /*如果新窗口的宽高都小于原始的，不调整窗口大小*/
+        int index[2] = { 0 }, ret = 0;
+        getIndex(index, shmaddr_google);
+
+        char *p[3];
+        p[0] = &shmaddr_google[ACTUALSTART];
+        p[1] = &shmaddr_google[index[0]];
+        p[2] = &shmaddr_google[index[1]];
+
+        adjustStr(p, 28, google_result);
+
+        lines_google = getLinesOfGoogleTrans ( index );
+
+        /* 如果只有单个翻译结果，在原始数据显示情况下，要计算其显示长度是否超过翻译结果的
+         * 如果是，则替换之*/
+        if ( index[0] == 0 && (ret = strlen (SourceInput)) < 30)
+            if ( ret/2 > maxlen_google )
+                maxlen_google = ret / 2;
+
+        printf("\033[0;maxlen_google=%d lines=%d34m\033[0m\n", maxlen_google,lines_google);
+
+        /*存于全局变量*/
+        gw.width = 14 * maxlen_google + 60;
+        gw.height = lines_google * 26;
+
+        if ( index[0] != 0)
+            setWinSize ( maxlen_google, lines_google, shmaddr_google );
+
+        /*如果新窗口的宽高都小于上一个的，不调整窗口大小*/
         if ( gw.width < bw.width && gw.height < bw.height)
             return;
 
@@ -459,6 +532,9 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         if ( gw.height <= 0 )
             gw.height = gw.width * 0.618;
 
+        if ( gw.height < 200 )
+            gw.height = 200;
+
         printf("gw width=%f %f\n", gw.width, gw.height);
         gtk_window_resize((GtkWindow*)((struct GtkText*)arg)->window, gw.width, gw.height);
         gtk_layout_move((GtkLayout*)((struct GtkText*)arg)->layout, button, gw.width-50, gw.height-45);
@@ -467,28 +543,14 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
 
     else 
     {
-        /*还未获取到结果，因重新获取并设置窗口大小*/
+        /*还未获取到结果，应重新获取并设置窗口大小*/
         if ( strlen ( baidu_result[1] ) == 0) {
 
             printf("\033[0;31m百度翻译结果长度为0\033[0m\n");
-
-            maxlen_baidu = 0;
-            lines_baidu = 0;
-
-            int index_baidu[13] = { 0 };
-            getIndex(index_baidu, shmaddr_baidu);
-
-            separateData(index_baidu, 28);
-
-            setWinSize ( maxlen_baidu, lines_baidu, shmaddr_baidu );
-
-            adjustWinSize ( ((struct GtkText*)arg)->button, arg, ~show );
-
-            printf("\033[0;32mmaxlen=%d lines_baidu=%d bw.width=%f bw.height=%f\033[0m\n", maxlen_baidu, \
-                    lines_baidu, bw.width, bw.height);
+            reGetBaiduTransAndSetWin ( arg, which );
         }
 
-        /*如果新窗口的宽高都小于原始的，不调整窗口大小*/
+        /*如果新窗口的宽高都小于上一个的，不调整窗口大小*/
         if ( gw.width > bw.width && gw.height > bw.height)
             return;
 
@@ -505,6 +567,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
     }
 }
 
+/* 切换百度和谷歌翻译结果的显示*/
 void changeDisplay(GtkWidget *button, gpointer *arg) {
 
     show = ~show;
@@ -520,7 +583,10 @@ void changeDisplay(GtkWidget *button, gpointer *arg) {
 
 void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
 
-    //printf("显示谷歌翻译结果\n");
+    printf("\033[0;34m\n显示谷歌翻译结果:\033[0m\n");
+
+    /* 调整窗口大小*/
+    adjustWinSize ( button, arg, 0 );
 
     GtkTextIter *iter, start, end;
     iter = ((struct GtkText*)arg)->iter;
@@ -561,6 +627,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
 
     } else {
         printf("字符串依然相等\n");
+
         /*若字符串依旧相等，直接拿来用就行*/
     }
 
@@ -568,14 +635,18 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
     char enter[] = "\n";
 
     /*插入输入原文*/
-    if ( strlen( SourceInput )  < 30 )
-        gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[0], -1, 
+    if ( strlen( text )  < 30 ) {
+
+        gtk_text_buffer_insert_with_tags_by_name(buf, iter, text, -1, 
                 "black-font", "gray_background", "bold-style", "Uneditable", "font-size-15", "underline", NULL);
+
+        gtk_text_buffer_insert_with_tags_by_name(buf, iter, doubleEnter, -1, NULL, NULL);
+    }
 
     /*插入翻译结果*/
     for ( int i=0; i<3; i++ ) {
 
-        printf("storage[]=%s\n", google_result[i]);
+        printf("google_result[%d]=%s\n", i, google_result[i]);
         if ( google_result[i][0] != '\0') {
 
             gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
@@ -592,6 +663,12 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
     printf("显示百度翻译结果\n");
 
+    if ( strlen (ZhTrans) == 0) {
+
+        printf("\033[0;31mZhTrans长度为0 \033[0m\n");
+        reGetBaiduTransAndSetWin ( arg, -1 );
+    }
+
     GtkTextIter start, end;
 
     /*找到开头和结尾并删除，重新定位到初始为位置0*/
@@ -605,8 +682,10 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
     /*根据得到的相关结果进行翻译内容输出*/
     for ( int i=0; i<BAIDUSIZE-1; i++ ) {
 
+        /* 翻译结果不为空*/
         if ( baidu_result[i][0] != '\0') {
 
+            /* 翻译结果输出控制代码段*/
             if ( i == 0 && strlen(baidu_result[i]) < 30 )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i], -1,\
                         "black-font", "gray_background", "bold-style", "Uneditable",\
@@ -625,6 +704,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
                         "font-size-11", "letter-spacing", NULL);
 
 
+            /* 回车符控制输出代码段*/
             if ( 0 && i == 0 && ( strlen(baidu_result[3]) ==0 && strlen(baidu_result[4]) == 0\
                         && strlen(baidu_result[2]) != 0 && strlen(baidu_result[1]) == 0))
 
@@ -642,11 +722,20 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
             else if ( i == 3 && ( strlen(baidu_result[4]) != 0) )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         } 
-        else if ( i== 0 ){
+
+        /* 翻译结果检测为空*/
+        else if ( i == 0 ){
 
             gtk_text_buffer_insert_with_tags_by_name(buf, iter, "尚未获取到数据,请尝试刷新\n", -1,\
                     "black-font", "gray_background", "bold-style", "Uneditable",\
                     "font-size-15", "letter-spacing","underline", NULL);
+
+
+            /* 一般来说谷歌翻译的结果获取快一点，如果百度翻译此时还没获取到，
+             * 先返回谷歌翻译的结果, 显示顺序改变，需同步show*/
+            show = ~show;
+            printf("\033[0;31m百度翻译结果为空，尚未成功获取，重定向到谷歌翻译结果 \033[0m\n");
+            return displayGoogleTrans ( ((struct GtkText*)arg)->button, arg);
         }
     }
 
@@ -680,7 +769,6 @@ void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter) {
 
 void printDebugInfo() {
 
-    printf("百度翻译结果: %s\n", &shmaddr_baidu[ACTUALSTART]);
     printf("\nFinish标志位: %c", shmaddr_baidu[0]);
     printf("\nPhonetic标志位: %c", shmaddr_baidu[1]);
     printf("\nNumbers of zhTrans标志位: %c", shmaddr_baidu[2]);
@@ -688,6 +776,7 @@ void printDebugInfo() {
     printf("\nOther forms of word标志位: %c", shmaddr_baidu[4]);
     printf("\nNumbers of audio links标志位: %c\n", shmaddr_baidu[5]);
 
+    printf("百度翻译结果: %s\n", &shmaddr_baidu[ACTUALSTART]);
     printf("\n谷歌翻译结果: %s\n\n", &shmaddr_google[ACTUALSTART]);
 }
 
@@ -752,6 +841,7 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
 
         printf("\033[0;35m (showBaiduScrolledWin) charNums=%d\n", charNums);
 
+        /* 根据字符数量控制窗口大小和单行长度*/
         if ( charNums < 400 ) {
 
             int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
@@ -789,6 +879,7 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
 
     else if ( strlen ( ZhTrans ) != 0 ) {
 
+        /* 窗口大了，对显示的字符串进行相应调整, 扩大单行显示长度为46*/
         if ( wd->width >= 900 ) {
 
             adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
@@ -808,7 +899,25 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
 
         gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, "未获取到百度翻译结果\n", -1,\
                 "green-font", "font-size-14", "bold-style", NULL );
+
+        return (void)showGoogleScrolledWin (gtbuf, iter, wd);
     }
+}
+
+int isContainSeparateChar ( char *str ) {
+
+    if ( str == NULL || str[0] == '\0')
+        return 0;
+
+    char *p = str;
+
+    while ( *p ) {
+        if ( *p++ == '|' )
+            return 1;
+    }
+
+    return 0;
+
 }
 
 void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) {
@@ -821,13 +930,20 @@ void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd)
     gtk_text_buffer_delete (gtbuf, &start, &end);
     gtk_text_buffer_get_iter_at_offset (gtbuf, iter, 0);
 
+    /* 仍旧包含分隔符，说明是新的字符串翻译结果，未显示，需要调整*/
+    if ( isContainSeparateChar ( &shmaddr_google[ACTUALSTART] ) )
+        wd->hadShowGoogleResult = 0;
+
     if ( ! wd->hadShowGoogleResult ) {
+
+        printf("\033[0;34mHadn't show google result \033[0m\n");
 
         int index[2] = { 0 };
         getIndex(index, shmaddr_google);
 
         int charNums = countCharNums ( &shmaddr_google[ACTUALSTART] );
-        
+
+        /* 根据字符数量控制窗口大小和单行长度*/
         if ( charNums < 400 ) {
 
             int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
@@ -857,6 +973,7 @@ void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd)
             "green-font", "font-size-14", "bold-style", NULL );
 }
 
+/* 切换百度谷歌翻译结果显示*/
 void switchScrolledWin(GtkWidget *button, gpointer data) {
 
     scrollShow= ~scrollShow;
@@ -873,7 +990,6 @@ int  newScrolledWin() {
     GtkWidget *window;
 
     InNewWin = 1;
-    action = 0; 
 
     gint width = 900+20;
     gint height;
@@ -957,7 +1073,6 @@ int  newScrolledWin() {
 
     strcatFlag = 1;
     InNewWin = 0;
-    CanNewEntrance = 0;
 
     memset ( ZhTrans, '\0', SHMSIZE / BAIDUSIZE );
 
@@ -967,6 +1082,7 @@ int  newScrolledWin() {
 }
 
 
+/* 设置newWin的窗口大小*/
 void setWinSize ( int maxlen, int lines, char *addr ) {
 
     int ret = 0;
@@ -1002,5 +1118,9 @@ void setWinSize ( int maxlen, int lines, char *addr ) {
         bw.height = height;
 
         return;
+    } 
+
+    else if ( addr == shmaddr_google ) 
+    {
     }
 }
