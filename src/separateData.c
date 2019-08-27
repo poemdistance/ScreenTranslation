@@ -64,7 +64,7 @@ void separateData(int *index, int len) {
 
     /*打印提取结果*/
     //for ( int i=0; i<BAIDUSIZE; i++ )
-    //printf("%s\n", baidu_result[i]);
+    //    printf("baidu_result[%d]=%s\n",i, baidu_result[i]);
 }
 
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
