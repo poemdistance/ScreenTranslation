@@ -14,6 +14,11 @@
 
 extern char *shmaddr;
 extern int InNewWin;
+extern int BAIDU_TRANS_EXIT_FALG;
+extern int GOOGLE_TRANS_EXIT_FLAG;
+
+pid_t baidu_translate_pid;
+pid_t google_translate_pid;
 
 int mousefd;
 
@@ -64,9 +69,13 @@ void *DetectMouse(void *arg) {
         /*让子进程中pid_google=-1,防止子进程执行到pid_google>0的代码段*/
         if (pid_baidu == 0)
             pid_google = -1;
+        else if ( pid_baidu > 0 )
+            baidu_translate_pid = pid_baidu;
     }
 
     if ( pid_google > 0 ) {
+
+        google_translate_pid = pid_google;
 
         /*父进程:关闭读端口*/
         close(fd_google[0]);
@@ -75,14 +84,15 @@ void *DetectMouse(void *arg) {
         fd[0] = fd_google[1];
         fd[1] = fd_baidu[1];
 
-        printf("百度翻译提前建立连接\n");
-        char tmp[] = "@@@@@\n";
-        writePipe(tmp, fd_baidu[1]);
+        //printf("百度翻译提前建立连接\n");
+        //char tmp[] = "@@@@@\n";
+        //writePipe(tmp, fd_baidu[1]);
 
         sa.sa_handler = handler;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_RESTART;
         if ( sigaction(SIGCHLD, &sa, NULL) == -1) {
+            printf("\033[0;31msigaction exec failed (DetectMouse.c -> SIGCHLD) \033[0m\n");
             perror("sigaction");
             exit(1);
         }
@@ -98,8 +108,6 @@ void *DetectMouse(void *arg) {
 
         int history[4] = { 0 };
         int i = 0, n = 0, m = 0;
-
-        signal(SIGINT, quit);
 
         while(1) {
 
@@ -127,6 +135,20 @@ void *DetectMouse(void *arg) {
              * 其他代码逻辑才不会被旧数据影响*/
             if ( InNewWin == 1 )
                 continue;
+
+            /* 任何一端翻译程序终止即退出取词翻译*/
+            if ( BAIDU_TRANS_EXIT_FALG ) {
+                printf("\033[0;31m百度翻译子进程已退出 \033[0m\n");
+                printf("\033[0;31m准备退出取词翻译程序... \033[0m\n");
+                quit();
+            } 
+
+            if ( GOOGLE_TRANS_EXIT_FLAG ) {
+
+                printf("\033[0;31m谷歌翻译子进程已退出 \033[0m\n");
+                printf("\033[0;31m准备退出取词翻译程序... \033[0m\n");
+                quit();
+            }
 
             /*循环写入鼠标数据到数组*/
             history[i++] = buf[0] & 0x07;
