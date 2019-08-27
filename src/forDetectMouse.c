@@ -22,6 +22,9 @@ const static char wantToIgnore[][20] = {
     "gimp-2.10"
 };
 
+int BAIDU_TRANS_EXIT_FALG  = 0;
+int GOOGLE_TRANS_EXIT_FLAG = 0;
+
 extern FILE *fp;
 extern int action;
 
@@ -32,6 +35,9 @@ extern char *shmaddr_baidu;
 
 extern int shmid_google;
 extern int shmid_baidu;
+
+extern pid_t google_translate_pid;
+extern pid_t baidu_translate_pid;
 
 void err_exit(char *buf) {
     fprintf(stderr, "%s\n", buf);
@@ -99,7 +105,14 @@ void writePipe(char *text, int fd) {
 void handler(int signo) {
 
     pid_t pid;
-    while( (pid=waitpid(-1, NULL, WNOHANG)) > 0);
+    while( (pid=waitpid(-1, NULL, WNOHANG)) > 0) {
+
+        if ( pid == baidu_translate_pid )
+            BAIDU_TRANS_EXIT_FALG = 1;
+        else if ( pid == google_translate_pid )
+            GOOGLE_TRANS_EXIT_FLAG = 1;
+    }
+
 }
 
 /*判断当前聚焦窗口是否为终端*/
