@@ -229,6 +229,8 @@ void *DetectMouse(void *arg) {
     /*child process for google translate*/
     if (pid_google == 0){ 
 
+        printf("\033[0;34m执行谷歌翻译程序 \033[0m\n");
+
         close(fd_google[1]); /*关闭写端口*/
 
         /*重映射标准输入为管道读端口*/
@@ -262,7 +264,7 @@ void *DetectMouse(void *arg) {
             }
         }
 
-        printf("执行百度翻译程序\n");
+        printf("\033[0;34m执行百度翻译程序 \033[0m\n");
         char * const cmd[3] = {"bdtran","-s", (char*)0};
         if ( execv( "/usr/bin/bdtran", cmd ) < 0) {
             fprintf(stderr, "Execv error (baidu)\n");
