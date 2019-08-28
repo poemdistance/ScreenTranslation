@@ -113,7 +113,7 @@ void *DetectMouse(void *arg) {
 
             /*超时时间*/
             tv.tv_sec = 0;
-            tv.tv_usec = 500000;
+            tv.tv_usec = 5000000;
 
             FD_ZERO( &readfds );
             FD_SET( mousefd, &readfds );
