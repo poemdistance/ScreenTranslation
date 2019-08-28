@@ -99,7 +99,7 @@ main(int argc, char **argv)
      * 监控子程序状态，如果子程序退出，则再fork一个子进程重新启动之*/
     if ( pid > 0 ) {
         needWait = pid;
-        printf("\033[0;34m ( Monitor ) Parent process, child pid =%ld\033[0m\n", pid);
+        printf("\033[0;34m ( Monitor ) Parent process, child pid =%d\033[0m\n", pid);
         while ( 1 ) { 
             usleep ( 1000000 );
             if ( PROCESS_EXIT_FLAG == 1 && CTRL_C_FLAG != 1 && SIG_KILL_FLAG != 1) {
@@ -116,7 +116,7 @@ main(int argc, char **argv)
 
                 if ( pid > 0 ) {
                     needWait = pid;
-                    printf("\033[0;34m(Monitor) Parent process in while, new child process id %ld \033[0m\n", pid);
+                    printf("\033[0;34m(Monitor) Parent process in while, new child process id %d \033[0m\n", pid);
                 }
 
                 /* 子进程需要跳出while循环进入下面的翻译程序启动代码*/
