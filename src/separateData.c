@@ -20,9 +20,22 @@ void separateData(int *index, int len) {
     if ( baidu_result[0] == NULL)
         err_exit("Doesn't init memory yet\n");
 
-    strcat ( SourceInput, text );
-    strcat ( SourceInput, "\n" );
-    adjustStrForBaidu(len, SourceInput, 0, 0);
+    /* TODO:去除SourceInput末尾的回车符后，比较新输入的字符串
+     * 是否与之相等，相等说明复制过了，取消本次复制 ( <130的判断
+     * 是因为>=130时, 原始字符是不显示的, 没必要复制)*/
+    if ( strlen ( text ) < 130 ) {
+
+        char tmp[130];
+        strcpy ( tmp, text );
+        strcat ( tmp, "\n" );
+
+        if ( strcmp ( tmp, SourceInput ) != 0 ) {
+
+            strcat ( SourceInput, text );
+            strcat ( SourceInput, "\n" );
+            adjustStrForBaidu(len, SourceInput, 0, 0);
+        }
+    }
 
     /*分离相应数据到特定功能内存区域*/
     for ( int n=1, i=0, count=0; n<=BAIDUSIZE; n++ ) {
