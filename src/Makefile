@@ -23,7 +23,7 @@ $(OBJECTS) : %.o : %.c
 	$(CC) -c $(LDLIBS) $(CFLAGS) $< -o $@  
 
 $(MONNITOR) : %.o : %.c
-	$(CC) -c  $< -o $@  
+	$(CC) -c  $< -o $@  -Wall
 
 install:
 	sudo cp -v stran /usr/bin/stran
