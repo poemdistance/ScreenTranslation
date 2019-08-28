@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Mstran
+Comment=The Monitor of ScreenTranslation
+Exec=bash /home/rease/.stran/start.sh
+Encodeing=UTF-8
+Icon=/home/rease/.stran/tran.png
+Type=Application
+Terminal=false
+Categories=GTK;GNOME;
