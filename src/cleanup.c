@@ -21,11 +21,18 @@ extern pid_t google_translate_pid;
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
 
+int hadCleanUp = 0;
+
 /* TODO:可能会被多次执行，如在终端输入ctrl-c，会被主函数注册的监听SIGINT捕捉到，
  * 之后python翻译程序退出，又接收到SIGCHLD，再被调用一次，最后StranMonitor程序
  * 发送SIGTERM，接收到后又调用一次, 不过影响不大*/
 
 void quit() {
+
+    if ( hadCleanUp )
+        return;
+
+    hadCleanUp = 1;
 
     printf("\033[0;35m\nCleaning up... \033[0m\n\n");
 
@@ -37,6 +44,9 @@ void quit() {
 
     close(mousefd);
     close(fd_key);
+
+
+    /* TODO:有时候共享内存会清理不成功*/
 
     /* 清除与谷歌翻译的共享内存*/
     if ( shmdt(shmaddr_google) < 0)
