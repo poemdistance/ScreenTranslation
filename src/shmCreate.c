@@ -10,15 +10,15 @@ int shared_memory_for_google_translate(char **addr) {
     shmid = shmget(key, SHMSIZE, IPC_CREAT | IPC_EXCL | 0664);
     if ( shmid == -1 ) {
         if ( errno == EEXIST ) {
-            printf("shared memeory already exist\n");
+            printf("\033[0;31mshared memeory already exist,\033[0m");
             shmid = shmget(key ,0, 0);
-            printf("reference shmid = %d\n", shmid);
+            printf("\033[0;35mreference shmid = %d\033[0m\n", shmid);
         } else {
             perror("errno");
             err_exit("shmget error");
         }
     } else {
-        printf("shmid=%d\n", shmid);
+        printf("\033[0;35m\nObtained shared memory successful shmid=%d \033[0m\n", shmid);
     }
 
     /* Do not to specific the address to attach
@@ -33,8 +33,10 @@ int shared_memory_for_google_translate(char **addr) {
 
         err_exit("shmat error");
     } else {
-        printf("Attach to %p\n", addr);
+        printf("\033[0;35mAttach to %p \033[0m\n", addr);
     }
+
+    printf("\n");
 
     return shmid;
 }
@@ -45,21 +47,20 @@ int shared_memory_for_baidu_translate(char **addr) {
     key_t key = ftok(GETEKYDIR, PROJECTID2);
     if ( key < 0 )
         err_exit("ftok error");
-    printf("key=%d\n", key);
 
     int shmid;
     shmid = shmget(key, SHMSIZE, IPC_CREAT | IPC_EXCL | 0664);
     if ( shmid == -1 ) {
         if ( errno == EEXIST ) {
-            printf("shared memeory already exist\n");
+            printf("\033[0;31mshared memeory already exist,\033[0m");
             shmid = shmget(key ,0, 0);
-            printf("reference shmid = %d\n", shmid);
+            printf("\033[0;35mreference shmid = %d\033[0m\n", shmid);
         } else {
             perror("errno");
             err_exit("shmget error");
         }
     } else {
-        printf("shmid=%d\n", shmid);
+        printf("\033[0;35mObtained shared memory successful shmid=%d \033[0m\n", shmid);
     }
 
     /* Do not to specific the address to attach
@@ -74,8 +75,10 @@ int shared_memory_for_baidu_translate(char **addr) {
 
         err_exit("shmat error");
     } else {
-        printf("Attach to %p\n", addr);
+        printf("\033[0;35mAttach to %p \033[0m\n", addr);
     }
+
+    printf("\n");
 
     return shmid;
 }
