@@ -133,6 +133,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
         send_Ctrl_C();
         printf("Send key successful\n");
     }
+
     delay();
 
     if ( text == NULL )
@@ -142,23 +143,36 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     memset(text, 0, TEXTSIZE);
     int retval = 0;
-    if ( (retval = getClipboard(text) ) == 1) {
-        printf("Not copy event\n");
-        action = 0;
-        memset(*history, 0, sizeof(*history));
-        CanNewEntrance = 0;
-        return ;
-    }
+    int trytimes = 0;
+    while ( trytimes <= 6 ) {
 
-    if ( strcmp(lastText, text ) == 0 )
-    {
-        *text = '0';
-        action = 0;
-        //static int i = 0;
-        //printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
-        memset(*history, 0, sizeof(*history));
-        CanNewEntrance = 0;
-        return ;
+        if ( (retval = getClipboard(text) ) == 1) {
+            printf("Not copy event\n");
+            action = 0;
+            memset(*history, 0, sizeof(*history));
+            CanNewEntrance = 0;
+            return ;
+        }
+
+        if ( strcmp(lastText, text ) == 0 )
+        {
+            *text = '0';
+            action = 0;
+            //static int i = 0;
+            //printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
+            printf("\033[0;34mSame text \033[0m\n");
+            memset(*history, 0, sizeof(*history));
+            CanNewEntrance = 0;
+            return ;
+        }
+
+        if ( strcmp(lastText, text ) != 0 )
+            break;
+        else
+        {
+            trytimes++;
+            continue;
+        }
     }
 
     strcpy(lastText, text);
