@@ -242,9 +242,9 @@ void *newWindow(void * arg) {
         p[1] = &shmaddr_google[index_google[0]];
         p[2] = &shmaddr_google[index_google[1]];
 
-        adjustStr(p, 28, google_result);
-
         lines_google = getLinesOfGoogleTrans ( index_google );
+
+        adjustStr(p, 28, google_result);
 
         /* 如果只有单个翻译结果，在原始数据显示情况下，要计算其显示长度是否超过翻译结果的
          * 如果是，则替换之*/
@@ -252,12 +252,14 @@ void *newWindow(void * arg) {
             if ( ret/2 > maxlen_google )
                 maxlen_google = ret / 2;
 
-        printf("\033[0;36mmaxlen_google=%d lines=%d34m\033[0m\n", maxlen_google,lines_google);
+        printf("\033[0;33mmaxlen_google=%d lines=%d34m\033[0m\n\n", maxlen_google,lines_google);
 
         /*存于全局变量*/
         gw.width = 14 * maxlen_google + 60;
-        gw.height = lines_google * 26;
+        gw.height = lines_google * 28;
 
+        for ( int i=0; i<3; i++ )
+            printf("\033[0;33m(newWin)%s \033[0m\n", google_result[i]);
     }
     else  {
         shmaddr_google[0] = CLEAR;
@@ -497,17 +499,25 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
 
     if ( !which ) 
     {
+
         int index[2] = { 0 }, ret = 0;
-        getIndex(index, shmaddr_google);
+        int i = ((struct GtkText*)arg)->index_google[0] - 1;
 
-        char *p[3];
-        p[0] = &shmaddr_google[ACTUALSTART];
-        p[1] = &shmaddr_google[index[0]];
-        p[2] = &shmaddr_google[index[1]];
+        /* 如果第一个分隔符索引值为0，则未索引到，因为每次数据传输至少有一个索引值,
+         * 需要重新索引*/
+        if ( i+1 == 0 ) {
 
-        adjustStr(p, 28, google_result);
+            getIndex(index, shmaddr_google);
 
-        lines_google = getLinesOfGoogleTrans ( index );
+            char *p[3];
+            p[0] = &shmaddr_google[ACTUALSTART];
+            p[1] = &shmaddr_google[index[0]];
+            p[2] = &shmaddr_google[index[1]];
+
+            adjustStr(p, 28, google_result);
+
+            lines_google = getLinesOfGoogleTrans ( index );
+        } 
 
         /* 如果只有单个翻译结果，在原始数据显示情况下，要计算其显示长度是否超过翻译结果的
          * 如果是，则替换之*/
@@ -519,7 +529,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
 
         /*存于全局变量*/
         gw.width = 14 * maxlen_google + 60;
-        gw.height = lines_google * 26;
+        gw.height = lines_google * 28;
 
         /* TODO：mark1*/
         if ( index[0] != 0)
@@ -532,8 +542,8 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         if (gw.width < 350)
             gw.width = 350;
 
-        if ( gw.height < 200 )
-            gw.height = 200;
+        if ( gw.height < 230 )
+            gw.height = 230;
 
         printf("\033[0;33mgw width=%f height=%f\033[0m\n", gw.width, gw.height);
 
