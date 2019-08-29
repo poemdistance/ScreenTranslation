@@ -27,8 +27,8 @@ $(MONNITOR) : %.o : %.c
 	$(CC) -c  $< -o $@  -Wall
 
 install:
-	sudo cp -v stran /usr/bin/stran
-	sudo cp -v mstran /usr/bin/mstran
+	sudo cp -v stran /usr/bin/
+	sudo cp -v mstran /usr/bin/
 
 clean:
 	rm -f *.o stran *.out core.* sendToClipboard mstran StranMonitor
