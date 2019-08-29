@@ -15,6 +15,10 @@ void adjustStr(char *p[], int len, char *storage[]) {
 
     printf("\nIn adjustStr function\n");
 
+    printf("\033[0;31m1.%s \033[0m\n", storage[0]);
+    printf("\033[0;31m2.%s \033[0m\n", storage[1]);
+    printf("\033[0;31m3.%s \033[0m\n", storage[2]);
+
     int nowlen = 0;
     int asciich = 0;
     for ( int i=0; i<3; i++ ) 
@@ -28,7 +32,7 @@ void adjustStr(char *p[], int len, char *storage[]) {
 
             /*读到结尾字符时退出内层for循环，处理下一个字符串*/
             if ( p[i][j] == '\0' ) {
-                if ( j != 0 && i != 0 ) {
+                if ( j != 0 ) {
                     strcat ( storage[i], "\n" );
                     lines_google++;
                     printf("\033[0;33mlines_google++ \033[0m\n");
