@@ -72,6 +72,10 @@ void separateData(int *index, int len);
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
 int countLines ( int len, char *source );
 int countCharNums ( char *source );
+GtkWidget* newVolumeBtn () ;
+GtkWidget* insertVolumeIcon( GtkWidget *window, GtkLayout *layout ) ;
+
+int mp3play (GtkWidget *button, gpointer *data);
 
 struct clickDate {
     GtkWidget *window;
