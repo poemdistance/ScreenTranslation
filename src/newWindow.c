@@ -13,6 +13,7 @@ int InNewWin = 0;
 /* 用于切换百度和谷歌翻译结果的显示, -1和0互为取反运算*/
 int show = -1;
 int scrollShow = -1;
+extern int audioShow;
 
 extern int action;
 
@@ -22,7 +23,8 @@ extern int lines_google;
 extern int maxlen_baidu;
 extern int maxlen_google;
 
-extern int strcatFlag;
+extern char audio_en[512];
+extern char audio_uk[512];
 
 extern char *text;
 
@@ -34,6 +36,8 @@ struct GtkText {
 
     GtkTextIter *iter;
     GtkTextBuffer *buf;
+
+    GtkWidget *volume;
 
     int index_google[2];
     char **storage;
@@ -68,6 +72,9 @@ typedef struct Baidu {
 
     double width;
     double height;
+
+    char *audio[2];
+
 }Baidu;
 
 Baidu bw;
@@ -252,7 +259,7 @@ void *newWindow(void * arg) {
             if ( ret/2 > maxlen_google )
                 maxlen_google = ret / 2;
 
-        printf("\033[0;33mmaxlen_google=%d lines=%d34m\033[0m\n\n", maxlen_google,lines_google);
+        printf("\033[0;33mmaxlen_google=%d lines=%d\033[0m\n\n", maxlen_google,lines_google);
 
         /*存于全局变量*/
         gw.width = 14 * maxlen_google + 60;
@@ -286,6 +293,7 @@ void *newWindow(void * arg) {
     gt.layout = (GtkLayout*)layout;
     gt.button = button;
     gt.window = newWin;
+    gt.volume = NULL;
 
     g_signal_connect(button, "clicked", G_CALLBACK(changeDisplay), (void*)&gt);
 
@@ -323,6 +331,9 @@ int destroyNewWin(GtkWidget *window) {
     memset(shmaddr_google, '\0', SHMSIZE-10);
     memset(shmaddr_baidu, '\0', SHMSIZE-10);
 
+    memset ( audio_uk, '\0', 512 );
+    memset ( audio_en, '\0', 512 );
+
     /* TODO:谷歌结果存放空间未填充0*/
     for ( int i=0; i<BAIDUSIZE; i++ )
         memset( baidu_result[i], '\0', SHMSIZE / BAIDUSIZE );
@@ -359,7 +370,7 @@ void getIndex(int *index, char *addr) {
         {
             *p = '\0';
             if ( addr == shmaddr_google && charNum >= 2 ) /*截取到第三个分隔符*/ {
-                printf("已完成分割字符索引\n");
+                printf("\033[0;33m(Google)已完成分割字符索引 \033[0m\n");
                 break;
             }
 
@@ -507,16 +518,25 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
          * 需要重新索引*/
         if ( i+1 == 0 ) {
 
+            printf("\033[0;31m谷歌翻译重新索引 index: \033[0m");
             getIndex(index, shmaddr_google);
 
-            char *p[3];
-            p[0] = &shmaddr_google[ACTUALSTART];
-            p[1] = &shmaddr_google[index[0]];
-            p[2] = &shmaddr_google[index[1]];
+            /* TODO:???*/
+            if ( index[0] != 0) {
 
-            adjustStr(p, 28, google_result);
+                char *p[3];
+                p[0] = &shmaddr_google[ACTUALSTART];
+                p[1] = &shmaddr_google[index[0]];
+                p[2] = &shmaddr_google[index[1]];
 
-            lines_google = getLinesOfGoogleTrans ( index );
+                adjustStr(p, 28, google_result);
+
+                printf("\033[0;33m1.%s \033[0m\n", google_result[0]);
+                printf("\033[0;33m2.%s \033[0m\n", google_result[1]);
+                printf("\033[0;33m3.%s \033[0m\n", google_result[2]);
+
+                lines_google = getLinesOfGoogleTrans ( index );
+            }
         } 
 
         /* 如果只有单个翻译结果，在原始数据显示情况下，要计算其显示长度是否超过翻译结果的
@@ -599,6 +619,11 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
     /* 调整窗口大小*/
     adjustWinSize ( button, arg, 0 );
 
+    if ( ((struct GtkText*)arg)->volume != NULL ) {
+        printf("\033[0;31m隐藏音频按钮 \033[0m\n");
+        gtk_widget_hide ( ((struct GtkText*)arg)->volume  );
+    }
+
     GtkTextIter *iter, start, end;
     iter = ((struct GtkText*)arg)->iter;
     GtkTextBuffer *buf = ((struct GtkText*)arg)->buf;
@@ -618,13 +643,17 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
         printf("\033[0;31m字符串不相等: google_result[0]->%s< \033[0m\n\n", google_result[0]);
         printf("ACTUALSTART=>%s<\n",&shmaddr_google[ACTUALSTART] );
 
+        int flag = 0;
         for ( int i=0; i<2; i++ ) {
-            printf("\033[0;35m%d \033[0m\n",((struct GtkText*)arg)->index_google[i] );
-            if ( shmaddr_google[((struct GtkText*)arg)->index_google[i] - 1] == '\0')
+            if ( shmaddr_google[((struct GtkText*)arg)->index_google[i] - 1] == '\0') {
+
                 shmaddr_google[((struct GtkText*)arg)->index_google[i] - 1] = '|';
+                flag = 1;
+            }
         }
 
-        printf("\033[0;35m添加分隔符后字符串:>%s< \033[0m\n", &shmaddr_google[ACTUALSTART]);
+        if ( flag )
+            printf("\033[0;35m添加分隔符后字符串:>%s< \033[0m\n", &shmaddr_google[ACTUALSTART]);
 
         lines_google = 0;
 
@@ -632,12 +661,16 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
         getIndex(index_google, shmaddr_google);
         printf("\n\033[0;32mindex:%d %d\n\033[0m", index_google[0], index_google[1]);
 
-        char *p[3] ={ NULL };
-        p[0] = &shmaddr_google[ACTUALSTART];
-        p[1] = &shmaddr_google[index_google[0]];
-        p[2] = &shmaddr_google[index_google[1]];
+        /* index_google[0] == 0没有索引到分隔符，不必调整字符，不然反而会出错*/
+        if ( index_google[0] != 0) {
 
-        adjustStr(p, 28, google_result);
+            char *p[3] ={ NULL };
+            p[0] = &shmaddr_google[ACTUALSTART];
+            p[1] = &shmaddr_google[index_google[0]];
+            p[2] = &shmaddr_google[index_google[1]];
+
+            adjustStr(p, 28, google_result);
+        }
 
     } else {
         printf("\033[0;33m字符串依然相等\033[0m\n");
@@ -645,7 +678,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
         /*若字符串依旧相等，直接拿来用就行*/
     }
 
-    char doubleEnter[] = "\n\n";
+    //char doubleEnter[] = "\n\n";
     char enter[] = "\n";
 
     /*插入输入原文*/
@@ -654,7 +687,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
         gtk_text_buffer_insert_with_tags_by_name(buf, iter, text, -1, 
                 "black-font", "gray_background", "bold-style", "Uneditable", "font-size-15", "underline", NULL);
 
-        gtk_text_buffer_insert_with_tags_by_name(buf, iter, doubleEnter, -1, NULL, NULL);
+        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
     }
 
     /*插入翻译结果*/
@@ -666,10 +699,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
             gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
                     "green-font", "gray_background", "bold-style", "Uneditable", "font-size-11", NULL);
 
-            if ( i<2 && google_result[i+1][0] != '\0')
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, doubleEnter, -1, NULL, NULL);
-            else 
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+            gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         }
     }
 }
@@ -692,6 +722,29 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
     gtk_text_buffer_delete(buf, &start, &end);
     gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
 
+
+    /* 含音标，添加播放按钮*/
+    if ( strlen ( Phonetic ) != 0) {
+
+        GtkWidget *volume =  ((struct GtkText*)arg)->volume;
+
+        if ( volume == NULL ) {
+
+            printf("\033[0;34m插入音频播放按钮 \033[0m\n");
+            bw.audio[0] = audio_en;
+            bw.audio[1] = audio_uk;
+
+            ((struct GtkText*)arg)->volume = insertVolumeIcon(\
+                ((struct GtkText*)arg)->window, ((struct GtkText*)arg)->layout);
+        }
+        else {
+
+            printf("\033[0;34m显示音频播放按钮\033[0m\n");
+            gtk_widget_show ( volume );
+        }
+
+    }
+
     char enter[] = "\n";
 
     /*根据得到的相关结果进行翻译内容输出*/
@@ -705,10 +758,13 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i], -1,\
                         "black-font", "gray_background", "bold-style", "Uneditable",\
                         "font-size-15", "letter-spacing","underline", NULL);
-            else if ( i == 1 )
+            else if ( i == 1 ) {
+
+
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i], -1, 
                         "blue-font", "gray_background", "heavy-font", "Uneditable",\
                         "font-size-11", "letter-spacing", NULL);
+            }
             else if ( i == 4 )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i], -1, 
                         "brown-font", "gray_background", "heavy-font", "Uneditable",\
@@ -1102,7 +1158,6 @@ int  newScrolledWin() {
 
     gtk_main();
 
-    strcatFlag = 1;
     InNewWin = 0;
 
     memset ( ZhTrans, '\0', SHMSIZE / BAIDUSIZE );
