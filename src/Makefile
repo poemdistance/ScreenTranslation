@@ -1,11 +1,12 @@
 CC = gcc
 CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -ggdb #-fsanitize=address 
-LDLIBS = `pkg-config --cflags --libs gtk+-3.0`
+LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  notify.o detectMouse.o shmCreate.o newWindow.o\
 		  separateData.o cleanup.o adjustStr.o Main.o\
 		  countLines.o countCharNums.o adjustStrForScrolledWin.o\
+		  audioPlayer.o
 
 MONNITOR = StranMonitor.o
 
