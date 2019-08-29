@@ -8,7 +8,9 @@ extern char *text;
 
 int lines_baidu = 0;
 int maxlen_baidu = 0;
-int strcatFlag = 1;
+
+char audio_en[512] = { '\0' };
+char audio_uk[512] = { '\0' };
 
 void separateData(int *index, int len) {
 
@@ -47,6 +49,14 @@ void separateData(int *index, int len) {
             continue;
         }
 
+        /* 提取音频链接*/
+        if ( n == 5 ) {
+
+            strcat ( audio_en, &shmaddr_baidu[index[i++]] );
+            strcat ( audio_uk, &shmaddr_baidu[index[i++]] );
+            continue;
+        }
+
         count = 0;
         while ( count <  shmaddr_baidu[n] - '0') 
         {
@@ -76,8 +86,11 @@ void separateData(int *index, int len) {
     }
 
     /*打印提取结果*/
-    //for ( int i=0; i<BAIDUSIZE; i++ )
-    //    printf("baidu_result[%d]=%s\n",i, baidu_result[i]);
+    for ( int i=0; i<BAIDUSIZE; i++ )
+        printf("\033[0;35mbaidu_result[%d]=%s\033[0m\n", i, baidu_result[i]);
+
+    printf("\033[0;35maudio_en= %s \033[0m\n", audio_en);
+    printf("\033[0;35maudio_uk= %s \033[0m\n", audio_uk);
 }
 
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
@@ -150,7 +163,7 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         if (nowlen && nowlen > maxlen_baidu )
             maxlen_baidu = nowlen;
 
-        if ( nowlen == len && strcatFlag ) {
+        if ( nowlen == len ) {
             //printf("\033[0;32mAdd Enter\033[0m\n");
             storage[++k] = '\n';
             lines_baidu++;
