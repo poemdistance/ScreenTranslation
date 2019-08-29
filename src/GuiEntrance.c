@@ -11,6 +11,15 @@ extern int timeout_id_2;
 extern int CanNewWin;
 extern int CanNewEntrance;
 
+extern char *baidu_result[BAIDUSIZE] ;
+extern char *google_result[GOOGLESIZE];
+
+extern char *shmaddr_google;
+extern char *shmaddr_baidu;
+
+extern char audio_en[512];
+extern char audio_uk[512];
+
 int HadDestroied;
 static int aboveWindow = 0;
 
@@ -192,6 +201,15 @@ int quit_entry(void *arg) {
          * 也应该新建入口图标*/
         if ( action == DOUBLECLICK)
             CanNewEntrance = 1;
+
+        memset(shmaddr_google, '0', 10);
+        memset(shmaddr_baidu, '0', 10);
+
+        memset(shmaddr_google, '\0', SHMSIZE-10);
+        memset(shmaddr_baidu, '\0', SHMSIZE-10);
+
+        memset ( audio_uk, '\0', 512 );
+        memset ( audio_en, '\0', 512 );
 
         action  = 0;
         CanNewWin = 0;
