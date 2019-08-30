@@ -29,6 +29,9 @@
 
         $ git clone https://github.com/poemdistance/ScreenTranslation --recursive
 
+    如果代码已经下载过一次并做了修改，需要同步到上游到最新状态覆盖本地的，参考：
+    https://poemdear.com/2019/08/29/git-%e4%b8%8b%e6%b8%b8%e6%9b%b4%e6%94%b9%e5%90%8e%e5%bc%ba%e8%a1%8c%e6%81%a2%e5%a4%8d%e8%87%b3%e4%b8%8a%e6%b8%b8%e6%9c%80%e6%96%b0%e7%8a%b6%e6%80%81-%e6%9b%b4%e6%96%b0submodules%e8%87%b3%e6%9c%80/
+
 2. cd到src目录  
 
         $ cd ScreenTranslation/src
@@ -45,22 +48,32 @@
 
           $  sudo pacman -S gtk3  libxtst libx11  xdotool    
 
-
-4. 终端执行命令完成项目安装 <br>
+  
+4. 终端执行命令完成项目安装 (**以下可用 `bash prepare.sh` 命令代替,如果这个命令执行后未能正常运行，尝试以下具体步骤**) <br>
    
    * 复制资源文件 
 
           $ mkdir ~/.stran
-          $ cp ../gif_pic/tran.png ../gif_pic/Switch.png ~/.stran -v 
+          $ cp ../gif_pic/tran.png ../gif_pic/Switch.png ../gif_pic/background.jpg errNotification.sh startup.sh ../gif_pic/volume.png ~/.stran -v
 
    * 修改源码适应用户 
   
           $ echo $HOME         #记下这个结果输出 
 
-          $ sed -i 's/\/home\/rease/<上一个命令的输出结果>/g' GuiEntrance.c newWindow.c  
+          $ sed -i 's/\/home\/rease/<上一个命令的输出结果>/g' GuiEntrance.c newWindow.c background.c  audioPlayer.c  Mstran.desktop switchButton.c  
           #不要带上尖括号. 记得在斜杠前加反斜杠
 
-          #如: sed -i 's/\/home\/rease/\/home\/username/g' GuiEntrance.c newWindow.c  
+          #如: sed -i 's/\/home\/rease/\/home\/username/g' GuiEntrance.c newWindow.c background.c  audioPlayer.c  Mstran.desktop switchButton.c 
+
+   * 添加桌面图标,创建日志文件
+
+           #复制启动图标，创建日志文件,修改读写权限，(**启动图标的生效可能要等计算机重启或gnome shell重启**)
+
+            sudo cp Mstran.desktop /usr/share/applications/ -v
+            sudo touch /var/log/mstran.log
+            sudo chmod -c 750 /var/log/mstran.log
+            sudo chown -c $USER /var/log/mstran.log
+
 
    * 添加用户到 `/dev/input/mice` 所在组: 
     
