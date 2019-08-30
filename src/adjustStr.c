@@ -15,9 +15,9 @@ void adjustStr(char *p[], int len, char *storage[]) {
 
     printf("\nIn adjustStr function\n");
 
-    printf("\033[0;31m1.%s \033[0m\n", storage[0]);
-    printf("\033[0;31m2.%s \033[0m\n", storage[1]);
-    printf("\033[0;31m3.%s \033[0m\n", storage[2]);
+    printf("\033[0;31m(adjustStr)1.%s \033[0m\n", storage[0]);
+    printf("\033[0;31m(adjustStr)2.%s \033[0m\n", storage[1]);
+    printf("\033[0;31m(adjustStr)3.%s \033[0m\n", storage[2]);
 
     int nowlen = 0;
     int asciich = 0;
