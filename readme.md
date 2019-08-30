@@ -49,7 +49,7 @@
           $  sudo pacman -S gtk3  libxtst libx11  xdotool    
 
   
-4. 终端执行命令完成项目安装 (**以下可用 `bash prepare.sh` 命令代替,如果这个命令执行后未能正常运行，尝试以下具体步骤**) <br>
+4. 终端执行命令完成项目安装 (**以下可用 `bash prepare.sh` `make && make install` 两个命令代替,如果这个命令执行后未能正常运行，尝试以下具体步骤**) <br>
    
    * 复制资源文件 
 
@@ -147,17 +147,17 @@
 
 3. 直接运行编译后生成的可执行文件stran 
  
-        $  stran 
+        $  mstran 
     
       这种情况会有很多输出信息，一般是拿来作为调试信息的<br><br>
 
-        $  stran > /dev/null &
+        $  mstran > /dev/null &
   
      放置在后台执行，重定向输出到/dev/null <br> <br>
 
      停止运行:   
 
-        $ kill `ps -aux | grep stran | head -n 1 |awk '{print $2}'|xargs` 
+        $ kill `ps -aux | grep mstran | head -n 1 |awk '{print $2}'|xargs` 
 
 
 <br> 
@@ -174,8 +174,6 @@
 
 # 五. 程序目前已知问题
 
-
-- [ ] Python翻译程序如果异常退出，C语言程序会继续运行但不会得到任何翻译结果，可以重启程序回到正轨
 - [ ] **程序只支持Xorg的桌面，并且系统必须禁用Wayland。** 
 
 <br> 
