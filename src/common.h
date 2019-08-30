@@ -42,6 +42,56 @@
 #define GOOGLESIZE (3)
 #define LINELEN (28)
 
+typedef struct Google {
+
+    double width;
+    double height;
+}Google;
+
+Google gw;
+
+
+typedef struct Baidu {
+
+    double width;
+    double height;
+
+    char *audio[2];
+
+}Baidu;
+
+Baidu bw;
+
+
+typedef struct WinData{
+
+    GtkWidget *window;
+    GtkWidget *layout;
+    GtkWidget *button;
+
+    GtkTextIter *iter;
+    GtkTextBuffer *buf;
+
+    GtkWidget *volume;
+    GtkWidget *scroll;
+
+    GtkWidget *image;
+    GtkWidget *oldImage;
+
+    GdkPixbuf *srcBackgroundImage;
+
+    gint width;
+    gint height;
+
+    gint hadShowGoogleResult;
+
+    int index_google[2];
+    char **storage;
+
+    int switchEvent;
+
+}WinData;
+
 void show_utf8_prop(Display *dpy, Window w, Atom p, char *text);
 
 int getClipboard(char *text);
@@ -61,21 +111,29 @@ void *GuiEntrance(void *arg);
 void *DetectMouse(void *arg);
 int shared_memory_for_google_translate(char **addr);
 int shared_memory_for_baidu_translate(char **addr);
-void *newWindow(void * arg);
+void *newNormalWindow(void * arg);
 void adjustStr(char *p[3], int len, char *storage[3]);
 int adjustStrForScrolledWin(int len, char *source);
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
 
 void * 
 sendToClipboard( void *arg );
-void separateData(int *index, int len);
+void separateDataForBaidu(int *index, int len);
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
 int countLines ( int len, char *source );
 int countCharNums ( char *source );
 GtkWidget* newVolumeBtn () ;
-GtkWidget* insertVolumeIcon( GtkWidget *window, GtkLayout *layout ) ;
+GtkWidget* insertVolumeIcon( GtkWidget *window, GtkWidget *layout ) ;
 
 int mp3play (GtkWidget *button, gpointer *data);
+GtkWidget * getImageWidgetWithBG( gint width, gint height  ) ;
+GtkWidget *syncImageSize ( GtkWidget *window, gpointer *data ) ;
+
+GtkWidget *newSwitchButton ( WinData *win );
+
+int getLinesOfGoogleTrans ( int *index_google );
+
+void separateGoogleDataSetWinSize ( int *index_google );
 
 struct clickDate {
     GtkWidget *window;
@@ -107,5 +165,30 @@ struct Arg {
 #define EnTrans ((char *)( baidu_result[3] ))
 #define OtherWordForm ((char *)( baidu_result[4] ))
 #define Audios ((char *)( baidu_result[5] ))
+
+
+/* For newWindow.c*/
+
+int destroyNormalWin(GtkWidget *window, WinData *win);
+int waitForContinue();
+void getIndex(int *index, char *addr);
+void get_paragraph();
+void initMemoryBaidu();
+void initMemoryGoogle();
+void printDebugInfo();
+int  newScrolledWin();
+void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter);
+void changeDisplay(GtkWidget *button, gpointer *arg);
+void displayGoogleTrans(GtkWidget *button, gpointer *arg);
+void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg);
+void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer scroll );
+void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer scroll );
+void adjustWinSize(GtkWidget *button, gpointer *arg, int which);
+void setWinSizeForNormalWin ( int maxlen, int lines, char *addr );
+void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd);
+int getMaxLenOfBaiduTrans() ;
+int getLinesOfBaiduTrans () ;
+
+/* End For newWindow.c*/
 
 #endif
