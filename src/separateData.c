@@ -1,23 +1,22 @@
 #include "common.h"
 
 extern char *shmaddr_baidu;
+extern char *shmaddr_google;
+
+extern char *baidu_result[BAIDUSIZE] ;
+extern char *google_result[GOOGLESIZE] ;
 
 extern char *baidu_result[BAIDUSIZE];
 
 extern char *text;
 
-int lines_baidu = 0;
-int maxlen_baidu = 0;
-
 char audio_en[512] = { '\0' };
 char audio_uk[512] = { '\0' };
 
-void separateData(int *index, int len) {
+void separateDataForBaidu(int *index, int len) {
 
     if ( index[0] == 0)
         return;
-
-    lines_baidu = 0;
 
     if ( baidu_result[0] == NULL)
         err_exit("Doesn't init memory yet\n");
@@ -28,13 +27,21 @@ void separateData(int *index, int len) {
     if ( strlen ( text ) < 130 ) {
 
         char tmp[130];
-        strcpy ( tmp, text );
-        strcat ( tmp, "\n" );
+        char *p = tmp;
+
+        strcpy ( tmp, text ); /* text含回车符*/
+
+        /* 去除回车符*/
+        while ( *p ) {
+            if ( *p == '\n' )
+                *p = '\0';
+            p++;
+        }
 
         if ( strcmp ( tmp, SourceInput ) != 0 ) {
 
-            strcat ( SourceInput, text );
-            strcat ( SourceInput, "\n" );
+            strcat ( SourceInput, tmp );
+            //strcat ( SourceInput, "\n" );
             adjustStrForBaidu(len, SourceInput, 0, 0);
         }
     }
@@ -64,13 +71,15 @@ void separateData(int *index, int len) {
             strcat ( baidu_result[n],  &shmaddr_baidu[index[i++]]);
             strcat ( baidu_result[n], "\n");
 
+            /* 最后一条中文翻译前的解释都加上回车*/
             if ( n == 2 && count + 1 < shmaddr_baidu[n] - '0') {
-                strcat ( baidu_result[n], "\n");
+                strcat ( ZhTrans, "\n");
             }
 
             count++;
         }
 
+        /* ZhTrans*/
         if ( n == 2 ) {
             /*单个翻译结果不能加空格前缀 addSpace=0*/
             if ( PhoneticFlag == 0 && NumZhTranFlag == 1 && NumEnTranFlag == 0 && OtherWordFormFlag == 0 )
@@ -81,6 +90,8 @@ void separateData(int *index, int len) {
 
         else if ( n == 3 || n == 4)
             adjustStrForBaidu(len, baidu_result[n], 0, 1);
+
+        /* 这条语句貌似是统计行数用的 */
         else if ( n == 1 )
             adjustStrForBaidu(len, baidu_result[n], 0, 0);
     }
@@ -127,7 +138,6 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
         if ( source[j] == '\n') {
 
-            lines_baidu++;
             validDot = 1;
             start = j;
             nowlen = 0;
@@ -159,14 +169,9 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
             asciich = 0;
         }
 
-        //printf("\033[0;32m  nowlen=%d \033[0m\n\n", nowlen);
-        if (nowlen && nowlen > maxlen_baidu )
-            maxlen_baidu = nowlen;
-
         if ( nowlen == len ) {
             //printf("\033[0;32mAdd Enter\033[0m\n");
             storage[++k] = '\n';
-            lines_baidu++;
             nowlen = 0;
 
             if ( addSpace ) {
@@ -183,7 +188,96 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
     if ( copy )
         strcpy(source, storage);
-
-    if ( maxlen_baidu > 28 )
-        fprintf(stderr, "\033[0;31m maxlen_baidu=%d 超过预期值\033[0m\n\n", maxlen_baidu);
 }
+
+int getLinesOfGoogleTrans ( int *index ) {
+
+    int lines = 0;
+
+    /*长度小于30会显示原始输入，lines加1*/
+    if ( strlen(&shmaddr_google[ACTUALSTART]) < 30 ) {
+
+        lines++;
+
+        /* 无翻译结果*/
+        if ( index[0] == 0 )
+            return ++lines;
+    }
+
+    char *p = NULL;
+
+    /* 显示时多了空行，index有值代表含有对应的结果，
+     * 总共就是两行，lines+2*/
+    for ( int i=0; i<3; i++ ) {
+
+        /* index只有两个值，一个不为0，说明含对应数据，算上空行lines要自增*/
+        if ( i < 2 && index[i] > 0 )
+            lines++;
+
+        p = google_result[i];
+        while ( *p ) {
+            if ( *p++ == '\n' )
+                lines++;
+        }
+    }
+
+    return lines;
+}
+
+
+void separateGoogleDataSetWinSize ( int *index ) {
+
+    if ( index[0] == 0 ) {
+        printf("\033[0;31m索引首值为0，无数据(Google in separateGoogleDataSetWinSize) \033[0m\n");
+        return;
+    }
+
+    /* TODO:原来是全局变量*/
+    int lines = 0;
+    int maxlen = 0;
+
+    /*主要完成步骤:加入回车符使单行句子不至于太长*/
+    if ( shmaddr_google[0]  != ERRCHAR ) {
+
+        int ret = 0;
+
+        char *p[3];
+        p[0] = &shmaddr_google[ACTUALSTART];
+        p[1] = &shmaddr_google[index[0]];
+        p[2] = &shmaddr_google[index[1]];
+
+        /* TODO:上下代码位置调换过，出错回来这里*/
+        adjustStr(p, 28, google_result);
+
+        /* 统计谷歌翻译结果行数*/
+        lines = getLinesOfGoogleTrans ( index );
+        
+        for ( int i=0; i<3; i++ )
+            if ( ( ret = countCharNums ( google_result[i] ) ) > maxlen )
+                maxlen = ret;
+
+        if ( maxlen > 28 )
+            maxlen = 28;
+
+        printf("\033[0;33m(谷歌数据分离窗口调整) maxlen=%d lines=%d\033[0m\n\n", maxlen,lines);
+
+        /*存于全局变量*/
+        gw.width = 15 * maxlen;
+        gw.height = lines * 28;
+
+        for ( int i=0; i<3; i++ )
+            printf("\033[0;33m(separateGoogleDataSetWinSize) %s \033[0m\n", google_result[i]);
+
+        printf("\033[0;33mgw.width=%f, gw.height=%f \033[0m\n", gw.width, gw.height);
+    }
+    else  {
+        shmaddr_google[0] = CLEAR;
+        strcpy(google_result[0], "翻译超时或出现其他错误|");
+        lines = 2;
+
+        gw.width = 250;
+        gw.height = gw.width * 0.618;
+        maxlen = 12;
+    }
+}
+
