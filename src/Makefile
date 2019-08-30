@@ -6,7 +6,7 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  notify.o detectMouse.o shmCreate.o newWindow.o\
 		  separateData.o cleanup.o adjustStr.o Main.o\
 		  countLines.o countCharNums.o adjustStrForScrolledWin.o\
-		  audioPlayer.o
+		  audioPlayer.o background.o switchButton.o
 
 MONNITOR = StranMonitor.o
 
