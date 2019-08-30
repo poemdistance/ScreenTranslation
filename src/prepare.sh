@@ -17,7 +17,7 @@ do
 done
 
 #修改资源文件路径以适应当前用户
-needChangFile=("./newWindow.c" "./GuiEntrance.c" "audioPlayer.c" "Mstran.desktop")
+needChangFile=("background.c" "GuiEntrance.c" "audioPlayer.c" "Mstran.desktop" "switchButton.c" "debug.c")
 len=${#needChangFile[@]}-1
 src="/home/rease"
 dst=$HOME

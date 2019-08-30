@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         if ( CanNewWin == 0 )
             continue;
 
-        pthread_create(&t3, NULL, newWindow, NULL);
+        pthread_create(&t3, NULL, newNormalWindow, NULL);
         pthread_join(t3, &thread_ret);
 
         CanNewWin = 0;
