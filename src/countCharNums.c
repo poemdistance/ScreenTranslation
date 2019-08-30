@@ -2,12 +2,12 @@
 
 int countCharNums (char *source) {
 
+    printf("\033[0;32mIn countCharNums \033[0m\n");
+
     char *p = source;
     
     int asciinum = 0;
     int nums = 0;
-
-    printf("\033[0;32m (countCharNums)%s\033[0m\n", p);
 
     while ( *p ) {
 
@@ -31,6 +31,8 @@ int countCharNums (char *source) {
 
         p++;
     }
+
+    printf("\033[0;32mout\033[0m\n");
 
     return nums;
 }
