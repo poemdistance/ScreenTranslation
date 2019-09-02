@@ -20,6 +20,7 @@ char *lastText = NULL;
 int CanNewEntrance;
 
 extern char *shmaddr_google;
+extern char *shmaddr_baidu;
 extern int action;
 
 void send_Ctrl_Shift_C() {
@@ -177,7 +178,12 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     strcpy(lastText, text);
 
-    memset(shmaddr_google, '\0', SHMSIZE);
+    /* 只能减小结果获取错误的概率，如果两边翻译都不够快，清零发生在百度谷歌翻译写1之前，
+     * 这句是没有意义的，之后点开翻译结果界面获取到的就会有上一次点击文本的内容，不过
+     * 一般按切换按钮后是可以重新加载出想要的结果的*/
+    memset(shmaddr_google, '0', 10);
+    memset(shmaddr_baidu, '0', 10);
+
     writePipe(text, fd[0]);
     writePipe(text, fd[1]);
 
