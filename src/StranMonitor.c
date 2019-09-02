@@ -107,7 +107,7 @@ main(int argc, char **argv)
                 if ( count++ == 3 ) {
 
                     printf("\033[0;31m失败尝试次数过多, 请检测网络是否正常再重新运行监控程序 \033[0m\n");
-                    system ( "bash ~/.stran/notification.sh" );
+                    system ( "bash ~/.stran/errNotification.sh" );
                     sigkill();
                 }
 
