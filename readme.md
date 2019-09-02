@@ -24,7 +24,24 @@
  
  <br> 
 
-# 二. 程序编译安装
+
+# 二. 运行效果图示 
+* [x] 终端演示<br><br>
+![gif](./gif_pic/1.gif) <br><br>
+
+* [x] 浏览器演示
+
+![gif](./gif_pic/2.gif) 
+
+<br>
+
+# 三. 程序目前已知问题
+
+- [ ] **程序只支持Xorg的桌面，并且系统必须禁用Wayland。** 
+
+<br> 
+
+# 四. 程序编译安装
 1. 先将源码克隆到本地 
 
         $ git clone https://github.com/poemdistance/ScreenTranslation --recursive
@@ -49,7 +66,7 @@
           $  sudo pacman -S gtk3  libxtst libx11  xdotool    
 
   
-4. 终端执行命令完成项目安装 (**以下可用 `bash prepare.sh` `make && make install` 两个命令代替,如果这个命令执行后未能正常运行，尝试以下具体步骤**) <br>
+4. 终端执行命令完成项目安装 (**以下可用 `bash prepare.sh` `make && make install` 两个命令代替,如果这个命令执行后未能正常运行，尝试以下具体步骤, <font color='red'>注意安装好后必须重启</font>**) <br>
    
    * 复制资源文件 
 
@@ -96,10 +113,38 @@
 
          $ sudo ./setup.py install 
 
-                      
+# 五. 更新上游项目并安装
+
+## 1. 项目更新 
+
+步骤一.
+
+          #注意这条命令自始至终只需要在项目中执行一次
+
+          git remote add upstream https://github.com/poemdistance/ScreenTranslation  
+
+步骤二.
+          
+          #注意以下命令会覆盖掉本地已有的修改
+
+          git fetch upstream
+          git checkout master
+          git reset --hard upstream/master
+
+步骤三.
+
+          git submodule foreach git pull origin master 
+
+## 2. 项目安装
+
+步骤四. <编译/安装项目> 
+
+        参照上面的安装步骤 2  4  5
+
+
 <br> 
 
-# 三. 程序运行与停止
+# 六. 程序运行与停止
 1. 运行**先决条件** <br>
      * **安装这个项目 https://github.com/poemdistance/google-translate 以及这个项目 https://github.com/poemdistance/baidu-translate 上的在线翻译程序**，其安装使用等相关事项见项目根目录的README. 确保此翻译程序能正常运行。另外，一般情况下，谷歌翻译爬虫项目会跟屏幕取词翻译同步更新，想要更新任何一个的话，两边都git pull一下。<br><br>
      * **NOTE**: **电脑如果安装了wayland，需要禁用**，不然终端中无法正常使用xdotool,方法如下：<br>
@@ -162,23 +207,8 @@
 
 <br> 
 
-# 四. 运行效果图示 
-* [x] 终端演示，用双击以及区域选择进行取词翻译<br><br>
-![gif](./gif_pic/1.gif) <br><br>
 
-* [x] 浏览器演示，用三击取段，单击取词以及区域选择取句翻译
-
-![gif](./gif_pic/2.gif) 
-
-<br>
-
-# 五. 程序目前已知问题
-
-- [ ] **程序只支持Xorg的桌面，并且系统必须禁用Wayland。** 
-
-<br> 
-
-# 六. 程序运行异常问题
+# 七. 程序运行异常问题
 
 1. <del>如果程序提取到用鼠标获取的结果一直是同一个或者为空，但是用键盘Ctrl-c操作能够获取到对应新的文本,换而言之就是鼠标取词不起作用，这说明打开的键盘设备文件是错的，模拟发送的Ctrl-c不会被捕捉到，此时可以用如下命令得到真正的键盘设备: <br> </del>
     
@@ -212,7 +242,7 @@
 
     * **方法二: 使用sudo执行此程序**: <br> 
      
-           sudo stran 
+           sudo mstran 
 
          中途测试过程中以root用户或者说sudo执行时Xdisplay发生过 No protocol specified的错误，所以此方法不一定奏效，但也可能是当时系统忘记关闭Wayland导致的。
 
