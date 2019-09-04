@@ -371,6 +371,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         if ( gw.width <= bw.width && gw.height <= bw.height) {
 
             /* 原谷歌scrolled window小于百度的，窗口没变，但scrolled window要随之扩大*/
+            gtk_window_resize ( (GtkWindow*)((WinData*)arg)->window, bw.width, bw.height );
             gtk_widget_set_size_request ( ((WinData*)arg)->scroll, bw.width, bw.height );
             gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, bw.width-50, bw.height-45);
             gtk_widget_show_all(((WinData*)arg)->window);
@@ -405,6 +406,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         if ( gw.width >= bw.width && gw.height >= bw.height) {
 
             printf("\033[0;34m百度翻译窗口小于谷歌，可不必调整 \033[0m\n");
+            gtk_window_resize ( (GtkWindow*)((WinData*)arg)->window, gw.width, gw.height );
             gtk_widget_set_size_request ( ((WinData*)arg)->scroll, gw.width, gw.height );
             gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, gw.width-50, gw.height-45);
             gtk_widget_show_all(((WinData*)arg)->window);
@@ -732,6 +734,7 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
     //printf("\033[0;35m当前窗口大小 width=%d height=%d \033[0m\n", width, height);
     //printf("\033[0;35m上一次窗口大小 width=%d height=%d \033[0m\n", lastwidth, lastheight);
 
+    gtk_window_resize ( GTK_WINDOW(((WinData*)data)->window), width, height );
     gtk_widget_set_size_request ( (GtkWidget*)((WinData*)data)->scroll,  width, height);
 
     /* mark*/
@@ -762,6 +765,7 @@ void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpoint
     lastwidth = width;
     lastheight = height;
 
+    gtk_window_resize ( GTK_WINDOW(((WinData*)wd)->window), width, height );
     gtk_widget_set_size_request ( (GtkWidget*)((WinData*)wd)->scroll,  width, height);
     gtk_layout_move ( (GtkLayout*)((WinData*)wd)->layout, ((WinData*)wd)->button, width-50, height-45 );
     gtk_widget_queue_draw ( window );
