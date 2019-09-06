@@ -87,7 +87,7 @@ int getClipboard(char *text)
      * it doesn't exists
      */
     //sel = XInternAtom(dpy, "CLIPBOARD", False);
-    sel = XInternAtom(dpy, "CLIPBOARD", False);
+    sel = XInternAtom(dpy, "PRIMARY", False);
     utf8 = XInternAtom(dpy, "UTF8_STRING", False);
 
     /*
