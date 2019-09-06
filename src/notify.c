@@ -114,6 +114,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     fprintf(stdout, "Focus window application: %s\n", appName);
 
+#if 0
     if ( isApp("screenShotApp", appName) == 1 )
         return;
 
@@ -125,15 +126,14 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     if ( isApp("terminal", appName) == 1) {
         printf("send key ctrl-shift-c\n");
         //simulateKey(fd_key, Ctrl_Shift_C, 3);
-        send_Ctrl_Shift_C();
+        //send_Ctrl_Shift_C();
         printf("Send key successful\n");
     }
     else {
-        printf("send key ctrl-c\n");
         //simulateKey(fd_key, Ctrl_C, 2);
-        send_Ctrl_C();
-        printf("Send key successful\n");
+        //send_Ctrl_C();
     }
+#endif
 
     delay();
 
@@ -155,18 +155,6 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
             return ;
         }
 
-        if ( strcmp(lastText, text ) == 0 )
-        {
-            *text = '0';
-            action = 0;
-            //static int i = 0;
-            //printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
-            printf("\033[0;34mSame text \033[0m\n");
-            memset(*history, 0, sizeof(*history));
-            CanNewEntrance = 0;
-            return ;
-        }
-
         if ( strcmp(lastText, text ) != 0 )
             break;
         else
@@ -174,6 +162,20 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
             trytimes++;
             continue;
         }
+    }
+
+    if ( strcmp(lastText, text ) == 0 )
+    {
+        *text = '0';
+        action = 0;
+        //static int i = 0;
+        //printf("same text %d %d %d %d %d\n", i++, (*history)[0], (*history)[1],(*history)[2],(*history)[3]);
+        printf("\033[0;34mSame text \033[0m\n");
+        if ( strlen(text) < 100)
+            printf("\033[0;31m%s\033[0m\n", text);
+        memset(*history, 0, sizeof(*history));
+        CanNewEntrance = 0;
+        return ;
     }
 
     strcpy(lastText, text);
