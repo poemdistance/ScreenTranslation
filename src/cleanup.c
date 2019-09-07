@@ -2,24 +2,28 @@
 
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
+extern char *shmaddr_selection;
 
 extern int shmid_google;
 extern int shmid_baidu;
+extern int shmid_selection;
 
 extern char *baidu_result[BAIDUSIZE];
 extern char *google_result[GOOGLESIZE];
 
 extern int mousefd;
 
-extern char *lastText;
 extern char *text;
 extern int fd_key;
 
 extern pid_t baidu_translate_pid;
 extern pid_t google_translate_pid;
+extern pid_t check_selectionEvent_pid;
 
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
+
+extern Display *display;
 
 int hadCleanUp = 0;
 
@@ -38,9 +42,6 @@ void quit() {
 
     if ( text != NULL )
         free(text);
-
-    if ( lastText != NULL )
-        free(lastText);
 
     close(mousefd);
     close(fd_key);
@@ -68,6 +69,14 @@ void quit() {
     else
         printf("\033[0;32mremove shared memory identifier successful (baidu)\033[0m\n");
 
+    /* 清除与共享内存*/
+    if ( shmdt(shmaddr_selection) < 0)
+        err_exit("shmdt error");
+
+    if (shmctl(shmid_selection, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error");
+    else
+        printf("\033[0;32mremove shared memory identifier successful (selection)\033[0m\n");
 
 
     if ( baidu_result[0] != NULL)
@@ -83,6 +92,16 @@ void quit() {
         kill ( baidu_translate_pid, SIGKILL );
     if ( GOOGLE_TRANS_EXIT_FLAG != 1 )
         kill ( google_translate_pid, SIGKILL );
+
+    kill ( check_selectionEvent_pid, SIGKILL );
+
+    /* 进程所在文件也进行了清理，判断一下防止多次释放,
+     * (释放后display会被置为空)*/
+    if ( display )
+        XCloseDisplay(display);
+
+    /* 手动再赋值空，保险一点*/
+    display = NULL;
 
     printf("\n");
     exit(0);
