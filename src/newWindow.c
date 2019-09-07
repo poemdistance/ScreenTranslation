@@ -1035,6 +1035,7 @@ int  newScrolledWin() {
         height = 900;
 
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
     gtk_window_set_default_size (GTK_WINDOW(window), width, height);
     gtk_window_set_title (GTK_WINDOW(window), "STRAN");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_MOUSE);
