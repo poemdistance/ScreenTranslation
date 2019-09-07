@@ -3,6 +3,7 @@
 #include <X11/extensions/Xfixes.h>
 
 extern char *shmaddr_selection;
+extern int action;
 
 void WatchSelection(Display *display, const char *bufname);
 
@@ -60,7 +61,18 @@ void WatchSelection(Display *display, const char *bufname)
     while ( 1 ) {
 
         XNextEvent ( display, &event );
-        shmaddr_selection[0] = '1';
-        printf("selection改变， 写入标志1\n");
+
+        if (event.type == event_base + XFixesSelectionNotify &&
+                ((XFixesSelectionNotifyEvent*)&event)->selection == bufid) {
+
+            shmaddr_selection[0] = '1';
+            printf("\033[0;31mSelection change: write finish flag: 1 \033[0m\n");
+        }
+
+        if ( action == CLEAR ) {
+            shmaddr_selection[0] = '0';
+            printf("\033[0;31mAction is clean, set flag to 0 \033[0m\n");
+        }
+
     }
 }
