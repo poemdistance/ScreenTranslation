@@ -33,7 +33,7 @@
 
 * [x] 浏览器演示
 
-![gif](./gif_pic/2.gif) 
+![gif](./gif_pic/peek.gif) 
 
 <br>
 
