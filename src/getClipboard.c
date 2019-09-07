@@ -97,7 +97,7 @@ int getClipboard(char *text)
 
     if (owner == None)
     {
-        fprintf(stderr,"'CLIPBOARD' has no owner\n");
+        fprintf(stderr,"'PRIMARY' has no owner\n");
         return 1;
     }
 

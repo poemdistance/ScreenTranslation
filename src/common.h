@@ -26,7 +26,6 @@
 #include <X11/keysym.h>
 #include <X11/extensions/XTest.h>
 
-#define NOTACTIONTEXT ("NOTACTIONTEXT")
 #define TEXTSIZE (1024*1024)
 #define SINGLECLICK (1)
 #define DOUBLECLICK (2)
@@ -43,25 +42,19 @@
 #define LINELEN (28)
 
 typedef struct Google {
-
     double width;
     double height;
 }Google;
 
 Google gw;
 
-
 typedef struct Baidu {
-
     double width;
     double height;
-
     char *audio[2];
-
 }Baidu;
 
 Baidu bw;
-
 
 typedef struct WinData{
 
@@ -111,13 +104,12 @@ void *GuiEntrance(void *arg);
 void *DetectMouse(void *arg);
 int shared_memory_for_google_translate(char **addr);
 int shared_memory_for_baidu_translate(char **addr);
+int shared_memory_for_selection(char **addr);
 void *newNormalWindow(void * arg);
 void adjustStr(char *p[3], int len, char *storage[3]);
 int adjustStrForScrolledWin(int len, char *source);
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
 
-void * 
-sendToClipboard( void *arg );
 void separateDataForBaidu(int *index, int len);
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
 int countLines ( int len, char *source );
@@ -190,5 +182,7 @@ int getMaxLenOfBaiduTrans() ;
 int getLinesOfBaiduTrans () ;
 
 /* End For newWindow.c*/
+
+void checkSelectionChanged() ;
 
 #endif
