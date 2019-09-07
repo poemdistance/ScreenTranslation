@@ -7,6 +7,9 @@
  *
  * 3. 重定向子进程标准输入为管道读取端，使exec执行的python翻译
  *    程序直接从管道中读取翻译源数据
+ *
+ * 4. 第3个子进程用于检测Primary Selection变化，以排除窗口拖动
+ *    和重设窗口大小值事件, 防止翻译入口图标误弹
  * */
 
 
@@ -19,11 +22,10 @@ extern int GOOGLE_TRANS_EXIT_FLAG;
 
 pid_t baidu_translate_pid;
 pid_t google_translate_pid;
+pid_t check_selectionEvent_pid;
 
 int mousefd;
-
 extern int action;
-
 
 void *DetectMouse(void *arg) {
 
@@ -42,6 +44,7 @@ void *DetectMouse(void *arg) {
     int fd_google[2], fd_baidu[2], fd[2];
     int status;
     pid_t pid_google = -1, pid_baidu = -1;
+    pid_t retpid;
 
     if ( (status = pipe(fd_google)) != 0 ) {
         fprintf(stderr, "create pipe fail (google)\n");
@@ -75,6 +78,23 @@ void *DetectMouse(void *arg) {
 
     if ( pid_google > 0 ) {
 
+        if ( ( retpid = fork() ) == -1) 
+            err_exit ("Fork check_selectionEvent failed");
+
+        if ( retpid == 0)
+        {
+            pid_google = -1;
+
+            checkSelectionChanged();
+        }
+        else {
+            /* 用于后期退出时清理进程*/
+            check_selectionEvent_pid = retpid;
+        }
+    }
+
+    if ( pid_google > 0 ) {
+
         google_translate_pid = pid_google;
 
         /*父进程:关闭读端口*/
@@ -84,17 +104,13 @@ void *DetectMouse(void *arg) {
         fd[0] = fd_google[1];
         fd[1] = fd_baidu[1];
 
-        //printf("百度翻译提前建立连接\n");
-        //char tmp[] = "@@@@@\n";
-        //writePipe(tmp, fd_baidu[1]);
-
         sa.sa_handler = handler;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_RESTART;
         if ( sigaction(SIGCHLD, &sa, NULL) == -1) {
             printf("\033[0;31msigaction exec failed (DetectMouse.c -> SIGCHLD) \033[0m\n");
             perror("sigaction");
-            exit(1);
+            quit();
         }
 
         // 打开鼠标设备
@@ -113,7 +129,7 @@ void *DetectMouse(void *arg) {
 
             /*超时时间*/
             tv.tv_sec = 0;
-            tv.tv_usec = 5000000;
+            tv.tv_usec = 2000000;
 
             FD_ZERO( &readfds );
             FD_SET( mousefd, &readfds );
