@@ -532,8 +532,15 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
         printf("\033[0;33mgoogle_result[%d]=%s\033[0m\n", i, google_result[i]);
         if ( google_result[i][0] != '\0') {
 
-            gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
-                    "green-font", "gray_background", "bold-style", "Uneditable", "font-size-11", NULL);
+            if ( i == 0 )
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
+                        "blue-font", "gray_background", "bold-style", "Uneditable", "font-size-11", NULL);
+            else if ( i == 1 )
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
+                        "green-font", "gray_background", "bold-style", "Uneditable", "font-size-11", NULL);
+            else if ( i == 2 )
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
+                        "brown-font", "gray_background", "bold-style", "Uneditable", "font-size-11", NULL);
 
             gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         }
@@ -678,8 +685,9 @@ void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter) {
     gtk_text_buffer_create_tag(buf, "black-font", "foreground", "#000000", NULL);
     gtk_text_buffer_create_tag(buf, "yellow-font", "foreground", "#c8ab02", NULL);
     gtk_text_buffer_create_tag(buf, "blue-font", "foreground", "#00aaff", NULL);
-    gtk_text_buffer_create_tag(buf, "brown-font", "foreground", "#aaaa7f", NULL);
+    gtk_text_buffer_create_tag(buf, "brown-font", "foreground", "#606415", NULL);
     gtk_text_buffer_create_tag(buf, "green-font", "foreground", "#216459", NULL);
+    gtk_text_buffer_create_tag(buf, "light-yellow-font", "foreground", "#a3aa89", NULL);
     gtk_text_buffer_create_tag(buf, "bold-style", "weight", PANGO_WEIGHT_BOLD, NULL);
     gtk_text_buffer_create_tag(buf, "heavy-font", "weight", PANGO_WEIGHT_HEAVY, NULL);
     gtk_text_buffer_create_tag(buf, "Uneditable", "editable", FALSE, NULL);
