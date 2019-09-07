@@ -20,7 +20,7 @@ extern char *shmaddr_baidu;
 extern char audio_en[512];
 extern char audio_uk[512];
 
-int HadDestroied;
+int HadDestroied = 1;
 static int aboveWindow = 0;
 
 int quit_entry(void *arg);
@@ -37,8 +37,8 @@ void *GuiEntrance(void *arg) {
     while(1) {
 
         if (CanNewEntrance) {
-            printf("\nDetect mouse action, creating icon entry\
-                    CanNewEntrance = %d action=%d\n", CanNewEntrance, action);
+            printf("\nDetect mouse action, creating icon entry "
+                    "CanNewEntrance = %d action=%d\n", CanNewEntrance, action);
 
             if ( shmaddr_google[0] == EMPTYFLAG) {
                 printf("空字符串,返回继续等待...\n");
@@ -50,7 +50,7 @@ void *GuiEntrance(void *arg) {
             }
             break;
         }
-        usleep(200000);
+        usleep(100000);
     }
 
     GtkWidget *window;
@@ -126,6 +126,8 @@ void setNewWinFlag(GtkWidget *button, GtkWidget *window) {
         CanNewWin = 0;
     else 
         CanNewWin = 1;
+
+    HadDestroied = 1;
 
     /*退出时注意注销超时回调函数，否则下一次创建的
      * 入口图标可能刚好创建就超时导致不显示*/
