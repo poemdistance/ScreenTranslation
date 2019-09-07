@@ -6,6 +6,7 @@
 
 char *shmaddr_google;
 char *shmaddr_baidu;
+char *shmaddr_selection;
 
 int action = 0;
 int timeout_id_1;
@@ -14,6 +15,7 @@ int CanNewWin = 0;
 
 int shmid_google;
 int shmid_baidu;
+int shmid_selection;
 
 int main(int argc, char **argv)
 {
@@ -22,13 +24,15 @@ int main(int argc, char **argv)
 
     char *addr_google;
     char *addr_baidu;
+    char *addr_selection;
 
     shmid_google = shared_memory_for_google_translate(&addr_google);
     shmid_baidu = shared_memory_for_baidu_translate(&addr_baidu);
-
+    shmid_selection = shared_memory_for_selection(&addr_selection);
 
     shmaddr_google = addr_google;
     shmaddr_baidu = addr_baidu;
+    shmaddr_selection = addr_selection;
 
     memset(shmaddr_google, '0', (size_t)10);
     memset(shmaddr_baidu, '0', (size_t)10);
