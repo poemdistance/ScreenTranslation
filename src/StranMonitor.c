@@ -39,15 +39,8 @@ void ctrl_c() {
     
     CTRL_C_FLAG = 1;
 
-    //char buf[20] = { '\0' };
-    //char cmd[100] = "kill -15 ";
 
-    //itoa ( needWait, buf );
-    //strcat ( cmd, buf );
-
-    ///* equal to: kill(pid, SIGTERM); */
-    //system( cmd );
-
+    /* kill 15*/
     kill( needWait, SIGTERM );
 
     usleep(1000000);
