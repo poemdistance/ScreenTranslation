@@ -23,6 +23,8 @@ extern char *shmaddr_baidu;
 extern char *shmaddr_selection;
 extern int action;
 
+extern int HadDestroied;
+
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     char appName[100];
@@ -107,10 +109,21 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     writePipe(text, fd[0]);
     writePipe(text, fd[1]);
 
-    /*管道写完成，可以创建入口图标了*/
-    //if ( action == DOUBLECLICK || action == SLIDE )
-    //if ( thirdClickTmp != 1 )
-    CanNewEntrance = 1;
+    /* 情况1: 双击单词后再点击了一次形成的三击选段，此时的3击不能再弹出入口图标
+     * 情况2: 从空白处直接3击取段，此时应弹出入口图标
+     *
+     * 总结: 只要入口图标已经创建就不应该弹出，反之反之, HadDestroied就是入口图标
+     *       是否为销毁状态的标志位, 只要是销毁状态，应该弹出
+     */
+    if ( HadDestroied ) {
+
+        CanNewEntrance = 1;
+        printf("\033[0;35mCanNewEntrance flag set to 1 \033[0m\n");
+    }
+    else {
+
+        printf("\033[0;35mCanNewEntrance flag is 0 \033[0m\n");
+    }
 
     /*清除鼠标记录*/
     memset(*history, 0, sizeof(*history));
