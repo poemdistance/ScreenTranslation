@@ -16,6 +16,7 @@
 #include "common.h"
 
 extern char *shmaddr;
+extern char *shmaddr_selection;
 extern int InNewWin;
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
@@ -184,6 +185,12 @@ void *DetectMouse(void *arg) {
             /*没有按下按键并活动鼠标,标志releaseButton=1*/
             if ( history[m] == 0 && history[n] == 0 ) {
                 releaseButton = 1;
+
+                /* 由于拼音打字和复制操作也会触发selection changed event
+                 * 但是一般拖动窗口等操作之前都是移动鼠标，并且没有按下任何
+                 * 按键，正好可以将剪贴板变化的事件标志给清空*/
+                shmaddr_selection[0] = '0';
+
                 action = 0;
             }
 
