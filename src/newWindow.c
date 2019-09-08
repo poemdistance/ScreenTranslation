@@ -81,9 +81,11 @@ void *newNormalWindow(void * arg) {
 
     wd.image =  NULL;
     wd.oldImage = NULL;
+    wd.view = view;
     wd.window = newWin;
     wd.layout = layout;
     wd.srcBackgroundImage = NULL;
+    wd.gdkwin = NULL;
 
     /* 这个获取背景图片并适应窗口的代码段放在分离翻译数据之前耗的时间才有
      * 意义，因为图片加载虽然花了一定时间，但总的还是会比翻译结果获取成功
@@ -595,7 +597,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
             bw.audio[1] = audio_uk;
 
             ((WinData*)arg)->volume = insertVolumeIcon(\
-                ((WinData*)arg)->window, ((WinData*)arg)->layout);
+                ((WinData*)arg)->window, ((WinData*)arg)->layout, ((WinData*)arg));
         }
         else {
 
