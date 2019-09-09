@@ -705,10 +705,12 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
                             -1, "blue-font", "gray_background", "heavy-font", \
                             "font-size-11", "letter-spacing", NULL);
 
-                } else
+                } else {
+
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
                             -1, "green-font", "gray_background", "heavy-font", \
                             "font-size-11", "letter-spacing", NULL);
+                }
 
             }
 
@@ -751,7 +753,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
         /* 翻译结果检测为空*/
         //else if ( i == 0  && PhoneticFlag == 0 && NumZhTranFlag==0
-        //&& NumEnTranFlag == 0 && OtherWordFormFlag == 0){
+        /*&& NumEnTranFlag == 0 && OtherWordFormFlag == 0) */
 
         /* 这里不要再用上面的用标志位检测，存在一种情况，翻译结果没复制过来，上面的结果插入语句无法执行
          * 刚好到这里的时候标志位又被刚好翻译结果写入完成的python端修改，导致重定向失败，这里的所有逻辑
@@ -781,534 +783,534 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
     gint lines = gtk_text_buffer_get_line_count ( buf );
     printf("\033[0;31mgtk text buffer lines = %d \033[0m\n", lines);
+}
+
+void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter) {
+
+    /*注意属性值设置正确，不然桌面分分钟崩溃:(*/
+
+    gtk_text_buffer_create_tag(buf, "black-font", "foreground", "#000000", NULL);
+    gtk_text_buffer_create_tag(buf, "yellow-font", "foreground", "#c8ab02", NULL);
+    gtk_text_buffer_create_tag(buf, "blue-font", "foreground", "#00aaff", NULL);
+    gtk_text_buffer_create_tag(buf, "brown-font", "foreground", "#606415", NULL);
+    gtk_text_buffer_create_tag(buf, "green-font", "foreground", "#216459", NULL);
+    gtk_text_buffer_create_tag(buf, "light-yellow-font", "foreground", "#a3aa89", NULL);
+    gtk_text_buffer_create_tag(buf, "bold-style", "weight", PANGO_WEIGHT_BOLD, NULL);
+    gtk_text_buffer_create_tag(buf, "heavy-font", "weight", PANGO_WEIGHT_HEAVY, NULL);
+    //gtk_text_buffer_create_tag(buf,  "Uneditable" ,"editable", FALSE, NULL);
+    gtk_text_buffer_create_tag(buf, "font-size-10", "font", "10", NULL );
+    gtk_text_buffer_create_tag(buf, "font-size-11", "font", "11", NULL );
+    gtk_text_buffer_create_tag(buf, "font-size-12", "font", "12", NULL );
+    gtk_text_buffer_create_tag(buf, "font-size-13", "font", "13", NULL );
+    gtk_text_buffer_create_tag(buf, "font-size-14", "font", "14", NULL );
+    gtk_text_buffer_create_tag(buf, "font-size-15", "font", "15", NULL );
+    gtk_text_buffer_create_tag(buf, "font-size-17", "font", "17", NULL );
+    gtk_text_buffer_create_tag(buf, "gray_background", "background", "#ffffff", NULL);
+    gtk_text_buffer_create_tag(buf, "letter-spacing", "letter-spacing", 100, NULL);
+    gtk_text_buffer_create_tag(buf, "underline", "underline", PANGO_UNDERLINE_SINGLE, NULL);
+
+    gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
+}
+
+void printDebugInfo() {
+
+    printf("\033[0;35m(In printDebugInfo) \033[0m\n");
+
+    printf("\n\033[0;36mFinish标志位: %c\033[0m", shmaddr_baidu[0]);
+    printf("\n\033[0;36mPhonetic标志位: %c\033[0m", shmaddr_baidu[1]);
+    printf("\n\033[0;36mNumbers of zhTrans标志位: %c\033[0m", shmaddr_baidu[2]);
+    printf("\n\033[0;36mNumbers of enTrans标志位: %c\033[0m", shmaddr_baidu[3]);
+    printf("\n\033[0;36mOther forms of word标志位: %c\033[0m", shmaddr_baidu[4]);
+    printf("\n\033[0;36mNumbers of audio links标志位: %c\033[0m\n", shmaddr_baidu[5]);
+
+    printf("\n\033[0;36m百度翻译结果: %s\n\n\033[0m", &shmaddr_baidu[ACTUALSTART]);
+    printf("\033[0;33m谷歌翻译结果: %s\033[0m\n\n", &shmaddr_google[ACTUALSTART]);
+    printf("\033[0;35m(out printDebugInfo) \033[0m\n");
+}
+
+/*当窗口大小被鼠标改变时进行窗口重绘以及自动调整switch button位置*/
+void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer data ) {
+
+    //printf("\033[0;35m进入窗口控件同步函数 \033[0m\n");
+
+    gint width, height;
+    static unsigned int lastwidth = 0, lastheight = 0;
+
+    gtk_window_get_size ( (GtkWindow*)window, &width, &height );
+
+    if ( ((WinData*)data)->width > width ||  ((WinData*)data)->height > height ) {
+
+        width  = ((WinData*)data)->width ;
+        height  = ((WinData*)data)->height ;
     }
 
-    void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter) {
+    //printf("\033[0;35m当前窗口大小 width=%d height=%d \033[0m\n", width, height);
+    //printf("\033[0;35m上一次窗口大小 width=%d height=%d \033[0m\n", lastwidth, lastheight);
 
-        /*注意属性值设置正确，不然桌面分分钟崩溃:(*/
+    /* 窗口大小未改变不用重新调整布局,直接返回*/
+    if ( lastwidth == width && lastheight == height )
+        return;
 
-        gtk_text_buffer_create_tag(buf, "black-font", "foreground", "#000000", NULL);
-        gtk_text_buffer_create_tag(buf, "yellow-font", "foreground", "#c8ab02", NULL);
-        gtk_text_buffer_create_tag(buf, "blue-font", "foreground", "#00aaff", NULL);
-        gtk_text_buffer_create_tag(buf, "brown-font", "foreground", "#606415", NULL);
-        gtk_text_buffer_create_tag(buf, "green-font", "foreground", "#216459", NULL);
-        gtk_text_buffer_create_tag(buf, "light-yellow-font", "foreground", "#a3aa89", NULL);
-        gtk_text_buffer_create_tag(buf, "bold-style", "weight", PANGO_WEIGHT_BOLD, NULL);
-        gtk_text_buffer_create_tag(buf, "heavy-font", "weight", PANGO_WEIGHT_HEAVY, NULL);
-        //gtk_text_buffer_create_tag(buf,  "Uneditable" ,"editable", FALSE, NULL);
-        gtk_text_buffer_create_tag(buf, "font-size-10", "font", "10", NULL );
-        gtk_text_buffer_create_tag(buf, "font-size-11", "font", "11", NULL );
-        gtk_text_buffer_create_tag(buf, "font-size-12", "font", "12", NULL );
-        gtk_text_buffer_create_tag(buf, "font-size-13", "font", "13", NULL );
-        gtk_text_buffer_create_tag(buf, "font-size-14", "font", "14", NULL );
-        gtk_text_buffer_create_tag(buf, "font-size-15", "font", "15", NULL );
-        gtk_text_buffer_create_tag(buf, "font-size-17", "font", "17", NULL );
-        gtk_text_buffer_create_tag(buf, "gray_background", "background", "#ffffff", NULL);
-        gtk_text_buffer_create_tag(buf, "letter-spacing", "letter-spacing", 100, NULL);
-        gtk_text_buffer_create_tag(buf, "underline", "underline", PANGO_UNDERLINE_SINGLE, NULL);
+    lastwidth = width;
+    lastheight = height;
 
-        gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
-    }
+    //printf("\033[0;35m同步普通窗口相关控件 \033[0m\n");
 
-    void printDebugInfo() {
+    gtk_window_resize ( GTK_WINDOW(((WinData*)data)->window), width, height );
+    gtk_widget_set_size_request ( (GtkWidget*)((WinData*)data)->scroll,  width, height);
 
-        printf("\033[0;35m(In printDebugInfo) \033[0m\n");
+    /* Unnecessary*/
+    gtk_widget_queue_draw ( ((WinData*)data)->button );
+    gtk_widget_show (  ((WinData*)data)->button  );
 
-        printf("\n\033[0;36mFinish标志位: %c\033[0m", shmaddr_baidu[0]);
-        printf("\n\033[0;36mPhonetic标志位: %c\033[0m", shmaddr_baidu[1]);
-        printf("\n\033[0;36mNumbers of zhTrans标志位: %c\033[0m", shmaddr_baidu[2]);
-        printf("\n\033[0;36mNumbers of enTrans标志位: %c\033[0m", shmaddr_baidu[3]);
-        printf("\n\033[0;36mOther forms of word标志位: %c\033[0m", shmaddr_baidu[4]);
-        printf("\n\033[0;36mNumbers of audio links标志位: %c\033[0m\n", shmaddr_baidu[5]);
+    gtk_layout_move ( (GtkLayout*)((WinData*)data)->layout, ((WinData*)data)->button, \
+            width-50, height-45 );
 
-        printf("\n\033[0;36m百度翻译结果: %s\n\n\033[0m", &shmaddr_baidu[ACTUALSTART]);
-        printf("\033[0;33m谷歌翻译结果: %s\033[0m\n\n", &shmaddr_google[ACTUALSTART]);
-        printf("\033[0;35m(out printDebugInfo) \033[0m\n");
-    }
+    /* mark*/
+    syncImageSize ( ((WinData*)data)->window, data );
 
-    /*当窗口大小被鼠标改变时进行窗口重绘以及自动调整switch button位置*/
-    void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer data ) {
+    gtk_widget_queue_draw ( window );
+}
 
-        //printf("\033[0;35m进入窗口控件同步函数 \033[0m\n");
+/*跟上一个函数是一样的, 这里主要是考虑到后期拓展和区分窗口写成了两个函数*/
+void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer wd ) {
 
-        gint width, height;
-        static unsigned int lastwidth = 0, lastheight = 0;
+    gint width, height;
+    static unsigned int lastwidth = 0, lastheight = 0;
 
-        gtk_window_get_size ( (GtkWindow*)window, &width, &height );
+    gtk_window_get_size ( (GtkWindow*)window, &width, &height );
 
-        if ( ((WinData*)data)->width > width ||  ((WinData*)data)->height > height ) {
+    /* 窗口大小未改变不用重新调整布局,直接返回*/
+    if ( lastwidth == width && lastheight == height )
+        return;
 
-            width  = ((WinData*)data)->width ;
-            height  = ((WinData*)data)->height ;
-        }
+    lastwidth = width;
+    lastheight = height;
 
-        //printf("\033[0;35m当前窗口大小 width=%d height=%d \033[0m\n", width, height);
-        //printf("\033[0;35m上一次窗口大小 width=%d height=%d \033[0m\n", lastwidth, lastheight);
+    gtk_window_resize ( GTK_WINDOW(((WinData*)wd)->window), width, height );
+    gtk_widget_set_size_request ( (GtkWidget*)((WinData*)wd)->scroll,  width, height);
+    gtk_layout_move ( (GtkLayout*)((WinData*)wd)->layout, ((WinData*)wd)->button, width-50, height-45 );
+    syncImageSize ( ((WinData*)wd)->window, (void*)wd );
+    gtk_widget_queue_draw ( window );
+}
 
-        /* 窗口大小未改变不用重新调整布局,直接返回*/
-        if ( lastwidth == width && lastheight == height )
-            return;
+void resizeScrolledWin ( WinData *wd, gint width, gint height ) {
 
-        lastwidth = width;
-        lastheight = height;
+    gtk_window_resize ((GtkWindow*) wd->window, width, height );
+    gtk_widget_set_size_request ( wd->scroll,  width, height);
+    gtk_layout_move ( (GtkLayout*)wd->layout, wd->button, width-50, height-45 );
+    gtk_widget_queue_draw ( wd->window );
 
-        //printf("\033[0;35m同步普通窗口相关控件 \033[0m\n");
+}
 
-        gtk_window_resize ( GTK_WINDOW(((WinData*)data)->window), width, height );
-        gtk_widget_set_size_request ( (GtkWidget*)((WinData*)data)->scroll,  width, height);
+/* Suit the size of window with the number of characters */
+void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
 
-        /* Unnecessary*/
-        gtk_widget_queue_draw ( ((WinData*)data)->button );
-        gtk_widget_show (  ((WinData*)data)->button  );
+    if ( addr == shmaddr_baidu ) {
 
-        gtk_layout_move ( (GtkLayout*)((WinData*)data)->layout, ((WinData*)data)->button, \
-                width-50, height-45 );
+        int charNums = countCharNums ( &shmaddr_baidu[ACTUALSTART+2] );
 
-        /* mark*/
-        syncImageSize ( ((WinData*)data)->window, data );
+        printf("\033[0;35m (showBaiduScrolledWin) charNums=%d\n", charNums);
 
-        gtk_widget_queue_draw ( window );
-    }
+        /* 根据字符数量控制窗口大小和单行长度*/
+        if ( charNums < 400 ) {
 
-    /*跟上一个函数是一样的, 这里主要是考虑到后期拓展和区分窗口写成了两个函数*/
-    void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer wd ) {
+            int lines = countLines ( 30 , &shmaddr_baidu[ACTUALSTART+2] );
+            printf("\033[0;35m (showBaiduScrolledWin) lines=%d\n", lines);
+            adjustStrForScrolledWin ( 30, &shmaddr_baidu[2+ACTUALSTART] );
+            wd->width = 650;
+            wd->height = lines * 30;
 
-        gint width, height;
-        static unsigned int lastwidth = 0, lastheight = 0;
+            if ( wd->height < 300 )
+                wd->height = 300;
 
-        gtk_window_get_size ( (GtkWindow*)window, &width, &height );
+            if ( wd->height > 600 )
+                wd->height = 600;
+        } 
+        else  {
 
-        /* 窗口大小未改变不用重新调整布局,直接返回*/
-        if ( lastwidth == width && lastheight == height )
-            return;
+            int lines = countLines ( 30 , &shmaddr_baidu[ACTUALSTART+2] );
+            printf("\033[0;35mbaiduRestlt countLines=%d \033[0m\n", lines);
+            wd->width = 950;
+            wd->height = lines * 30;
 
-        lastwidth = width;
-        lastheight = height;
+            if ( wd->height < 300 )
+                wd->height = 300;
 
-        gtk_window_resize ( GTK_WINDOW(((WinData*)wd)->window), width, height );
-        gtk_widget_set_size_request ( (GtkWidget*)((WinData*)wd)->scroll,  width, height);
-        gtk_layout_move ( (GtkLayout*)((WinData*)wd)->layout, ((WinData*)wd)->button, width-50, height-45 );
-        syncImageSize ( ((WinData*)wd)->window, (void*)wd );
-        gtk_widget_queue_draw ( window );
-    }
+            if ( wd->height > 600 )
+                wd->height = 600;
 
-    void resizeScrolledWin ( WinData *wd, gint width, gint height ) {
-
-        gtk_window_resize ((GtkWindow*) wd->window, width, height );
-        gtk_widget_set_size_request ( wd->scroll,  width, height);
-        gtk_layout_move ( (GtkLayout*)wd->layout, wd->button, width-50, height-45 );
-        gtk_widget_queue_draw ( wd->window );
-
-    }
-
-    /* Suit the size of window with the number of characters */
-    void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
-
-        if ( addr == shmaddr_baidu ) {
-
-            int charNums = countCharNums ( &shmaddr_baidu[ACTUALSTART+2] );
-
-            printf("\033[0;35m (showBaiduScrolledWin) charNums=%d\n", charNums);
-
-            /* 根据字符数量控制窗口大小和单行长度*/
-            if ( charNums < 400 ) {
-
-                int lines = countLines ( 30 , &shmaddr_baidu[ACTUALSTART+2] );
-                printf("\033[0;35m (showBaiduScrolledWin) lines=%d\n", lines);
-                adjustStrForScrolledWin ( 30, &shmaddr_baidu[2+ACTUALSTART] );
-                wd->width = 650;
-                wd->height = lines * 30;
-
-                if ( wd->height < 300 )
-                    wd->height = 300;
-
-                if ( wd->height > 600 )
-                    wd->height = 600;
-            } 
-            else  {
-
-                int lines = countLines ( 30 , &shmaddr_baidu[ACTUALSTART+2] );
-                printf("\033[0;35mbaiduRestlt countLines=%d \033[0m\n", lines);
-                wd->width = 950;
-                wd->height = lines * 30;
-
-                if ( wd->height < 300 )
-                    wd->height = 300;
-
-                if ( wd->height > 600 )
-                    wd->height = 600;
-
-                adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
-                strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
-            }
-        }
-
-        if ( addr == shmaddr_google ) {
-
-            int index[2] = { 0 };
-            getIndex(index, shmaddr_google);
-
-            int charNums = countCharNums ( &shmaddr_google[ACTUALSTART] );
-
-            /* 根据字符数量控制窗口大小和单行长度*/
-            if ( charNums < 400 ) {
-
-                int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
-                adjustStrForScrolledWin( 30, &shmaddr_google[ACTUALSTART] );
-                wd->width = 650;
-                wd->height = lines * 30;
-                if ( wd->height < 300 )
-                    wd->height = 300;
-
-                if ( wd->height > 600 )
-                    wd->height = 600;
-            }
-            else {
-
-                int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
-                wd->width = 950;
-                wd->height = lines * 30;
-                if ( wd->height < 300 )
-                    wd->height = 300;
-
-                if ( wd->height > 600 )
-                    wd->height = 600;
-
-                adjustStrForScrolledWin( 46, &shmaddr_google[ACTUALSTART] );
-            }
-
+            adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
+            strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
         }
     }
 
-    void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) {
+    if ( addr == shmaddr_google ) {
 
-        printf("\033[0;36m(showBaiduScrolledWin)百度翻译结果:%s\n\033[0m", &shmaddr_baidu[ACTUALSTART]);
+        int index[2] = { 0 };
+        getIndex(index, shmaddr_google);
 
-        GtkTextIter start, end;
-        gtk_text_buffer_get_start_iter (gtbuf, &start);
-        gtk_text_buffer_get_end_iter (gtbuf, &end);
-        gtk_text_buffer_delete (gtbuf, &start, &end);
-        gtk_text_buffer_get_iter_at_offset (gtbuf, iter, 0);
+        int charNums = countCharNums ( &shmaddr_google[ACTUALSTART] );
 
-        int index[13] = { 0 };
-        getIndex(index, shmaddr_baidu);
+        /* 根据字符数量控制窗口大小和单行长度*/
+        if ( charNums < 400 ) {
 
-        printf("\033[0;36m(showBaiduScrolledWin)百度翻译结果分隔符索引: \033[0m");
-        for ( int i=0; i<4; i++ )
-            printf("%d ", index[i]);
-        printf("\n");
+            int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
+            adjustStrForScrolledWin( 30, &shmaddr_google[ACTUALSTART] );
+            wd->width = 650;
+            wd->height = lines * 30;
+            if ( wd->height < 300 )
+                wd->height = 300;
 
-        printf("\033[0;36m (showBaiduScrolledWin) width=%d height=%d\n", wd->width, wd->height);
-
-        /* getIndex 会将分隔符修改为'\0', 再一次进入这个函数index[1]会成0
-         * 所以这里是为了区分是否是第一次进入这里，如果不是，插入已经保存
-         * 到ZhTrans的数据, 否则先生成ZhTrans*/
-        if ( index[1] != 0 ) {
-
-            shmaddr_baidu[0] = '0';
-
-            suitWinSizeWithCharNum ( shmaddr_baidu , wd );
-
-            resizeScrolledWin ( wd, wd->width, wd->height );
-            printf("\033[0;36m (showBaiduScrolledWin) width=%d height=%d\n", wd->width, wd->height);
-
-            strcpy ( ZhTrans,  &shmaddr_baidu[index[1]]);
-
-            printf("\033[0;31m 调整后输出的百度翻译结果:%s\033[0m\n", ZhTrans);
-
-            gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans, -1,\
-                    "brown-font", "font-size-14", "bold-style", NULL );
-        }
-
-        else if ( strlen ( ZhTrans ) != 0 ) {
-
-            //adjustStrForScrolledWin ( 30, &shmaddr_baidu[ACTUALSTART+2] );
-            //strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
-
-            /* 窗口大了，对显示的字符串进行相应调整, 扩大单行显示长度为46*/
-            if ( wd->width >= 900 ) {
-
-                adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
-                strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
-            }
-
-            resizeScrolledWin ( wd, wd->width, wd->height );
-
-            printf("\033[0;36m ZhTrans里的结果输出\033[0m\n");
-
-            gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans, -1,\
-                    "brown-font", "font-size-14", "bold-style", NULL );
+            if ( wd->height > 600 )
+                wd->height = 600;
         }
         else {
 
-            printf("\033[0;31m 未获取到百度翻译结果\033[0m\n");
+            int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
+            wd->width = 950;
+            wd->height = lines * 30;
+            if ( wd->height < 300 )
+                wd->height = 300;
 
-            gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, "未获取到百度翻译结果\n", -1,\
-                    "green-font", "font-size-14", "bold-style", NULL );
+            if ( wd->height > 600 )
+                wd->height = 600;
 
-            /* 重定向到谷歌翻译结果*/
-            return (void)showGoogleScrolledWin (gtbuf, iter, wd);
+            adjustStrForScrolledWin( 46, &shmaddr_google[ACTUALSTART] );
         }
+
     }
+}
 
-    int isContainSeparateChar ( char *str ) {
+void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) {
 
-        if ( str == NULL || str[0] == '\0')
-            return 0;
+    printf("\033[0;36m(showBaiduScrolledWin)百度翻译结果:%s\n\033[0m", &shmaddr_baidu[ACTUALSTART]);
 
-        char *p = str;
+    GtkTextIter start, end;
+    gtk_text_buffer_get_start_iter (gtbuf, &start);
+    gtk_text_buffer_get_end_iter (gtbuf, &end);
+    gtk_text_buffer_delete (gtbuf, &start, &end);
+    gtk_text_buffer_get_iter_at_offset (gtbuf, iter, 0);
 
-        while ( *p ) {
-            if ( *p++ == '|' )
-                return 1;
-        }
+    int index[13] = { 0 };
+    getIndex(index, shmaddr_baidu);
 
-        return 0;
-    }
+    printf("\033[0;36m(showBaiduScrolledWin)百度翻译结果分隔符索引: \033[0m");
+    for ( int i=0; i<4; i++ )
+        printf("%d ", index[i]);
+    printf("\n");
 
-    void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) {
+    printf("\033[0;36m (showBaiduScrolledWin) width=%d height=%d\n", wd->width, wd->height);
 
-        printf("\033[0;33m谷歌翻译结果:%s\033[0m\n\n", &shmaddr_google[ACTUALSTART]);
+    /* getIndex 会将分隔符修改为'\0', 再一次进入这个函数index[1]会成0
+     * 所以这里是为了区分是否是第一次进入这里，如果不是，插入已经保存
+     * 到ZhTrans的数据, 否则先生成ZhTrans*/
+    if ( index[1] != 0 ) {
 
-        GtkTextIter start, end;
-        gtk_text_buffer_get_start_iter (gtbuf, &start);
-        gtk_text_buffer_get_end_iter (gtbuf, &end);
-        gtk_text_buffer_delete (gtbuf, &start, &end);
-        gtk_text_buffer_get_iter_at_offset (gtbuf, iter, 0);
+        shmaddr_baidu[0] = '0';
 
-        /* 仍旧包含分隔符，说明是新的字符串翻译结果，未显示，需要调整*/
-        if ( isContainSeparateChar ( &shmaddr_google[ACTUALSTART] ) )
-            wd->hadShowGoogleResult = 0;
+        suitWinSizeWithCharNum ( shmaddr_baidu , wd );
 
-        if ( ! wd->hadShowGoogleResult ) {
+        resizeScrolledWin ( wd, wd->width, wd->height );
+        printf("\033[0;36m (showBaiduScrolledWin) width=%d height=%d\n", wd->width, wd->height);
 
-            printf("\033[0;31mHadn't show google result \033[0m\n");
+        strcpy ( ZhTrans,  &shmaddr_baidu[2+ACTUALSTART]);
 
-            suitWinSizeWithCharNum ( shmaddr_google, wd );
+        printf("\033[0;31m 调整后输出的百度翻译结果:%s\033[0m\n", ZhTrans);
 
-            resizeScrolledWin ( wd, wd->width, wd->height );
-
-            wd->hadShowGoogleResult  = 1;
-        }
-
-        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, &shmaddr_google[ACTUALSTART], -1,\
+        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans, -1,\
                 "brown-font", "font-size-14", "bold-style", NULL );
     }
 
-    /* 切换百度谷歌翻译结果显示*/
-    void switchScrolledWin(GtkWidget *button, gpointer data) {
+    else if ( strlen ( ZhTrans ) != 0 ) {
 
-        scrollShow= ~scrollShow;
+        //adjustStrForScrolledWin ( 30, &shmaddr_baidu[ACTUALSTART+2] );
+        //strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
 
-        if ( scrollShow ) {
-            showBaiduScrolledWin(((WinData*)data)->buf, ((WinData*)data)->iter, (WinData*)data);
-            return;
+        /* 窗口大了，对显示的字符串进行相应调整, 扩大单行显示长度为46*/
+        if ( wd->width >= 900 ) {
+
+            adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
+            strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
         }
 
-        showGoogleScrolledWin(((WinData*)data)->buf, ((WinData*)data)->iter, (WinData*)data);
+        resizeScrolledWin ( wd, wd->width, wd->height );
+
+        printf("\033[0;36m ZhTrans里的结果输出\033[0m\n");
+
+        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans, -1,\
+                "brown-font", "font-size-14", "bold-style", NULL );
+    }
+    else {
+
+        printf("\033[0;31m 未获取到百度翻译结果\033[0m\n");
+
+        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, "未获取到百度翻译结果\n", -1,\
+                "green-font", "font-size-14", "bold-style", NULL );
+
+        /* 重定向到谷歌翻译结果*/
+        return (void)showGoogleScrolledWin (gtbuf, iter, wd);
+    }
+}
+
+int isContainSeparateChar ( char *str ) {
+
+    if ( str == NULL || str[0] == '\0')
+        return 0;
+
+    char *p = str;
+
+    while ( *p ) {
+        if ( *p++ == '|' )
+            return 1;
     }
 
-    int  newScrolledWin() {
+    return 0;
+}
 
-        GtkWidget *window;
+void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) {
 
-        /* 进入窗口标志变量，禁止继续检测鼠标状态*/
-        InNewWin = 1;
+    printf("\033[0;33m谷歌翻译结果:%s\033[0m\n\n", &shmaddr_google[ACTUALSTART]);
 
-        gint width = 950;
-        gint height;
+    GtkTextIter start, end;
+    gtk_text_buffer_get_start_iter (gtbuf, &start);
+    gtk_text_buffer_get_end_iter (gtbuf, &end);
+    gtk_text_buffer_delete (gtbuf, &start, &end);
+    gtk_text_buffer_get_iter_at_offset (gtbuf, iter, 0);
 
-        int lines = 0, charNums = 0, ret = 0;
+    /* 仍旧包含分隔符，说明是新的字符串翻译结果，未显示，需要调整*/
+    if ( isContainSeparateChar ( &shmaddr_google[ACTUALSTART] ) )
+        wd->hadShowGoogleResult = 0;
 
-        lines = countLines(46, &shmaddr_google[ACTUALSTART]);
-        charNums = countCharNums(&shmaddr_google[ACTUALSTART]);
+    if ( ! wd->hadShowGoogleResult ) {
 
-        if ( ( ret = countCharNums(&shmaddr_baidu[2]) ) > charNums)
-            charNums = ret;
+        printf("\033[0;31mHadn't show google result \033[0m\n");
 
-        if ( charNums <= 500 )
-            height = 450;
+        suitWinSizeWithCharNum ( shmaddr_google, wd );
 
-        printf("\033[0;34m new scrolled window: lines=%d\033[0m\n", lines);
-        printf("\033[0;34m new scrolled window: characterNums=%d\033[0m\n", charNums);
+        resizeScrolledWin ( wd, wd->width, wd->height );
 
-        height = lines * 30;
-
-        if ( height < 400 )
-            height = 400;
-
-        if ( height > 900 )
-            height = 900;
-
-        window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-        gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
-        gtk_window_set_default_size (GTK_WINDOW(window), width, height);
-        gtk_window_set_title (GTK_WINDOW(window), "STRAN");
-        gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_MOUSE);
-
-        GtkWidget *layout = gtk_layout_new (NULL, NULL);
-        GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
-        GtkWidget *view = gtk_text_view_new();
-
-        gtk_text_view_set_editable ( (GtkTextView*)view, FALSE );
-        gtk_text_view_set_cursor_visible ( ( GtkTextView* )view, FALSE );
-
-        gtk_container_add ( GTK_CONTAINER(scroll), view );
-        gtk_container_add ( GTK_CONTAINER(layout), scroll );
-        gtk_container_add (GTK_CONTAINER(window), layout);
-
-        gtk_widget_set_size_request ( scroll,  width, height);
-
-        GtkTextBuffer *gtb = gtk_text_view_get_buffer((GtkTextView*)view);
-        gtk_text_view_set_left_margin (GTK_TEXT_VIEW (view), 25);
-        gtk_text_view_set_top_margin ( (GtkTextView*)view, 35 );
-
-        WinData wd;
-
-        GtkWidget *button = newSwitchButton( (WinData*)&wd );
-
-        gtk_layout_put ( (GtkLayout*)layout, button, width-50, height-45 );
-
-        GtkTextIter iter;
-
-        wd.layout = layout;
-        wd.button = button;
-        wd.scroll = scroll;
-        wd.buf = gtb;
-        wd.width = width;
-        wd.height = height;
-        wd.iter = &iter;
-        wd.window = window;
-        wd.hadShowGoogleResult = 0;
-
-        printf("In syncImageSize\n");
-        wd.oldImage = NULL;
-        wd.srcBackgroundImage = NULL;
-        wd.image = syncImageSize ( window, (void*)&wd );
-        printf("Out\n");
-
-        g_signal_connect (window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-        g_signal_connect (window, "configure-event", G_CALLBACK(syncScrolledWinWithConfigEvent), &wd);
-        g_signal_connect (button, "clicked", G_CALLBACK(switchScrolledWin), &wd);
-
-        setFontProperties (gtb, &iter);
-
-        scrollShow = -1;
-
-        /*初始化百度翻译结果存储空间内存*/
-        if ( baidu_result[0] == NULL)
-            initMemoryBaidu();
-
-        if ( google_result[0] == NULL)
-            initMemoryGoogle();
-
-        showBaiduScrolledWin(gtb, &iter, &wd);
-
-        gtk_widget_show_all(window);
-
-        gtk_main();
-
-        InNewWin = 0;
-
-        /* 清除共享内存和结果存储空间的数据*/
-        clearMemory();
-
-        pthread_exit(NULL);
-
-        return 1;
+        wd->hadShowGoogleResult  = 1;
     }
 
-    int getLinesOfBaiduTrans () {
+    gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, &shmaddr_google[ACTUALSTART], -1,\
+            "brown-font", "font-size-14", "bold-style", NULL );
+}
 
-        int resultNum = 0;
+/* 切换百度谷歌翻译结果显示*/
+void switchScrolledWin(GtkWidget *button, gpointer data) {
 
-        /* lines起始为1，因为源数据没有被插入回车符，后面计算不到，这里
-         * 手动加1*/
-        int lines = 1;
+    scrollShow= ~scrollShow;
 
-        char *p = NULL;
+    if ( scrollShow ) {
+        showBaiduScrolledWin(((WinData*)data)->buf, ((WinData*)data)->iter, (WinData*)data);
+        return;
+    }
 
-        for ( int i=0; i<BAIDUSIZE; i++ ) {
-            if ( baidu_result[i][0] != '\0' ) {
-                resultNum++;
-                p = baidu_result[i];
-                while ( *p ) {
-                    if ( *p++ == '\n' )
-                        lines++;
-                }
+    showGoogleScrolledWin(((WinData*)data)->buf, ((WinData*)data)->iter, (WinData*)data);
+}
+
+int  newScrolledWin() {
+
+    GtkWidget *window;
+
+    /* 进入窗口标志变量，禁止继续检测鼠标状态*/
+    InNewWin = 1;
+
+    gint width = 950;
+    gint height;
+
+    int lines = 0, charNums = 0, ret = 0;
+
+    lines = countLines(46, &shmaddr_google[ACTUALSTART]);
+    charNums = countCharNums(&shmaddr_google[ACTUALSTART]);
+
+    if ( ( ret = countCharNums(&shmaddr_baidu[2]) ) > charNums)
+        charNums = ret;
+
+    if ( charNums <= 500 )
+        height = 450;
+
+    printf("\033[0;34m new scrolled window: lines=%d\033[0m\n", lines);
+    printf("\033[0;34m new scrolled window: characterNums=%d\033[0m\n", charNums);
+
+    height = lines * 30;
+
+    if ( height < 400 )
+        height = 400;
+
+    if ( height > 900 )
+        height = 900;
+
+    window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
+    gtk_window_set_default_size (GTK_WINDOW(window), width, height);
+    gtk_window_set_title (GTK_WINDOW(window), "STRAN");
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_MOUSE);
+
+    GtkWidget *layout = gtk_layout_new (NULL, NULL);
+    GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
+    GtkWidget *view = gtk_text_view_new();
+
+    gtk_text_view_set_editable ( (GtkTextView*)view, FALSE );
+    gtk_text_view_set_cursor_visible ( ( GtkTextView* )view, FALSE );
+
+    gtk_container_add ( GTK_CONTAINER(scroll), view );
+    gtk_container_add ( GTK_CONTAINER(layout), scroll );
+    gtk_container_add (GTK_CONTAINER(window), layout);
+
+    gtk_widget_set_size_request ( scroll,  width, height);
+
+    GtkTextBuffer *gtb = gtk_text_view_get_buffer((GtkTextView*)view);
+    gtk_text_view_set_left_margin (GTK_TEXT_VIEW (view), 25);
+    gtk_text_view_set_top_margin ( (GtkTextView*)view, 35 );
+
+    WinData wd;
+
+    GtkWidget *button = newSwitchButton( (WinData*)&wd );
+
+    gtk_layout_put ( (GtkLayout*)layout, button, width-50, height-45 );
+
+    GtkTextIter iter;
+
+    wd.layout = layout;
+    wd.button = button;
+    wd.scroll = scroll;
+    wd.buf = gtb;
+    wd.width = width;
+    wd.height = height;
+    wd.iter = &iter;
+    wd.window = window;
+    wd.hadShowGoogleResult = 0;
+
+    printf("In syncImageSize\n");
+    wd.oldImage = NULL;
+    wd.srcBackgroundImage = NULL;
+    wd.image = syncImageSize ( window, (void*)&wd );
+    printf("Out\n");
+
+    g_signal_connect (window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect (window, "configure-event", G_CALLBACK(syncScrolledWinWithConfigEvent), &wd);
+    g_signal_connect (button, "clicked", G_CALLBACK(switchScrolledWin), &wd);
+
+    setFontProperties (gtb, &iter);
+
+    scrollShow = -1;
+
+    /*初始化百度翻译结果存储空间内存*/
+    if ( baidu_result[0] == NULL)
+        initMemoryBaidu();
+
+    if ( google_result[0] == NULL)
+        initMemoryGoogle();
+
+    showBaiduScrolledWin(gtb, &iter, &wd);
+
+    gtk_widget_show_all(window);
+
+    gtk_main();
+
+    InNewWin = 0;
+
+    /* 清除共享内存和结果存储空间的数据*/
+    clearMemory();
+
+    pthread_exit(NULL);
+
+    return 1;
+}
+
+int getLinesOfBaiduTrans () {
+
+    int resultNum = 0;
+
+    /* lines起始为1，因为源数据没有被插入回车符，后面计算不到，这里
+     * 手动加1*/
+    int lines = 1;
+
+    char *p = NULL;
+
+    for ( int i=0; i<BAIDUSIZE; i++ ) {
+        if ( baidu_result[i][0] != '\0' ) {
+            resultNum++;
+            p = baidu_result[i];
+            while ( *p ) {
+                if ( *p++ == '\n' )
+                    lines++;
             }
         }
-
-        /* 算上到时插入到显示界面的空行，最后一个结果后面不插入空行，
-         * 所以减1*/
-        lines = lines + resultNum - 1;
-
-        return lines;
     }
 
-    int getMaxLenOfBaiduTrans() {
+    /* 算上到时插入到显示界面的空行，最后一个结果后面不插入空行，
+     * 所以减1*/
+    lines = lines + resultNum - 1;
 
-        int maxlen = 0;
+    return lines;
+}
 
-        for ( int i=0, len=0; i<BAIDUSIZE; i++ ) {
-            if ( baidu_result[i][0] != '\0')
-                len = countCharNums ( baidu_result[i] );
+int getMaxLenOfBaiduTrans() {
 
-            if ( len > maxlen )
-                maxlen = len;
+    int maxlen = 0;
+
+    for ( int i=0, len=0; i<BAIDUSIZE; i++ ) {
+        if ( baidu_result[i][0] != '\0')
+            len = countCharNums ( baidu_result[i] );
+
+        if ( len > maxlen )
+            maxlen = len;
+    }
+
+    if ( maxlen > 28 )
+        maxlen = 28;
+
+    return maxlen;
+}
+
+/* 设置NormalWin的窗口大小*/
+void setWinSizeForNormalWin ( int maxlen, int lines, char *addr ) {
+
+    maxlen = 0;
+    lines = 0;
+
+    printf("\033[0;35mIn setWinSizeForNormalWin \033[0m\n");
+
+    if ( addr == shmaddr_baidu ) {
+
+        maxlen = getMaxLenOfBaiduTrans();
+        lines = getLinesOfBaiduTrans ();
+
+        printf("\033[0;36mmaxlen=%d lines=%d \033[0m\n", maxlen, lines);
+
+        /*来个黄金比例的矩形*/
+        double width, height;
+
+        width = maxlen * 15.6 + 40;
+        height = lines * 24;
+
+        /*别让窗口过小*/
+        if ( width < 300 ) {
+            width = 300;
         }
 
-        if ( maxlen > 28 )
-            maxlen = 28;
+        if ( height < 200 )
+            height = 200;
 
-        return maxlen;
+        bw.width = width;
+        bw.height = height;
+
+        if ( bw.width > 1000 )
+            bw.width = 1000;
+
+        if ( bw.height > 900 )
+            bw.height = 900;
+
+        printf("\033[0;36mbw.width=%f bw.height=%f \033[0m\n", width, height);
+
+        return;
+    } 
+
+    /* mark1*/
+    else if ( addr == shmaddr_google ) 
+    {
     }
-
-    /* 设置NormalWin的窗口大小*/
-    void setWinSizeForNormalWin ( int maxlen, int lines, char *addr ) {
-
-        maxlen = 0;
-        lines = 0;
-
-        printf("\033[0;35mIn setWinSizeForNormalWin \033[0m\n");
-
-        if ( addr == shmaddr_baidu ) {
-
-            maxlen = getMaxLenOfBaiduTrans();
-            lines = getLinesOfBaiduTrans ();
-
-            printf("\033[0;36mmaxlen=%d lines=%d \033[0m\n", maxlen, lines);
-
-            /*来个黄金比例的矩形*/
-            double width, height;
-
-            width = maxlen * 15.6 + 40;
-            height = lines * 24;
-
-            /*别让窗口过小*/
-            if ( width < 300 ) {
-                width = 300;
-            }
-
-            if ( height < 200 )
-                height = 200;
-
-            bw.width = width;
-            bw.height = height;
-
-            if ( bw.width > 1000 )
-                bw.width = 1000;
-
-            if ( bw.height > 900 )
-                bw.height = 900;
-
-            printf("\033[0;36mbw.width=%f bw.height=%f \033[0m\n", width, height);
-
-            return;
-        } 
-
-        /* mark1*/
-        else if ( addr == shmaddr_google ) 
-        {
-        }
-    }
+}
