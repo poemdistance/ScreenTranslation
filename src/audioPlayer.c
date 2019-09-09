@@ -137,7 +137,7 @@ GtkWidget* newVolumeBtn ()
     return button;
 }
 
-GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout ) 
+GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd ) 
 {
     GtkWidget *button = newVolumeBtn();
 
@@ -145,34 +145,64 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout )
     //int charNum = countCharNums ( SourceInput );
     printf("\033[0;35mPhonetic charNum = %d \033[0m\n", charNum);
 
-    int x = charNum * 12;
+
+    int posx = 0;
+    int x = charNum;
+
+    /* 三次函数拟合字符长度和按钮位置之间的关系*/
+    posx = (int)(-0.0111945 * x*x*x  + 0.667037 * x*x -0.0414765*x + 70.975);
+    //if ( charNum <= 12 )
+    //    x = charNum * 14;
+    //else
+    //    x = charNum * 12;
 
     g_signal_connect ( button, "clicked", G_CALLBACK(mp3play), NULL );
 
     printf("\033[0;34m重绘窗口 \033[0m\n");
 
+#if 0
+
+    /* 必须要注意，窗口实现后调用realized函数才能返回非空值
+     * 不在这个前提下获取GdkWindow是不可能的, 一般在gtk widget
+     * show all 后才算实例化(猜测)*/
+
+    if ( ! gtk_widget_get_realized ( wd->window ) ) {
+
+        gtk_widget_set_realized ( wd->window , TRUE );
+    }
+
+    if ( ! wd->gdkwin ) {
+        //wd->gdkwin = gtk_widget_get_window ( wd->scroll );
+        wd->gdkwin = gtk_text_view_get_window ( GTK_TEXT_VIEW(wd->view), GTK_TEXT_WINDOW_WIDGET );
+
+    }
+#endif
+
     if ( bw.width <= gw.width && bw.height <= gw.height ){
 
         printf("\033[0;35m百度窗口小于谷歌,不需要重设窗口 \033[0m\n");
-      
+
+        /* 注释代码先不要删除，后面可能还需要*/
+
         /* 超出窗口了*/
-        if ( x + 30 > gw.width )
-            gtk_layout_put ( (GtkLayout*)layout, button, gw.width-55, 37 );
-        else
-            gtk_layout_put ( (GtkLayout*)layout, button, x, 37 );
+        //if ( x + 30 > gw.width )
+        gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
+        //else {
+
+        //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
+        //}
     }
     else
     {
         printf("\033[0;35m百度窗口大于谷歌，需要调整 \033[0m\n");
         printf("\033[0;35m百度:%f %f 谷歌: %f %f \033[0m\n", bw.width, bw.height, gw.width, gw.height);
-        printf("\033[0;31m播放按钮坐标,%d \033[0m\n", x);
+        printf("\033[0;31m播放按钮坐标:%d \033[0m\n", posx);
 
         /* 超出窗口了*/
-        if ( x + 30 > bw.width )
-            gtk_layout_put ( (GtkLayout*)layout, button, bw.width-55, 37 );
-        else 
-            gtk_layout_put ( (GtkLayout*)layout, button, x, 37 );
-
+        //if ( x + 30 > bw.width )
+        //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
+        //else 
+        gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
         gtk_window_resize ( (GtkWindow*)window, bw.width, bw.height );
     }
 
