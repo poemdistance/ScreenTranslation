@@ -69,6 +69,16 @@ void adjustStr(char *p[], int len, char *storage[]) {
                 maxlen_google = nowlen;
             //printf("maxlen_google=%d\n", maxlen_google);
 
+            /* 防止单词被割裂为两行(上一行末尾 下一行开头) */ 
+            if (nowlen == len && isalnum(p[i][j]) && isalnum(p[i][j+1]))
+            {
+                int goback = 0;
+                while (isalnum(p[i][j--]))
+                {
+                    storage[i][k - goback++] = ' ';
+                }
+            }
+
             if ( nowlen == len ) {
                 storage[i][++k] = '\n';
                 lines_google++;
