@@ -61,6 +61,9 @@ typedef struct WinData{
     GtkWidget *window;
     GtkWidget *layout;
     GtkWidget *button;
+    GtkWidget *view;
+
+    GdkWindow *gdkwin;
 
     GtkTextIter *iter;
     GtkTextBuffer *buf;
@@ -75,6 +78,11 @@ typedef struct WinData{
 
     gint width;
     gint height;
+
+    gint lineHeight;
+    gint phonPos;
+
+    gint hadRedirect;
 
     gint hadShowGoogleResult;
 
@@ -115,7 +123,7 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
 int countLines ( int len, char *source );
 int countCharNums ( char *source );
 GtkWidget* newVolumeBtn () ;
-GtkWidget* insertVolumeIcon( GtkWidget *window, GtkWidget *layout ) ;
+GtkWidget* insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd ) ;
 
 int mp3play (GtkWidget *button, gpointer *data);
 GtkWidget * getImageWidgetWithBG( gint width, gint height  ) ;
