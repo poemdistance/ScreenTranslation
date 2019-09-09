@@ -58,6 +58,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     *releaseButton = 1;
 
+    /* TODO: Please remove relative codes of opening this device*/
     if ( fd_key < 0 )
         if ((fd_key = open("/dev/input/event3", O_RDWR)) < 0 ) 
             err_exit("opened keyboard device fail");
