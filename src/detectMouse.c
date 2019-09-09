@@ -268,6 +268,7 @@ void *DetectMouse(void *arg) {
         char * const cmd[3] = {"tranen","-s", (char*)0};
         if ( execv( "/usr/bin/tranen", cmd ) < 0) {
             fprintf(stderr, "Execv error (google)\n");
+            perror("Execv error(google):");
             exit(1);
         }
         printf("detectMouse.c (google)子进程已经退出...\n");
@@ -291,6 +292,7 @@ void *DetectMouse(void *arg) {
         char * const cmd[3] = {"bdtran","-s", (char*)0};
         if ( execv( "/usr/bin/bdtran", cmd ) < 0) {
             fprintf(stderr, "Execv error (baidu)\n");
+            perror("Execv error(baidu):");
             exit(1);
         }
         printf("detectMouse.c (baidu)子进程已经退出...\n");
