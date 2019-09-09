@@ -12,6 +12,7 @@ void adjustStr(char *p[], int len, char *storage[]) {
 
     int nowlen = 0;
     int asciich = 0;
+    int cansplit = 0;
 
     for ( int i=0; i<3; i++ ) 
     {
@@ -30,6 +31,9 @@ void adjustStr(char *p[], int len, char *storage[]) {
                 break;
             }
 
+            if ( p[i][j] == ' ')
+                cansplit = k;
+
             /*此处需要了解一下utf8编码格式
              *
              * 对于只有一个字节的字符,单字节最高位为0，
@@ -46,6 +50,9 @@ void adjustStr(char *p[], int len, char *storage[]) {
                     && (((p[i][j+1] & 0xff) >> 6) & 0x03) != 2 ) {
 
                 nowlen++;
+
+                if ( k > cansplit )
+                    cansplit = k;
             }
 
             if ( (p[i][j]&0xff) < 128 && (p[i][j]&&0xff >= 0) )
@@ -59,18 +66,24 @@ void adjustStr(char *p[], int len, char *storage[]) {
             /* 防止单词被割裂为两行(上一行末尾 下一行开头) */ 
             if (nowlen == len && isalnum(p[i][j]) && isalnum(p[i][j+1]))
             {
-                int goback = 0;
-                while (isalnum(p[i][j--]))
-                {
-                    storage[i][k - goback++] = ' ';
+                int count = k - cansplit;
+
+                /* 排除可分割下标在行头或者待回退字符过长,此种情况强制切割*/
+                if (! (count > len || k == 0)) {
+
+                    int goback = 0;
+                    while (isalnum(p[i][j--]))
+                    {
+                        storage[i][k - goback++] = ' ';
+                    }
                 }
             }
 
             if ( nowlen == len ) {
 
-                    storage[i][++k] = '\n';
-                    nowlen = 0;
-                    continue;
+                storage[i][++k] = '\n';
+                nowlen = 0;
+                continue;
             }
         }
     }
