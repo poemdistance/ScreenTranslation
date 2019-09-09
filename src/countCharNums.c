@@ -2,7 +2,7 @@
 
 int countCharNums (char *source) {
 
-    printf("\033[0;32mIn countCharNums \033[0m\n");
+    //printf("\033[0;32mIn countCharNums \033[0m\n");
 
     char *p = source;
     
@@ -32,7 +32,7 @@ int countCharNums (char *source) {
         p++;
     }
 
-    printf("\033[0;32mout\033[0m\n");
+    //printf("\033[0;32mout\033[0m\n");
 
     return nums;
 }
