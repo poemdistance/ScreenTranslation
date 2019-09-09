@@ -120,7 +120,7 @@ void *DetectMouse(void *arg) {
             fprintf(stderr, "Failed to open mice\
                     \nTry to execute as superuser or add \
                     current user to group which /dev/input/mice belong to\n");
-            exit(1);
+            quit();
         }
 
         int history[4] = { 0 };
@@ -299,7 +299,6 @@ void *DetectMouse(void *arg) {
         exit(1);
 
     }
-
     pthread_exit(NULL);
 }
 
