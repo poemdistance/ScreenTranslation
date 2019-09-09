@@ -97,8 +97,8 @@ void separateDataForBaidu(int *index, int len) {
     }
 
     /*打印提取结果*/
-    for ( int i=0; i<BAIDUSIZE; i++ )
-        printf("\033[0;35mbaidu_result[%d]=%s\033[0m\n", i, baidu_result[i]);
+    //for ( int i=0; i<BAIDUSIZE; i++ )
+    //printf("\033[0;35mbaidu_result[%d]=%s\033[0m\n", i, baidu_result[i]);
 
     printf("\033[0;35maudio_en= %s \033[0m\n", audio_en);
     printf("\033[0;35maudio_uk= %s \033[0m\n", audio_uk);
@@ -113,6 +113,9 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
     int prefixLen = 0;
     int start = 0;
     int validDot = 1;
+    int cansplit = 0;
+
+    char buf[1024] = { '\0' };
 
     long int srclen = 0;
     srclen = strlen(source);
@@ -134,6 +137,9 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
         if ( source[j] == '\0' )
             break;
+
+        if ( source[j] == ' ')
+            cansplit = k;
 
 
         if ( source[j] == '\n') {
@@ -157,9 +163,13 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         }
 
         if ( (((source[j] & 0xff) >> 6) & 0x03) == 2  
-                && (((source[j+1] & 0xff) >> 6) & 0x03) != 2 )
+                && (((source[j+1] & 0xff) >> 6) & 0x03) != 2 ) {
 
             nowlen++;
+
+            if ( k > cansplit )
+                cansplit = k;
+        }
 
         if ( (source[j]&0xff) < 128 && (source[j]&&0xff >= 0) )
             asciich++;
@@ -170,9 +180,40 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         }
 
         if ( nowlen == len ) {
-            //printf("\033[0;32mAdd Enter\033[0m\n");
-            storage[++k] = '\n';
-            nowlen = 0;
+
+            char nextchar = source[j+1];
+
+            /* 如果不是数字和字母，直接用回车符切割*/
+            if ( ! (\
+                        (nextchar >= '0' && nextchar <= '9' ) ||\
+                        (nextchar >= 'a' && nextchar <= 'z')  ||\
+                        (nextchar >= 'A' && nextchar <= 'Z')) ) {
+
+                storage[++k] = '\n';
+
+                nowlen = 0;
+            } 
+            else {
+
+
+                /* 离上一个空格的距离*/
+                int count = k - cansplit;
+                int right = k+1;
+                int left = k;
+
+                strncpy ( buf, &storage[cansplit+1], count );
+                strcat ( buf, "\0" );
+                nowlen = countCharNums ( buf );
+                k++;
+
+                while ( count-- ) {
+                    storage[right] = storage[left];
+                    right--;
+                    left--;
+                }
+
+                storage[left+1] = '\n';
+            }
 
             if ( addSpace ) {
                 int tmp = prefixLen;
@@ -181,8 +222,8 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
                     nowlen++;
                 }
                 nowlen /= 2;
-                //printf("\033[0;32m  (in if)nowlen=%d \033[0m\n\n", nowlen);
             }
+            continue;
         }
     }
 
@@ -251,7 +292,7 @@ void separateGoogleDataSetWinSize ( int *index ) {
 
         /* 统计谷歌翻译结果行数*/
         lines = getLinesOfGoogleTrans ( index );
-        
+
         for ( int i=0; i<3; i++ )
             if ( ( ret = countCharNums ( google_result[i] ) ) > maxlen )
                 maxlen = ret;
@@ -262,13 +303,13 @@ void separateGoogleDataSetWinSize ( int *index ) {
         printf("\033[0;33m(谷歌数据分离窗口调整) maxlen=%d lines=%d\033[0m\n\n", maxlen,lines);
 
         /*存于全局变量*/
-        gw.width = 15 * maxlen;
+        gw.width = 15 * maxlen + 40;
         gw.height = lines * 28;
 
-        for ( int i=0; i<3; i++ )
-            printf("\033[0;33m(separateGoogleDataSetWinSize) %s \033[0m\n", google_result[i]);
+        //for ( int i=0; i<3; i++ )
+        //printf("\033[0;33m(separateGoogleDataSetWinSize) %s \033[0m\n", google_result[i]);
 
-        printf("\033[0;33mgw.width=%f, gw.height=%f \033[0m\n", gw.width, gw.height);
+        printf("\033[0;33m(separadata.c)gw.width=%f, gw.height=%f \033[0m\n", gw.width, gw.height);
     }
     else  {
         shmaddr_google[0] = CLEAR;
