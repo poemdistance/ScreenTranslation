@@ -75,6 +75,12 @@ int adjustStrForScrolledWin(int len, char *source) {
             int right = k+1;
             int left = k;
 
+            if ( count > len || cansplit == 0) {
+                storage[++k] = '\n';
+                nowlen = 0;
+                continue;
+            }
+
             strncpy ( buf, &storage[cansplit+1], count );
             strcat ( buf, "\0" );
             nowlen = countCharNums ( buf );

@@ -84,6 +84,14 @@ void adjustStr(char *p[], int len, char *storage[]) {
                 int right = k+1;
                 int left = k;
 
+                printf("\033[0;31mcount=%d k=%d cansplit=%d \033[0m\n", count, k, cansplit);
+                if ( count > len || cansplit == 0) {
+                    storage[i][++k] = '\n';
+                    nowlen = 0;
+                    continue;
+                }
+
+
                 strncpy ( buf, &storage[i][cansplit+1], count );
                 strcat ( buf, "\0" );
                 nowlen = countCharNums ( buf );
