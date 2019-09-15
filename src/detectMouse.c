@@ -14,12 +14,20 @@
 
 
 #include "common.h"
+#include "quickSearch.h"
 
 extern char *shmaddr;
 extern char *shmaddr_selection;
 extern int InNewWin;
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
+extern int CanNewWin;
+
+extern char *shmaddr_searchWin;
+extern int shmid_searchWin ;
+
+extern char *text;
+extern int quickSearchFlag;
 
 pid_t baidu_translate_pid;
 pid_t google_translate_pid;
@@ -42,7 +50,8 @@ void *DetectMouse(void *arg) {
     double lasttime = 0;
     int thirdClick;
 
-    int fd_google[2], fd_baidu[2], fd[2];
+    int fd_google[2], fd_baidu[2];
+    int fd_python[2];
     int status;
     pid_t pid_google = -1, pid_baidu = -1;
     pid_t retpid;
@@ -102,8 +111,17 @@ void *DetectMouse(void *arg) {
         close(fd_google[0]);
         close(fd_baidu[0]);
 
-        fd[0] = fd_google[1];
-        fd[1] = fd_baidu[1];
+        fd_python[0] = fd_google[1];
+        fd_python[1] = fd_baidu[1];
+
+        printf("\033[0;35m%d %d \033[0m\n", fd_python[0], fd_python[1]);
+        printf("\033[0;31m%p \033[0m\n", shmaddr_searchWin);
+
+        shmaddr_searchWin[0] =  *itoa(fd_python[0]);
+        shmaddr_searchWin[strlen(itoa(fd_python[0]))] =  '\0';
+
+        shmaddr_searchWin[10] =  *itoa(fd_python[1]);
+        shmaddr_searchWin[10 + strlen(itoa(fd_python[1]))] =  '\0';
 
         sa.sa_handler = handler;
         sigemptyset(&sa.sa_mask);
@@ -130,12 +148,25 @@ void *DetectMouse(void *arg) {
 
             /*超时时间*/
             tv.tv_sec = 0;
-            tv.tv_usec = 2000000;
+            tv.tv_usec = 1000;
 
             FD_ZERO( &readfds );
             FD_SET( mousefd, &readfds );
 
             retval = select( mousefd+1, &readfds, NULL, NULL, &tv );
+
+            if ( shmaddr_searchWin[20] == '1') {
+
+                if ( text == NULL )
+                    if (( text = calloc(TEXTSIZE, 1)) == NULL)
+                        err_exit("malloc failed in notify.c");
+
+                shmaddr_searchWin[20] = '0';
+                strcpy ( text,  &shmaddr_searchWin[21] );
+                writePipe ( &shmaddr_searchWin[21], fd_python[0] );
+                writePipe ( &shmaddr_searchWin[21], fd_python[1] );
+                CanNewWin = 1;
+            }
 
             /*超时*/
             if(retval==0) {
@@ -209,7 +240,7 @@ void *DetectMouse(void *arg) {
                             && lasttime != 0 && action == DOUBLECLICK) {
 
                         thirdClick = 1;
-                        notify(&history, &thirdClick, &releaseButton, fd);
+                        notify(&history, &thirdClick, &releaseButton, fd_python);
                     }
                     else { /*不是3击事件则按单击处理，更新oldtime*/
                         oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
@@ -238,12 +269,12 @@ void *DetectMouse(void *arg) {
                 /*更新最后一次有效双击事件的发生时间*/
                 lasttime = newtime;
 
-                notify(&history, &thirdClick, &releaseButton, fd);
+                notify(&history, &thirdClick, &releaseButton, fd_python);
                 continue;
             }
 
             if ( isAction( history, i, SLIDE ) )
-                notify(&history, &thirdClick, &releaseButton, fd);
+                notify(&history, &thirdClick, &releaseButton, fd_python);
 
         } /*while loop*/
 
