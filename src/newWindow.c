@@ -4,6 +4,7 @@ extern char *text;
 
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
+extern char *shmaddr_keyboard;
 
 char *baidu_result[BAIDUSIZE] = { NULL };
 char *google_result[GOOGLESIZE] = { NULL };
@@ -21,6 +22,74 @@ extern int action;
 
 extern char audio_en[512];
 extern char audio_uk[512];
+
+extern int CanNewWin;
+
+static int focustimes = 0;
+int timeout_id = 0;
+
+/* 本函数代码借鉴自xdotool部分源码*/
+void focusOurWindow( WinData *wd ) {
+
+    /* Get window id of x11*/
+    GdkWindow *gw = gtk_widget_get_window ( GTK_WIDGET ( wd->window ) );
+    Window wid = gdk_x11_window_get_xid ( gw );
+
+    /* Get window's attributes*/
+    XWindowAttributes wattr;
+    Display *dpy = XOpenDisplay (NULL);
+    XGetWindowAttributes(dpy, wid, &wattr);
+
+    XEvent xev;
+    memset(&xev, 0, sizeof(xev));
+    xev.type = ClientMessage;
+    xev.xclient.display = dpy;
+    xev.xclient.window = wid;
+    xev.xclient.message_type = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
+    xev.xclient.format = 32;
+    xev.xclient.data.l[0] = 2L; /* 2 == Message from a window pager */
+    xev.xclient.data.l[1] = CurrentTime;
+
+    int ret = XSendEvent(dpy, wattr.screen->root, False,
+            SubstructureNotifyMask | SubstructureRedirectMask,
+            &xev);
+
+    if ( ret == 0 ) {
+        printf("\033[0;31m窗口聚焦请求失败(focusOurWindow) \033[0m\n");
+    }
+
+    XCloseDisplay(dpy);
+
+}
+
+int detect_ctrl_c(void *arg) {
+
+    /* 每隔一定时间多次尝试重新聚焦窗口防止聚焦窗口被抢占*/
+    if ( focustimes++ <= 5 ) {
+        focusOurWindow ( (WinData*)arg );
+    }
+
+
+    /* 此处监听的是电脑全局，如果不希望其他地方的ctrl-c
+     * 使本翻译界面关闭，请注释掉下面的代码段*/
+
+    /* Ctrl_C事件标志位*/
+    if ( shmaddr_keyboard[1] == '1' ) {
+
+        printf("\033[0;32m窗口检测到Control-C\033[0m\n");
+
+        WinData *wd = (WinData*)arg;
+
+        gtk_window_present_with_time ( GTK_WINDOW(wd->window), time(NULL) );
+        gtk_window_set_focus ( (GtkWindow*)wd->window, wd->view );
+        gtk_window_set_focus ( (GtkWindow*)wd->window, wd->scroll );
+        printf("\033[0;32mfocus test>>>>%d<<< \033[0m\n", gtk_window_activate_focus ( GTK_WINDOW(wd->window) ));
+        destroyNormalWin(wd->window, wd);
+        return FALSE;
+    }
+
+    return TRUE;
+}
 
 void syncVolumeBtn ( WinData *wd ) {
 
@@ -48,7 +117,27 @@ void syncVolumeBtn ( WinData *wd ) {
 
 }
 
-/* Do Nothing Userful*/
+/* 程序会在oh前面崩溃*/
+void mark_set(GtkTextBuffer *buf, gpointer *data) {
+
+    WinData *wd = (WinData*)data;
+
+    GtkTextIter start ;
+    GdkRectangle loc;
+    printf("god\n");
+    //gtk_text_buffer_get_iter_at_mark ( buf, &start, gtk_text_buffer_get_mark ( buf, "GOD" ) );
+    gtk_text_buffer_get_start_iter ( buf, &start );
+
+    printf("please\n");
+    gtk_text_view_get_iter_location ( (GtkTextView*)(wd->view), &start, &loc );
+    printf("oh\n");
+    ((WinData*)data)->lineHeight = loc.y;
+
+    printf("\033[0;31mloc.x=%d loc.y=%d \033[0m\n", loc.x, loc.y);
+
+    printf("\033[0;31m行高=%d \033[0m\n", loc.y);
+}
+
 void text_changed ( GtkTextBuffer *buf, gpointer *data ) {
 
     if ( ((WinData*)data)->lineHeight > 0 )
@@ -56,23 +145,36 @@ void text_changed ( GtkTextBuffer *buf, gpointer *data ) {
 
     gtk_widget_show(((WinData*)data)->window);
 
+    /*
+       int charnum = gtk_text_buffer_get_char_count ( buf );
+       GtkTextIter iter ;
+       gtk_text_buffer_get_iter_at_offset ( buf, &iter, charnum );
+       */
     GtkTextIter start , end;
     GdkRectangle loc;
     gtk_text_buffer_get_start_iter ( buf, &start);
     gtk_text_buffer_get_end_iter ( buf, &end );
+    //gtk_text_view_get_iter_location ( GTK_TEXT_VIEW(((WinData*)data)->view), &iter, &loc );
     gtk_text_view_get_iter_location ( GTK_TEXT_VIEW(((WinData*)data)->view), &end, &loc );
-    printf("text_change %d %d\n", loc.x, loc.y);
     ((WinData*)data)->lineHeight = loc.y;
+
+    printf("\033[0;31mloc.x=%d loc.y=%d \033[0m\n", loc.x, loc.y);
+
+    printf("\033[0;31m行高=%d \033[0m\n", loc.y);
 }
 
 
 /*新建翻译结果窗口, 本文件入口函数*/
-void *newNormalWindow(void * arg) {
+void *newNormalWindow() {
 
+    focustimes = 1;
     show = -1;
     InNewWin = 1;
 
     printf("\n准备判断是否新建一般窗口\n\n");
+
+    /* 窗口打开标志位*/
+    shmaddr_keyboard[2] = '1';
 
     int ret = waitForContinue();
 
@@ -87,7 +189,17 @@ void *newNormalWindow(void * arg) {
     GtkWidget *newWin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_keep_above(GTK_WINDOW(newWin), TRUE);
     gtk_window_set_title(GTK_WINDOW(newWin), "");
-    gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_MOUSE);
+    gtk_window_set_accept_focus ( GTK_WINDOW(newWin), TRUE );
+    gtk_window_set_focus_on_map ( GTK_WINDOW(newWin), TRUE );
+    gtk_widget_set_can_focus(newWin, TRUE);
+
+    if ( shmaddr_keyboard[0] == '1') {
+        shmaddr_keyboard[0] = '0';
+        gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_CENTER);
+    }
+    else
+        gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_MOUSE);
+
     //gtk_window_set_resizable(GTK_WINDOW(newWin), FALSE);
 
     g_signal_connect(newWin, "destroy", G_CALLBACK(destroyNormalWin), &wd);
@@ -109,6 +221,9 @@ void *newNormalWindow(void * arg) {
     gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
 
+    gtk_window_present ( GTK_WINDOW(newWin) );
+    gtk_widget_grab_focus ( view );
+    gtk_window_set_focus ( GTK_WINDOW(newWin), view );
 
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
     gtk_text_view_set_buffer((GtkTextView*)view, buf);
@@ -137,7 +252,15 @@ void *newNormalWindow(void * arg) {
     wd.phonPos = 0;
     wd.hadRedirect = 0;
 
-    g_signal_connect ( buf, "changed", G_CALLBACK(text_changed), (void*)&wd );
+    /* Signals are used by everyone, but they are only created on a per class basis \
+     * -- so you should not call call gtk_signal_new() unless you are writing a new \
+     *  GtkObject type. However, if you want to make a new signal for an existing \
+     *  type, you may use gtk_object_class_user_signal_new() to create a signal that\
+     *  doesn't correspond to a class's builtin methods.
+     * */
+
+    /* 监听键盘事件的回调函数*/
+    g_signal_connect ( newWin, "key-press-event", G_CALLBACK(key_press), (void*)&wd );
 
     /* 这个获取背景图片并适应窗口的代码段放在分离翻译数据之前耗的时间才有
      * 意义，因为图片加载虽然花了一定时间，但总的还是会比翻译结果获取成功
@@ -209,7 +332,15 @@ void *newNormalWindow(void * arg) {
     /*捕获resize window信号, 进行显示调整*/
     g_signal_connect (newWin, "configure-event", G_CALLBACK(syncNormalWinForConfigEvent), &wd);
 
+
+    timeout_id = g_timeout_add(100, detect_ctrl_c, &wd);
+
     gtk_widget_show_all(newWin);
+
+    /* GtkTextView 插入文本时的回调函数注册*/
+    //g_signal_connect ( buf, "changed", G_CALLBACK(text_changed), (void*)&wd );
+
+    //g_signal_connect ( buf, "mark-set", G_CALLBACK(mark_set), (void*)&wd );
 
     /*显示百度翻译结果*/
     displayBaiduTrans(buf, &iter, (void*)&wd);
@@ -240,6 +371,12 @@ void clearMemory () {
 int destroyNormalWin(GtkWidget *window, WinData *wd) {
 
     clearMemory();
+
+    g_source_remove ( timeout_id );
+
+    /* 窗口关闭标志位*/
+    shmaddr_keyboard[2] = '0';
+    shmaddr_keyboard[1] = '0';
 
     gtk_widget_destroy ( wd->image );
 
@@ -294,8 +431,12 @@ int waitForContinue() {
     int flag = 0;
     int time = 0;
 
+    printf("\033[0;32mCanNewWin=%d \033[0m\n", CanNewWin);
+
     /*等待任意一方python端的翻译数据全部写入共享内存*/
-    while( shmaddr_google[0] != FINFLAG && shmaddr_baidu[0] != FINFLAG ) {
+    while(/* (CanNewWin != 1) || */ ( shmaddr_google[0] != FINFLAG && shmaddr_baidu[0] != FINFLAG )) {
+
+        printf("\033[0;32mI an coming here \033[0m\n");
 
         if ( flag ) {
             flag = 0;
@@ -335,11 +476,17 @@ int waitForContinue() {
 
         /* 超时时间1.6S ( 2 * 400000ms )*/
         if ( time >= 2 ) {
+            printf("\033[0;31m超时退出 \033[0m\n");
             shmaddr_google[0] = ERRCHAR;
             shmaddr_baidu[0] = ERRCHAR;
             break;
         }
     }
+
+    printf("\033[0;32m准备创建窗口 %p \033[0m\n", text);
+    if ( text == NULL )
+        if (( text = calloc(TEXTSIZE, 1)) == NULL)
+            err_exit("malloc failed in notify.c");
 
     if ( shmaddr_baidu[0] == EXITFLAG ) {
         fprintf(stderr, "\033[0;35m百度翻译异常退出...\n\033[0m");
@@ -429,6 +576,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
             gtk_window_resize ( (GtkWindow*)((WinData*)arg)->window, bw.width, bw.height );
             gtk_widget_set_size_request ( ((WinData*)arg)->scroll, bw.width, bw.height );
             gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, bw.width-50, bw.height-45);
+            gtk_widget_queue_draw ( ((WinData*)arg)->window );
             gtk_widget_show_all(((WinData*)arg)->window);
             return;
         }
@@ -452,6 +600,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         gtk_window_resize((GtkWindow*)((WinData*)arg)->window, gw.width, gw.height);
         gtk_widget_set_size_request ( ((WinData*)arg)->scroll, gw.width, gw.height );
         gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, gw.width-50, gw.height-45);
+        gtk_widget_queue_draw ( ((WinData*)arg)->window );
         gtk_widget_show_all(((WinData*)arg)->window);
         printf("\033[0;31m\n谷歌翻译重设窗口大小:gw width=%f gw.height=%f\033[0m\n", gw.width, gw.height);
     } 
@@ -472,6 +621,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
             gtk_window_resize ( (GtkWindow*)((WinData*)arg)->window, gw.width, gw.height );
             gtk_widget_set_size_request ( ((WinData*)arg)->scroll, gw.width, gw.height );
             gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, gw.width-50, gw.height-45);
+            gtk_widget_queue_draw ( ((WinData*)arg)->window );
             gtk_widget_show_all(((WinData*)arg)->window);
             return;
         }
@@ -496,6 +646,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         gtk_window_resize((GtkWindow*)((WinData*)arg)->window, bw.width, bw.height);
         gtk_widget_set_size_request ( ((WinData*)arg)->scroll, bw.width, bw.height );
         gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, bw.width-50, bw.height-45);
+        gtk_widget_queue_draw ( ((WinData*)arg)->window );
         gtk_widget_show_all(((WinData*)arg)->window);
     }
 }
@@ -613,7 +764,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
                 }
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
-                        "blue-font", "gray_background", "bold-style",  "font-size-11", NULL);
+                        "brown-font", "gray_background", "bold-style",  "font-size-11", NULL);
 
                 if ( google_result[1][0] != '\0'  || google_result[2][0] != '\0') {
 
@@ -683,6 +834,9 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
             }
             else if ( i == 1 ) {
 
+                gtk_text_buffer_get_end_iter ( buf, &end );
+                printf("create mark\n");
+                gtk_text_buffer_create_mark ( buf, "GOD", &end, TRUE);
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
                         -1, "blue-font", "gray_background", "heavy-font", \
@@ -702,7 +856,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
-                            -1, "blue-font", "gray_background", "heavy-font", \
+                            -1, "brown-font", "gray_background", "heavy-font", \
                             "font-size-11", "letter-spacing", NULL);
 
                 } else {
@@ -1216,6 +1370,9 @@ int  newScrolledWin() {
     clearMemory();
 
     pthread_exit(NULL);
+
+    /* 窗口关闭标志位*/
+    shmaddr_keyboard [2] = '0';
 
     return 1;
 }
