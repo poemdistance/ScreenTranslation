@@ -3,10 +3,14 @@
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 extern char *shmaddr_selection;
+extern char *shmaddr_searchWin;
+extern char *shmaddr_keyboard;
 
 extern int shmid_google;
 extern int shmid_baidu;
 extern int shmid_selection;
+extern int shmid_searchWin;
+extern int shmid_keyboard;
 
 extern char *baidu_result[BAIDUSIZE];
 extern char *google_result[GOOGLESIZE];
@@ -69,7 +73,7 @@ void quit() {
     else
         printf("\033[0;32mremove shared memory identifier successful (baidu)\033[0m\n");
 
-    /* 清除与共享内存*/
+    /* 清除共享内存*/
     if ( shmdt(shmaddr_selection) < 0)
         err_exit("shmdt error");
 
@@ -78,6 +82,23 @@ void quit() {
     else
         printf("\033[0;32mremove shared memory identifier successful (selection)\033[0m\n");
 
+    /* 清除共享内存*/
+    if ( shmdt(shmaddr_searchWin) < 0)
+        err_exit("shmdt error");
+
+    if (shmctl(shmid_searchWin, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error");
+    else
+        printf("\033[0;32mremove shared memory identifier successful (search window)\033[0m\n");
+
+    /* 清除共享内存: keyboard event*/
+    if ( shmdt(shmaddr_keyboard) < 0)
+        err_exit("shmdt error");
+
+    if (shmctl(shmid_keyboard, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error");
+    else
+        printf("\033[0;32mremove shared memory identifier successful (keyboard event)\033[0m\n");
 
     if ( baidu_result[0] != NULL)
         for (int i=0; i<BAIDUSIZE; i++)
