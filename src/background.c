@@ -42,10 +42,12 @@ GtkWidget *syncImageSize ( GtkWidget *window, gpointer *data )
 
     gtk_widget_set_size_request ( image, width, height );
     gtk_widget_queue_draw (image);
+    gtk_widget_queue_draw ( ((WinData*)data)->window );
 
     gtk_layout_put ( layout, image, 0, 0 );
 
     gtk_widget_show (image);
+    gtk_widget_show (((WinData*)data)->window);
 
     ((WinData*)data)->oldImage = image;
 
