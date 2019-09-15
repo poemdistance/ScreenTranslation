@@ -2,6 +2,7 @@
 #define __COMMON_H__
 
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
 #include <gtk/gtkwindow.h>
 #include <sys/time.h>
 #include <pthread.h>
@@ -24,6 +25,10 @@
 #include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+
+/*for gdk_x11_window_get_xid()*/
+#include <gdk/gdkx.h> 
+
 #include <X11/extensions/XTest.h>
 
 #define TEXTSIZE (1024*1024)
@@ -113,7 +118,7 @@ void *DetectMouse(void *arg);
 int shared_memory_for_google_translate(char **addr);
 int shared_memory_for_baidu_translate(char **addr);
 int shared_memory_for_selection(char **addr);
-void *newNormalWindow(void * arg);
+void *newNormalWindow();
 void adjustStr(char *p[3], int len, char *storage[3]);
 int adjustStrForScrolledWin(int len, char *source);
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
@@ -189,8 +194,15 @@ void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd)
 int getMaxLenOfBaiduTrans() ;
 int getLinesOfBaiduTrans () ;
 
+gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data );
+
 /* End For newWindow.c*/
 
+
+void quickSearch();
+void tranSelect();
 void checkSelectionChanged() ;
+
+int isEmpty( char *buf );
 
 #endif
