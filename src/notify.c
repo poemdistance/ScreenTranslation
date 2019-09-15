@@ -34,7 +34,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     /* 必须延迟一下, 原因:
      * 检测Primary Selection的程序跑的没这边快，
      * 需要等到对方写完1后才能继续(如果对方正在写1)*/
-    usleep(100000);
+    usleep(132000);
 
     if ( shmaddr_selection[0] == '1') {
 
@@ -93,8 +93,8 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     memset(text, 0, TEXTSIZE);
     int retval = 0;
 
-    if ( (retval = getClipboard(text) ) == 1) {
-        printf("Not copy event\n");
+    if ( (retval = getClipboard(text) ) == 1 || isEmpty(text)) {
+        printf("Not copy event or empty text\n");
         action = 0;
         memset(*history, 0, sizeof(*history));
         CanNewEntrance = 0;
