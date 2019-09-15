@@ -5,6 +5,7 @@
 #include "common.h"
 
 extern char *shmaddr_google;
+extern char *shmaddr_searchWin;
 extern int action;
 extern int timeout_id_1;
 extern int timeout_id_2;
@@ -21,6 +22,7 @@ extern char audio_en[512];
 extern char audio_uk[512];
 
 int HadDestroied = 1;
+int quickSearchFlag = 0;
 static int aboveWindow = 0;
 
 int quit_entry(void *arg);
@@ -46,11 +48,20 @@ void *GuiEntrance(void *arg) {
                 action = 0;
                 CanNewWin = 0;
                 CanNewEntrance = 0;
+                pthread_exit(NULL);
                 return (void*)0;
             }
             break;
         }
-        usleep(100000);
+
+        /*
+        if ( shmaddr_searchWin[20] == '1' ) {
+            quickSearchFlag = 1;
+            pthread_exit(NULL);
+            return (void*)0;
+        } */
+
+        usleep(1000);
     }
 
     GtkWidget *window;
