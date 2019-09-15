@@ -23,7 +23,8 @@ GtkWidget *syncImageSize ( GtkWidget *window, gpointer *data )
     gint width, height;
     gtk_window_get_size ( (GtkWindow*)window, &width, &height );
 
-    if ( ((WinData*)data)->width > width &&  ((WinData*)data)->height > height ) {
+    /* FIXME:与或操作换了，先测试看问题是不是在这里*/
+    if ( ((WinData*)data)->width > width ||  ((WinData*)data)->height > height ) {
 
         width  = ((WinData*)data)->width ;
         height  = ((WinData*)data)->height ;
