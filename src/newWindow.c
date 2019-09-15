@@ -74,7 +74,7 @@ int detect_ctrl_c(void *arg) {
      * 使本翻译界面关闭，请注释掉下面的代码段*/
 
     /* Ctrl_C事件标志位*/
-    if ( shmaddr_keyboard[1] == '1' ) {
+    if ( shmaddr_keyboard[1] == '1' && 0) {
 
         printf("\033[0;32m窗口检测到Control-C\033[0m\n");
 
@@ -251,6 +251,7 @@ void *newNormalWindow() {
     wd.lineHeight = 0;
     wd.phonPos = 0;
     wd.hadRedirect = 0;
+    wd.forceResize = 0;
 
     /* Signals are used by everyone, but they are only created on a per class basis \
      * -- so you should not call call gtk_signal_new() unless you are writing a new \
@@ -1027,11 +1028,12 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
 }
 
 /*跟上一个函数是一样的, 这里主要是考虑到后期拓展和区分窗口写成了两个函数*/
-void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer wd ) {
+void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer *wd ) {
 
     gint width, height;
     static unsigned int lastwidth = 0, lastheight = 0;
 
+    //printf("syncScrolledWinWithConfigEvent\n");
     gtk_window_get_size ( (GtkWindow*)window, &width, &height );
 
     /* 窗口大小未改变不用重新调整布局,直接返回*/
@@ -1044,16 +1046,33 @@ void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpoint
     gtk_window_resize ( GTK_WINDOW(((WinData*)wd)->window), width, height );
     gtk_widget_set_size_request ( (GtkWidget*)((WinData*)wd)->scroll,  width, height);
     gtk_layout_move ( (GtkLayout*)((WinData*)wd)->layout, ((WinData*)wd)->button, width-50, height-45 );
+
     syncImageSize ( ((WinData*)wd)->window, (void*)wd );
+    ((WinData*)wd)->width = width;
+    ((WinData*)wd)->height = height;
+
     gtk_widget_queue_draw ( window );
+    gtk_widget_show_all ( ((WinData*)wd)->window );
 }
 
 void resizeScrolledWin ( WinData *wd, gint width, gint height ) {
 
+    //wd->forceResize = 1;
+    wd->height = height;
+    wd->width = width;
+    syncImageSize ( wd->window, (void*)wd );
+
+    printf("\033[0;33mresize scrolled window %d %d \033[0m\n", width, height);
     gtk_window_resize ((GtkWindow*) wd->window, width, height );
     gtk_widget_set_size_request ( wd->scroll,  width, height);
+
     gtk_layout_move ( (GtkLayout*)wd->layout, wd->button, width-50, height-45 );
     gtk_widget_queue_draw ( wd->window );
+
+    gtk_widget_show_all(wd->window);
+
+    gtk_window_get_size ( (GtkWindow*)(wd->window), &width, &height );
+    printf("\033[0;33mnow size %d %d \033[0m\n", width, height);
 
 }
 
@@ -1105,6 +1124,7 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
         getIndex(index, shmaddr_google);
 
         int charNums = countCharNums ( &shmaddr_google[ACTUALSTART] );
+        printf("\033[0;33mcharNums=%d \033[0m\n", charNums);
 
         /* 根据字符数量控制窗口大小和单行长度*/
         if ( charNums < 400 ) {
@@ -1241,6 +1261,8 @@ void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd)
         printf("\033[0;31mHadn't show google result \033[0m\n");
 
         suitWinSizeWithCharNum ( shmaddr_google, wd );
+
+        printf("\033[0;33mwindow width,height %d %d \033[0m\n", wd->width, wd->height);
 
         resizeScrolledWin ( wd, wd->width, wd->height );
 

@@ -83,6 +83,7 @@ typedef struct WinData{
 
     gint width;
     gint height;
+    gint forceResize;
 
     gint lineHeight;
     gint phonPos;
@@ -186,7 +187,7 @@ void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter);
 void changeDisplay(GtkWidget *button, gpointer *arg);
 void displayGoogleTrans(GtkWidget *button, gpointer *arg);
 void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg);
-void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer scroll );
+void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer *wd );
 void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer scroll );
 void adjustWinSize(GtkWidget *button, gpointer *arg, int which);
 void setWinSizeForNormalWin ( int maxlen, int lines, char *addr );

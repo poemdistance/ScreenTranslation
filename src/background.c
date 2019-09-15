@@ -24,7 +24,7 @@ GtkWidget *syncImageSize ( GtkWidget *window, gpointer *data )
     gtk_window_get_size ( (GtkWindow*)window, &width, &height );
 
     /* FIXME:与或操作换了，先测试看问题是不是在这里*/
-    if ( ((WinData*)data)->width > width ||  ((WinData*)data)->height > height ) {
+    if ( ((WinData*)data)->width > width ||  ((WinData*)data)->height > height || ((WinData*)data)->forceResize) {
 
         width  = ((WinData*)data)->width ;
         height  = ((WinData*)data)->height ;
@@ -42,12 +42,12 @@ GtkWidget *syncImageSize ( GtkWidget *window, gpointer *data )
 
     gtk_widget_set_size_request ( image, width, height );
     gtk_widget_queue_draw (image);
-    gtk_widget_queue_draw ( ((WinData*)data)->window );
+    //gtk_widget_queue_draw ( ((WinData*)data)->window );
 
     gtk_layout_put ( layout, image, 0, 0 );
 
     gtk_widget_show (image);
-    gtk_widget_show (((WinData*)data)->window);
+    //gtk_widget_show (((WinData*)data)->window);
 
     ((WinData*)data)->oldImage = image;
 
