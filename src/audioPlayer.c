@@ -186,7 +186,8 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd 
 
         /* 超出窗口了*/
         //if ( x + 30 > gw.width )
-        gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
+        //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
+        gtk_layout_put ( (GtkLayout*)layout, button, posx, 40 );
         //else {
 
         //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
@@ -202,7 +203,8 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd 
         //if ( x + 30 > bw.width )
         //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
         //else 
-        gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
+        //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
+        gtk_layout_put ( (GtkLayout*)layout, button, posx,  40 );
         gtk_window_resize ( (GtkWindow*)window, bw.width, bw.height );
     }
 
