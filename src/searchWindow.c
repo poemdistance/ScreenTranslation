@@ -22,6 +22,11 @@ void search_change ( GtkSearchEntry *entry, gpointer *data ) {
 
 void stop_search (  GtkSearchEntry *entry, gpointer *data  ) {
 
+    char *shmaddr;
+    shared_memory_for_keyboard_event(&shmaddr);
+    shmaddr[1] = '0';
+    shmaddr[0] = '0';
+
     gtk_widget_destroy ( (GtkWidget*)data );
     gtk_widget_destroy ( (GtkWidget*)entry );
     gtk_main_quit();
