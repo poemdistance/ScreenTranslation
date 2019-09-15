@@ -30,7 +30,7 @@ void *readSocket() {
         if ( InSearchWin )
             buf[0] = '0';
 
-        usleep(10000);
+        usleep(1000);
     }
 }
 
@@ -77,7 +77,7 @@ void quickSearch()
 
                     /* 等待子进程退出*/
                     while ( ! childExitFlag )
-                        usleep(200000);
+                        usleep(1000);
 
                     childExitFlag = 0;
                 }
@@ -87,7 +87,7 @@ void quickSearch()
                 buf[0] = '0';
             }
 
-            usleep(200000);
+            usleep(1000);
         }
     } 
     else {
