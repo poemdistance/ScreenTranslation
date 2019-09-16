@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g -fsanitize=address 
+CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g #-fsanitize=address 
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
