@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Mstran
 Comment=The Monitor of ScreenTranslation
-Exec=bash /home/rease/.stran/startup.sh
+Exec=/home/rease/.stran/startup.sh
 Encodeing=UTF-8
 Icon=/home/rease/.stran/tran.png
 Type=Application

@@ -1,3 +1,6 @@
+/* 注意不要频繁调用gtk_widget_queue_draw(),
+ * 否则越靠后的重绘指令越有可能不被成功执行*/
+
 #include "common.h"
 
 extern char *text;
