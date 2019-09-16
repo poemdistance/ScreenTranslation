@@ -23,6 +23,7 @@ extern int fd_key;
 extern pid_t baidu_translate_pid;
 extern pid_t google_translate_pid;
 extern pid_t check_selectionEvent_pid;
+extern pid_t quickSearchProcess_pid;
 
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
@@ -115,6 +116,7 @@ void quit() {
         kill ( google_translate_pid, SIGKILL );
 
     kill ( check_selectionEvent_pid, SIGKILL );
+    kill ( quickSearchProcess_pid, SIGTERM );
 
     /* 进程所在文件也进行了清理，判断一下防止多次释放,
      * (释放后display会被置为空)*/

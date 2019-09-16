@@ -1,5 +1,6 @@
 #include "common.h"
 
+pid_t quickSearchProcess_pid;
 
 int main(int argc, char **argv)
 {
@@ -16,8 +17,13 @@ int main(int argc, char **argv)
     tranSelectProcess = tranSelect;
 
     /* 启动取词翻译进程和quickSearch进程*/
-    if ( pid > 0 )
+    if ( pid > 0 ) {
+
+        quickSearchProcess_pid = pid;
         tranSelectProcess();
-    else
+    }
+    else {
+
         quickSearchProcess();
+    }
 }

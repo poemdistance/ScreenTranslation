@@ -1,10 +1,25 @@
 #include "quickSearch.h"
+#include <signal.h>
+
+int fd;
+
+void closeDevice() {
+
+    printf("\033[0;31mCLOSING DEVICE (captureShortcutEvent)\033[0m\n");
+    close(fd);
+    exit(0);
+}
 
 void captureShortcutEvent(int socket) {
 
-    int fd;
     char device[100];
     fd = open( getKeyboardDevice(device) , O_RDONLY);
+
+    struct sigaction sa;
+    sa.sa_handler = closeDevice;
+    sigemptyset ( &sa.sa_mask );
+    if ( sigaction ( SIGTERM, &sa, NULL) != 0 )
+        err_exit_qs("Sigaction error in captureShortcutEvent");
 
     struct timeval tv;
     fd_set fdset;
