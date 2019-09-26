@@ -1,19 +1,37 @@
 #include "quickSearch.h"
 #include <signal.h>
 
-int fd;
+#define KEYBOARD_NUM ( 10 )
+
+int fds[KEYBOARD_NUM] = { 0 };
 
 void closeDevice() {
 
     printf("\033[0;31mCLOSING DEVICE (captureShortcutEvent)\033[0m\n");
-    close(fd);
+    for ( int i=0; i<KEYBOARD_NUM; i++ ) {
+        if ( fds[i] != 0 && fds[i] != 0 )
+            close(fds[i]);
+    }
     exit(0);
+}
+
+int *myopen( char (*dev)[100] )  {
+
+    for ( int i=0; i<KEYBOARD_NUM; i++ ) {
+        if ( strlen(dev[i]) > 0 ) {
+            fds[i] = open((char*)dev[i], O_RDONLY);
+            printf("\033[0;35mopen device %s \033[0m\n", dev[i]);
+        }
+    }
+
+    return fds;
 }
 
 void captureShortcutEvent(int socket) {
 
-    char device[100];
-    fd = open( getKeyboardDevice(device) , O_RDONLY);
+    char device[KEYBOARD_NUM][100] = { '\0' };
+    myopen( (char (*)[100])getKeyboardDevice(device) );
+    int fd = 0;
 
     struct sigaction sa;
     sa.sa_handler = closeDevice;
@@ -23,28 +41,36 @@ void captureShortcutEvent(int socket) {
 
     struct timeval tv;
     fd_set fdset;
-    int retnum = -1;
+    int retnum = 0;
 
     struct input_event ev;
 
     int AltPress = 0;
     int CtrlPress = 0;
-    //int count = 0;
 
     char *shmaddr;
     shared_memory_for_keyboard_event(&shmaddr);
 
-    //char buf[2] = { '\0' };
+    int maxfd = 0;
 
     for (;;) {
 
-        tv.tv_usec = 200000;
+        tv.tv_usec = 300000;
         tv.tv_sec = 0;
 
         FD_ZERO ( &fdset );
-        FD_SET ( fd, &fdset );
 
-        retnum = select ( fd+1, &fdset, NULL, NULL, &tv );
+        for ( int i=0; i<KEYBOARD_NUM; i++ ) {
+
+            if ( fds[i] != 0 ) {
+
+                FD_SET ( fds[i], &fdset );
+                if ( fds[i] > maxfd )
+                    maxfd = fds[i];
+            }
+        }
+
+        retnum = select ( maxfd+1, &fdset, NULL, NULL, &tv );
 
         /* 超时*/
         if ( retnum == 0 )
@@ -61,6 +87,11 @@ void captureShortcutEvent(int socket) {
          * code: KEY_*
          * */
 
+        for ( int i=0; i<KEYBOARD_NUM; i++ )
+            if ( fds[i] != 0 )
+                if ( FD_ISSET ( fds[i], &fdset ) )
+                    fd = fds[i];
+
         if ( read ( fd, &ev, sizeof(ev) ) < 0 )
             continue;
 
@@ -74,6 +105,8 @@ void captureShortcutEvent(int socket) {
 
                 fprintf(stdout, "Captured pressing event <Alt-J>\n");
                 write ( socket, "1", 1 );
+
+                /* quick search 快捷键标志位*/
                 shmaddr[0] = '1';
             }
 
@@ -86,6 +119,7 @@ void captureShortcutEvent(int socket) {
 
                 fprintf(stdout, "Captured pressing event <Ctrl-C>\n");
                 if ( shmaddr[2] == '1')
+                    /* 退出快捷键标志位*/
                     shmaddr[1] = '1';
             }
 
