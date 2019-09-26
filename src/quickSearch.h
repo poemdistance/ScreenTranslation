@@ -12,7 +12,10 @@
 #include <linux/input.h>
 #include <sys/ipc.h>
 
-char *getKeyboardDevice(char *buf);
+#define TEXT_SUBMIT_BYTE ( 20 )
+#define SUBMIT_TEXT ( 21 )
+
+char **getKeyboardDevice(char (*buf)[100]);
 void captureShortcutEvent(int socket);
 void err_exit_qs(const char *buf);
 void searchWindow();
