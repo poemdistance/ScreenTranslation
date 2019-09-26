@@ -55,11 +55,11 @@ void *GuiEntrance(void *arg) {
         }
 
         /*
-        if ( shmaddr_searchWin[20] == '1' ) {
-            quickSearchFlag = 1;
-            pthread_exit(NULL);
-            return (void*)0;
-        } */
+           if ( shmaddr_searchWin[20] == '1' ) {
+           quickSearchFlag = 1;
+           pthread_exit(NULL);
+           return (void*)0;
+           } */
 
         usleep(1000);
     }
@@ -170,16 +170,7 @@ int quit_test(void *arg) {
         if ( action == SINGLECLICK  && !aboveWindow) {
             printf("GuiEntrance: 单击销毁\n");
 
-            /* TODO:单击销毁这里虽然清空了标志位，但如果之后产生的标志位
-             * 这里的清除是不起作用的*/
-            memset(shmaddr_google, '0', 10);
-            memset(shmaddr_baidu, '0', 10);
-
-            memset(shmaddr_google, '\0', SHMSIZE-10);
-            memset(shmaddr_baidu, '\0', SHMSIZE-10);
-
-            memset ( audio_uk, '\0', 512 );
-            memset ( audio_en, '\0', 512 );
+            clearMemory();
 
             CanNewWin = 0;
 
@@ -226,14 +217,7 @@ int quit_entry(void *arg) {
         if ( action == DOUBLECLICK)
             CanNewEntrance = 1;
 
-        memset(shmaddr_google, '0', 10);
-        memset(shmaddr_baidu, '0', 10);
-
-        memset(shmaddr_google, '\0', SHMSIZE-10);
-        memset(shmaddr_baidu, '\0', SHMSIZE-10);
-
-        memset ( audio_uk, '\0', 512 );
-        memset ( audio_en, '\0', 512 );
+        clearMemory();
 
         action  = 0;
         CanNewWin = 0;
