@@ -366,10 +366,12 @@ void clearMemory () {
     memset ( audio_en, '\0', 512 );
 
     for ( int i=0; i<BAIDUSIZE; i++ )
-        memset( baidu_result[i], '\0', SHMSIZE / BAIDUSIZE );
+        if ( baidu_result[i] != NULL)
+            memset( baidu_result[i], '\0', SHMSIZE / BAIDUSIZE );
 
     for ( int i=0; i<GOOGLESIZE; i++ )
-        memset( google_result[i], '\0', SHMSIZE / GOOGLESIZE );
+        if ( google_result[i] != NULL)
+            memset( google_result[i], '\0', SHMSIZE / GOOGLESIZE );
 }
 
 int destroyNormalWin(GtkWidget *window, WinData *wd) {
@@ -703,21 +705,14 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
         printf("\033[0;31m字符串不相等: google_result[0]->%s< \033[0m\n\n", google_result[0]);
         printf("ACTUALSTART=>%s<\n",&shmaddr_google[ACTUALSTART] );
 
-        //int flag = 0;
         for ( int i=0; i<2; i++ ) {
             if ( shmaddr_google[((WinData*)arg)->index_google[i] - 1] == '\0') {
-
                 shmaddr_google[((WinData*)arg)->index_google[i] - 1] = '|';
-                //flag = 1;
             }
         }
 
-        //if ( flag )
-        //printf("\033[0;35m添加分隔符后字符串:>%s< \033[0m\n", &shmaddr_google[ACTUALSTART]);
-
         index_google[0] = index_google[1] = 0;
         getIndex(index_google, shmaddr_google);
-        //printf("\n\033[0;32mindex:%d %d\n\033[0m", index_google[0], index_google[1]);
 
         /* index_google[0] == 0没有索引到分隔符，不必调整字符，不然反而会出错*/
         if ( index_google[0] != 0) {
