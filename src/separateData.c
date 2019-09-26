@@ -279,9 +279,10 @@ void separateGoogleDataSetWinSize ( int *index ) {
         return;
     }
 
-    /* TODO:原来是全局变量*/
     int lines = 0;
     int maxlen = 0;
+
+    printf("\n\033[0;35m原始数据>>%s \033[0m\n", &shmaddr_google[ACTUALSTART]);
 
     /*主要完成步骤:加入回车符使单行句子不至于太长*/
     if ( shmaddr_google[0]  != ERRCHAR ) {
@@ -293,7 +294,6 @@ void separateGoogleDataSetWinSize ( int *index ) {
         p[1] = &shmaddr_google[index[0]];
         p[2] = &shmaddr_google[index[1]];
 
-        /* TODO:上下代码位置调换过，出错回来这里*/
         adjustStr(p, 28, google_result);
 
         /* 统计谷歌翻译结果行数*/
@@ -311,9 +311,6 @@ void separateGoogleDataSetWinSize ( int *index ) {
         /*存于全局变量*/
         gw.width = 15 * maxlen + 40;
         gw.height = lines * 28;
-
-        //for ( int i=0; i<3; i++ )
-        //printf("\033[0;33m(separateGoogleDataSetWinSize) %s \033[0m\n", google_result[i]);
 
         printf("\033[0;33m(separadata.c)gw.width=%f, gw.height=%f \033[0m\n", gw.width, gw.height);
     }
