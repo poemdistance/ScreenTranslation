@@ -34,7 +34,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     /* 必须延迟一下, 原因:
      * 检测Primary Selection的程序跑的没这边快，
      * 需要等到对方写完1后才能继续(如果对方正在写1)*/
-    usleep(132000);
+    usleep(230000);
 
     if ( shmaddr_selection[0] == '1') {
 
@@ -43,9 +43,13 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
         /* 去吧, 皮卡丘*/
         pikaqiuGo = 1;
+
+        printf("\033[0;35mPikaqiu Go \033[0m\n");
     }
 
     if ( ! pikaqiuGo ) {
+
+        printf("\033[0;35mPikaqiu return \033[0m\n");
 
         action = 0;
         memset(*history, 0, sizeof(*history));
@@ -65,8 +69,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
 
     /*需每次都执行才能判断当前的窗口是什么*/
-    fp = popen("ps -p `xdotool getwindowfocus getwindowpid`\
-            | awk '{print $NF}' | tail -n 1", "r");
+    fp = popen("ps -p `xdotool getwindowfocus getwindowpid` | awk '{print $NF}' | tail -n 1", "r");
 
     memset ( appName, 0, sizeof(appName) );
 
