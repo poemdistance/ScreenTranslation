@@ -179,6 +179,7 @@ int destroyNormalWin(GtkWidget *window, WinData *win);
 int waitForContinue();
 void getIndex(int *index, char *addr);
 void get_paragraph();
+void clearMemory ();
 void initMemoryBaidu();
 void initMemoryGoogle();
 void printDebugInfo();
