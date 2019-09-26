@@ -17,7 +17,14 @@ pid_t captureShortcutEvent_pid;
 void kill_ourselves() {
 
     printf("\033[0;31mKILL  captureShortcutEvent(), PID %d \033[0m\n", captureShortcutEvent_pid);
-    kill ( captureShortcutEvent_pid, SIGTERM );
+    //kill ( captureShortcutEvent_pid, SIGTERM );
+
+    /* 万一失败就不好了，多来几个*/
+    kill ( captureShortcutEvent_pid, SIGKILL );
+    kill ( captureShortcutEvent_pid, SIGKILL );
+    kill ( captureShortcutEvent_pid, SIGKILL );
+    kill ( captureShortcutEvent_pid, SIGKILL );
+    kill ( captureShortcutEvent_pid, SIGKILL );
     exit(0);
 }
 
