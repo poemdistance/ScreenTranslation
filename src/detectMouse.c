@@ -44,10 +44,11 @@ void *DetectMouse(void *arg) {
     int releaseButton = 1;
     fd_set readfds;
     struct timeval tv;
-    struct timeval old, now;
+    struct timeval old, now, whenTimeout;
     double oldtime = 0;
     double newtime = 0;
     double lasttime = 0;
+    double inTimeout = 0;
     int thirdClick;
 
     int fd_google[2], fd_baidu[2];
@@ -114,9 +115,6 @@ void *DetectMouse(void *arg) {
         fd_python[0] = fd_google[1];
         fd_python[1] = fd_baidu[1];
 
-        printf("\033[0;35m%d %d \033[0m\n", fd_python[0], fd_python[1]);
-        printf("\033[0;31m%p \033[0m\n", shmaddr_searchWin);
-
         shmaddr_searchWin[0] =  *itoa(fd_python[0]);
         shmaddr_searchWin[strlen(itoa(fd_python[0]))] =  '\0';
 
@@ -155,21 +153,32 @@ void *DetectMouse(void *arg) {
 
             retval = select( mousefd+1, &readfds, NULL, NULL, &tv );
 
-            if ( shmaddr_searchWin[20] == '1') {
+            if ( shmaddr_searchWin[TEXT_SUBMIT_BYTE] == '1') {
 
                 if ( text == NULL )
                     if (( text = calloc(TEXTSIZE, 1)) == NULL)
                         err_exit("malloc failed in notify.c");
 
-                shmaddr_searchWin[20] = '0';
-                strcpy ( text,  &shmaddr_searchWin[21] );
-                writePipe ( &shmaddr_searchWin[21], fd_python[0] );
-                writePipe ( &shmaddr_searchWin[21], fd_python[1] );
+                shmaddr_searchWin[TEXT_SUBMIT_BYTE] = '0';
+                strcpy ( text,  &shmaddr_searchWin[SUBMIT_TEXT] );
+                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[0] );
+                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
                 CanNewWin = 1;
             }
 
             /*超时*/
             if(retval==0) {
+
+                gettimeofday( &whenTimeout, NULL );
+                inTimeout = (whenTimeout.tv_usec + whenTimeout.tv_sec*1000000) / 1000;
+
+                /* 超时自动清零history*/
+                if ( abs (inTimeout - oldtime) > 700)
+                    if ( history[0] | history[1] |  history[2] | history[3]) {
+                        memset(history, 0, sizeof(history));
+                        releaseButton = 1;
+                    }
+
                 continue;
             }
 
@@ -246,6 +255,8 @@ void *DetectMouse(void *arg) {
                         oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                         thirdClick = 0;
                         action = SINGLECLICK;
+
+                        printf("\033[0;35m单击事件 \033[0m\n");
                     }
                     releaseButton = 0;
 
@@ -263,9 +274,14 @@ void *DetectMouse(void *arg) {
 
                 /*双击超过700ms的丢弃掉*/
                 if ( abs (newtime - oldtime) > 700)  {
+                    gettimeofday(&old, NULL);
+                    oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                     memset(history, 0, sizeof(history));
+                    printf("\033[0;31m超时丢弃 \033[0m\n");
                     continue;
                 }
+
+                printf("\033[0;35m有效双击事件 \033[0m\n");
                 /*更新最后一次有效双击事件的发生时间*/
                 lasttime = newtime;
 
