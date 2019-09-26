@@ -24,7 +24,11 @@ void stop_search (  GtkSearchEntry *entry, gpointer *data  ) {
 
     char *shmaddr;
     shared_memory_for_keyboard_event(&shmaddr);
+
+    /* 退出快捷键标志位清零*/
     shmaddr[1] = '0';
+
+    /* quick search 快捷键标志位清零*/
     shmaddr[0] = '0';
 
     gtk_widget_destroy ( (GtkWidget*)data );
@@ -45,12 +49,14 @@ void submit_text ( GtkSearchEntry *entry, gpointer *data ) {
 
     char *shmaddr = NULL;
     shared_memory_for_quickSearch( &shmaddr );
-    shmaddr[20] = '1';
+
+    /* 文本提交标记位*/
+    shmaddr[TEXT_SUBMIT_BYTE] = '1';
 
     strcat ( wg->buf, "\n" );
 
     /* 注意结尾字符, 应该是有的*/
-    strcpy ( &shmaddr[21], wg->buf);
+    strcpy ( &shmaddr[SUBMIT_TEXT], wg->buf);
 
     gtk_widget_destroy ( wg->entry );
     gtk_widget_destroy ( wg->window );
