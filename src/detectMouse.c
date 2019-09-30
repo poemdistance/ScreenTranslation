@@ -173,7 +173,7 @@ void *DetectMouse(void *arg) {
                 inTimeout = (whenTimeout.tv_usec + whenTimeout.tv_sec*1000000) / 1000;
 
                 /* 超时自动清零history*/
-                if ( abs (inTimeout - oldtime) > 700 && action != SLIDE)
+                if ( abs (inTimeout - oldtime) > 700 && ! isAction(history, i, ALLONE))
                     if ( history[0] | history[1] |  history[2] | history[3]) {
                         memset(history, 0, sizeof(history));
                         releaseButton = 1;
