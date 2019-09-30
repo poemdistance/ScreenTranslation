@@ -183,6 +183,15 @@ int isAction(int history[], int last, int judgeType) {
         return 1;
     }
 
+    else if(judgeType == ALLONE &&
+            history[m] == 1 && history[n] == 1 &&
+            history[j] == 1 && history[q] == 1
+           ) {
+
+        return 1;
+    }
+
+
     return 0;
 }
 
