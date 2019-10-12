@@ -245,3 +245,6 @@
          中途测试过程中以root用户或者说sudo执行时Xdisplay发生过 No protocol specified的错误，所以此方法不一定奏效，但也可能是当时系统忘记关闭Wayland导致的。
 
 <br>
+
+# 九. 程序内部逻辑流程图
+![img](./src/FlowChart.png)
