@@ -1,0 +1,562 @@
+digraph ST {
+
+    splines=false;
+    /* group分组使同组element强行对齐*/
+
+    monitor [shape=rectangle label="Screen Translation Monitor" height=0.7];
+    {node[shape=point style=invisible,label="" height=0 width=0 group=b] i1};
+
+    /*monitor -> tmp*/
+    monitor->i1 [label="  fork()" arrowhead=none constrait=false];
+
+    st [shape=point label="" height=0 width=0 group=sub];
+
+    /* tmp->screen translation*/
+    {rank=same i1->st [minlen=15 label="child process (p1)" arrowhead=none ]};
+
+    wait [shape="diamond" label="child process (p1) has exited?" height=1 width=4 group=b];
+
+    {node[shape=point style=invisible label="" group=b height=0 width=0] looppoint};
+
+    /* tmp -> wait*/
+    i1 -> looppoint [label="  parent process" arrowhead=none group=b constrait=false];
+    looppoint -> wait;
+
+    {node[shape=point height=0 width=0 label="1" rank=sink group=a] i2, i3, loopcon};
+    {rank=same loopcon looppoint}
+
+    {rank=same i2->wait [arrowhead=none]};
+    {rank=same i3->i1 };
+    i2->i3 [label="  YES" arrowhead=none];
+
+
+    sigchld [shape=diamond label="SIGCHLD coming?" height=1 group=b];
+    wait->sigchld[label="  NO"];
+
+    subgraph forceLR {
+
+        rank=same;
+        rankdir=LR;
+        readchild [shape=box label="Read child \nprocess info (waitpid())" group=r];
+        readchild->sigchld [dir=back label=YES];
+    };
+
+    subgraph returnLoop{
+
+        sigexit[shape=diamond height=1 label="SIGTERM or SIGINT coming?" group=b];
+
+        {node [style=invisible shape=point label="" width=0 height=0 group=r] downreadchild};
+        {rank=same downreadchild->sigexit };
+        readchild->downreadchild[arrowhead=none];
+
+        {node [style=invisible shape=point label="" width=0 height=0 group=b] conExitChld};
+        { sigchld->sigexit[label="  NO"] };
+
+        {node [style=invisible shape=point label="" group=con width=0 height=0] con1 con2 con3 l1 l2  con4 l3, l4 };
+        {rankdir=LR rank=same sigexit l1 con1 };
+        {rankdir=LR rank=same sigchld readchild l2 con2 };
+        {rankdir=LR rank=same wait l3 con3 };
+        {rankdir=LR rank=same looppoint l4 con4};
+
+        {rank=same l1->con1 [style=invisible arrowhead=none]};
+        {rank=same readchild->l2->con2 [style=invisible arrowhead=none]};
+        {rank=same l3->con3 [style=invisible arrowhead=none]};
+
+
+        {node[shape=point height=0 width=0 style=invisible group=d] continueLoop1};
+        { rank=same sigexit->continueLoop1 [label="NO" arrowhead=none group=b]};
+
+        {node[shape=point height=0 width=0 style=invisible group=d] continueLoop2};
+        { rank=same looppoint->l4 [dir=back]};
+
+        continueLoop1->l1->l2->l3->l4 [arrowhead=none];
+
+
+        exit [shape=box, label="Exit program" group=b];
+        {node[shape=point height=0 width=0 style=invisible group=b] sendsig}
+        sigexit->sendsig [label="  YES" arrowhead=none constrait=false];
+        sendsig->exit[constrait=false];
+
+    };
+
+    {node[shape=point style=invisible,label="" height=0 width=0 group=sub] s1 };
+    {node[shape=point style=invisible,label="" height=0 width=0 ] s1left };
+    {rank=same looppoint s1 s1left};
+    {node[shape=point style=invisible,label="" height=0 width=0 group=con] sleft};
+    main [label="Main Process" shape=box group=sub];
+    {st->s1[arrowhead=none ] }
+    s1->main;
+    {rank=same sleft->s1left[minlen=4 arrowhead=none] };
+
+    subgraph sendsignalterminate {
+
+        downcloop1 [shape=point width=0 height=0 style=invisible group=d];
+        continueLoop1->downcloop1 [style=invisible arrowhead=none];
+
+        sendsigterm [shape="point" style="invisible" group=con];
+        {rankdir=LR rank=same sendsig->downcloop1 [arrowhead=none]};
+        {rankdir=LR rank=same downcloop1->sendsigterm [minlen=9 group=con label="send SIGTERM"]};
+
+        sendsigterm->con1->con2->con3->con4->sleft [arrowhead=none];
+        s1left->main;
+        {rank=same con3 main};
+
+        /* 阻挡左右等级方向被改变*/
+        i2->l2 [style=invisible arrowhead=none];
+    }
+
+    subgraph connectForkPoint {
+
+        {node[shape=point style=invisible,label="" height=0 width=0 group=sub] upfork};
+        {node[shape=box label="Tran Select Process" group=sub] tsp };
+        {node[shape=box label="Quick Search Process" group=qspg] qsp };
+        {node[shape=point label="" style=invisible group=qspg height=0 width=0] up_qsp };
+
+        main->upfork[arrowhead=none label="  fork()"];
+        upfork->tsp [label="  parent process"];
+
+        {rank=same upfork->up_qsp [arrowhead=none]  con2};
+        {rank=same con1 qsp };
+        up_qsp->qsp [label="  child process"];
+        {rank=same con1->tsp->qsp [style=invisible arrowhead=none]};
+    }
+
+    subgraph thread {
+
+        {node[shape=point style=invisible,label="" height=0 width=0 group=sub] upthread};
+        {node[shape=point style=invisible,height=0 width=0 group=t] thread3 };
+        {node[shape=point style=invisible,height=0 width=0 group=m] thread2 };
+
+        mouse [shape=box label="Detect Mouse \nAction Thread" group=m];
+        entrance [shape=box label="Create GUI \nEntrance Thread" group=sub];
+        gui [shape=box label="Create Translation\nResult Window Thread" group=t];
+
+        {node[shape=point style=invisible group=sub] thread1 };
+
+        tsp->upthread [arrowhead=none label="  pthread_create() × 3"];
+        upthread->thread1 [arrowhead=none];
+        thread1->entrance;
+
+        {node[shape=point style=invisible group=sub height=0 width=0] entranceTransfer };
+        canNewEntrance[shape=diamond label="CanNewEntrance == 1 ?" height=1 group=sub];
+        createEntrance [shape=box label="Create Entrance" group=sub];
+        {node[shape=point style=invisible,label="" height=0 width=0 group=canNewEntranceCheckReturn] return1 return2};
+
+        entrance->entranceTransfer [arrowhead=none];
+        entranceTransfer->canNewEntrance;
+        {rank=same canNewEntrance->return1 [arrowhead=none label="  NO"]};
+        {rank=same entranceTransfer->return2 [dir=back label="usleep()"]}
+        return1->return2 [arrowhead=none];
+
+        {node[shape=point width=0 height=0 style=invisible group=sub]upclick1 upclick2};
+        canNewEntrance->createEntrance [label="  YES"];
+        click [shape=diamond label="clicked in window?" group=sub height=1];
+        downclick [shape=point group=sub height=0 width=0];
+        {node[shape=point style=invisible,label="" height=0 width=0 group=c] creturn1 creturn2};
+        createEntrance->upclick1;
+        upclick1->upclick2->click;
+
+        {node[shape=point style=invisible,label="" height=0 width=0 group=sub] timeoutTransfer};
+        click->downclick->timeoutTransfer [arrowhead=none];
+        destroy [shape=diamond height=1 group=sub label="single clicked out of window\n or time out?"];
+        timeoutTransfer->destroy;
+        {node[shape=point style=invisible,label="" height=0 width=0 group=timeout] toreturn1 toreturn2};
+
+        {rank=same destroy->toreturn1 [arrowhead=none label="NO"]};
+        {rank=same timeoutTransfer->toreturn2 [dir=back group=sub]};
+        toreturn1->toreturn2 [arrowhead=none];
+
+        join1 [shape=box label="pthread_join()" group=sub];
+        destroy->join1 [label="  YES"];
+        {node[shape=point style=invisible,label="" height=0 width=0 group=j] j1 j2 j3 j4 j5 j6 j7 j8 j9 downj4 upj3};
+
+        {rank=same join1->j1 [arrowhead=none]};
+
+        {rank=same destroy toreturn1 j2};
+        destroy->toreturn1->j2 [style=invisible arrowhead=none];
+
+        {rank=same timeoutTransfer->toreturn2->j3 [arrowhead=none style=invisible]};
+        {rank=same click->j4 [label=" YES" arrowhead=none]};
+
+        {rank=same createEntrance j5};
+        createEntrance->toreturn2->j5 [style=invisible arrowhead=none];
+
+        {rank=same canNewEntrance j6};
+        canNewEntrance->return2->j5 [style=invisible arrowhead=none];
+
+        {rank=same entranceTransfer j7};
+        entranceTransfer->return2->j7 [style=invisible arrowhead=none];
+
+        {rank=same entrance->j8 [style=invisible arrowhead=none]};
+        {rank=same thread1->j9 [style=invisible arrowhead=none]};
+
+
+        rightthread2 [shape=point width=0 height=0 style=invisible group=fixgoogle];
+        {rank=same thread2->rightthread2->upthread->thread3 [arrowhead=none]};
+
+        j1->j2->j3[arrowhead=none] ;
+        j4->j5->j6->j7->j8->j9[arrowhead=none] ;
+
+        /* 新增节点发生错误最终原因不一定是新增节点引起的,可能原本的逻辑就有错误*/
+        thread1->j9 [dir=back];
+
+        upmouse [shape=point style=invisible height=0 width=0 group=m];
+        thread2->upmouse[arrowhead=none];
+        upmouse->mouse;
+        {rank=same mouse->entrance [style=invisible arrowhead=none]};
+    }
+
+    subgraph newwin {
+
+        {node [shape=point group=t height=0 width=0] upgui};
+        thread3->upgui[arrowhead=none];
+        upgui->gui;
+
+        {node [shape=diamond label="CanNewWin == 1 ?" group=t height=1] check };
+        upcheck [shape=point label="" height=0 width=0 group=t];
+        {node [shape=point label="" group=returncheck height=0 width=0] upcheckleft upcheckright};
+        {node [shape=point style=invisible height=0 width=0 group=returncheck] cright};
+        {node [shape=point style=invisible height=0 width=0 ] cleft};
+
+        {rank=same check->cright [arrowhead=none]};
+        {rank=same upcheck->upcheckright [dir=back label="usleep()"]};
+
+        gui->upcheck[arrowhead=none];
+        upcheck->check;
+
+        {rank=same entrance->gui [style=invisible arrowhead=none]};
+
+        cright->upcheckright [label="  NO" arrowhead=none];
+
+        {node[shape=point style=invisible height=0 width=0 group=c] c1 c2 c3 c4 c5};
+        {rank=same j4->c1 [ arrowhead=none]};
+        {rank=same j5->c2 [style=invisible arrowhead=none]};
+        //{rank=same j6->c3 [style=invisible arrowhead=none]};
+
+        c1->c2 [arrowhead=none label="  CanNewWin=1"];
+        {rank=same c2->check};
+
+        /* 防止CanNewWin倒转*/
+        {rank=same j7->upcheck [arrowhead=none style=invisible]};
+    }
+
+    subgraph loopNewThreadToNewWin {
+
+        {node[shape=point style=invisible height=0 width=0 group=t] n1 n2 n3 n4 n5};
+        check->n1[arrowhead=none];
+        threadcreate [shape=box label="pthread_create()" group=t];
+        n1->threadcreate;
+        NewWindow [shape=box label="Prepare New Normal Window" group=t];
+        threadcreate->NewWindow;
+        {rank=same click->c1->NewWindow[style=invisible arrowhead=none]};
+
+        {node[shape=point width=0 height=0  group=t style=invisible] waitloop };
+        {node[shape=point width=0 height=0  group=rw style=invisible] returnwait upreturnwait;} 
+        waitforflag [group=t shape=diamond height=2 label="Get result successful?\n\n<shmaddr_google[0]!=FINFLAG&&\nshmaddr_baidu[0]!=FINFLAG)>" fontsize=17];
+        changeflag [shape=point width=0 height=0 style=invisible group=t];
+        NewWindow->changeflag [arrowhead=none];
+        changeflag->waitloop [arrowhead=none];
+        waitloop->waitforflag;
+
+        {rank=same waitloop->upreturnwait [dir=back label="Nothing changed"]};
+        {rank=same waitforflag->returnwait [arrowhead=none]};
+
+        /* 防止倒转*/
+        upreturnwait->returnwait [rank=sink arrowhead=none];
+
+        numbers [group=t shape=diamond label="Input Char Num < 30" height=1];
+        waitforflag->numbers [label="  Receive Data Successful"];
+
+        normal [shape=box label="New Normal Window" height=1 group=t];
+        numbers->normal [label="  YES"];
+
+        scroll [shape=box label="New Scrolled Window" height=1 group=charnum];
+        {node [group=charnum shape=point style=invisible height=0 width=0] cn1 cn2};
+        {rank=same numbers->cn1 [arrowhead=none label="NO"]}
+        cn1->scroll;
+
+        {rank=same n2->waitforflag [arrowhead=none label=""]};
+        {rank=same j3->n2->waitforflag [style=invisible arrowhead=none]};
+        {rank=same j2->n3 [style=invisible arrowhead=none]};
+        {rank=same j1->n4 [style=invisible arrowhead=none]};
+        n2->n3 [label="  Time out \n  or\n  Error occured" arrowhead=none];
+        n3->n4 [arrowhead=none];
+
+        /* 增加一个转运节点，解决group也无法对齐的问题*/
+        {node [shape=point style=invisible width=0 height=0] transf};
+        {rank=same transf->normal };
+
+        {rank=same n4->transf[arrowhead=none  label="Display Error Message"]};
+    }
+
+    subgraph changeFlag {
+
+        rightchangeflag [shape=point style=invisible width=0 height=0];
+        {rank=same downj4->rightchangeflag [style=invisible arrowhead=none]};
+        {rank=same upj3->waitloop [style=invisible arrowhead=none] }
+
+        j4->downj4->upj3->j3 [rank=sink arrowhead=none];
+        {rank=same downclick->downj4->rightchangeflag [arrowhead=none]};
+        {rank=same rightchangeflag->changeflag [label="Set Flag"]};
+
+    }
+
+    subgraph destroyWindow {
+        destroywindow [shape=box group=charnum height=1];
+        updestroywindow [shape=point groupt=t width=0 height=0 group=t];
+        normal->updestroywindow [arrowhead=none];
+        {rank=same updestroywindow->destroywindow};
+
+        scroll->destroywindow [rank=sink];
+    }
+
+    subgraph returnNewWindow {
+
+        {node [shape=point width=0 height=0 style=invisible group=returngui] w1 w3 w4 w5 w6 w7 w8 w9 w10 w11 w12};
+        {rank=same destroywindow->w1[ arrowhead=none label="pthread_exit(NULL)"]};
+
+        { node [group=returngui height=1 shape=box label="pthread_join()"] w2} ;
+
+        {rank=same numbers->cn1->w3 [style=invisible arrowhead=none]};
+        {rank=same returnwait->w4 [style=invisible arrowhead=none]};
+        {rank=same upreturnwait->w5 [style=invisible arrowhead=none]};
+        {rank=same rightchangeflag->w6 [style=invisible arrowhead=none]};
+        {rank=same NewWindow->w7 [style=invisible arrowhead=none]};
+        {rank=same threadcreate->w8 [style=invisible arrowhead=none]};
+        {rank=same check->w9 [style=invisible arrowhead=none]};
+        {rank=same upcheck->upcheckright->w10 [style=invisible arrowhead=none]};
+        {rank=same gui->w11 [style=invisible arrowhead=none]};
+
+        {rank=same upgui->w12 [dir=back]};
+
+        w12->w11->w10->w9->w8->w7->w6->w5->w4->w3->w2[rank=sink arrowhead=none];
+        w2->w1 [rank=sink dir=back];
+    }
+
+    subgraph DetectMouse {
+
+        tran2 [shape=point width=0 height=0 group=m];
+        {rank=same tran2->return2 [style=invisible arrowhead=none]};
+
+        mouse->tran2 [arrowhead=none];
+
+        downmousefork [shape=point width=0 height=0 group=m];
+
+        mousefork [shape=box height=1 group=m label="fork() × 4"];
+        tran2->mousefork->downmousefork [arrowhead=none];
+
+        baidu [shape=box height=1 label="Baidu Translate Process" group=con];
+        google [shape=box height=1 label="Google Translate Process" group=fixgoogle];
+        detect [shape=box height=1 label="Detect Mouse Action Process" group=m];
+
+        {node [ group=con shape=point width=0 height=0 style=invisible] mouseforkleft };
+        {node [ group=d  shape=point width=0 height=0 style=invisible] upSelectionChange };
+        {node [ shape=point width=0 height=0 style=invisible group=fixgoogle] mouseforkright };
+
+        {node [ group=con shape=point width=0 height=0 style=invisible] m1 m2 m3 m4 m5 m6 };
+        {rank=same exit->m1 [arrowhead=none style=invisible]};
+        {rank=same m2->thread2 [arrowhead=none style=invisible]};
+        {rank=same m3->upmouse [arrowhead=none style=invisible]};
+        {rank=same m4->mouse [arrowhead=none style=invisible]};
+        {rank=same m5->tran2 [arrowhead=none style=invisible]};
+        {rank=same m6->mousefork [arrowhead=none style=invisible]};
+
+        {rank=same mouseforkleft->downmousefork [arrowhead=none]};
+
+        m6->mouseforkleft [style=invisible arrowhead=none];
+
+        /* 对齐上面的，阻止fork()*3 无法衍生到左边节点*/
+        sendsigterm->m1->m2->m3->m4->m5->m6 [arrowhead=none style=invisible];
+
+        mouseforkleft->baidu [label="  child"];
+        downmousefork->detect [label="  parent process"];
+
+        {node [ group=d shape=point width=0 height=0 style=invisible] d1 d2 d3 d4 d5 d6 };
+        {rank=same d1->m1 [arrowhead=none style=invisible]};
+        {rank=same d2->m2 [arrowhead=none style=invisible]};
+        {rank=same d3->m3 [arrowhead=none style=invisible]};
+        {rank=same d4->m4 [arrowhead=none style=invisible]};
+        {rank=same d5->m5 [arrowhead=none style=invisible]};
+        {rank=same d6->m6 [arrowhead=none style=invisible]};
+
+        selectionchange [shape=box height=1 group=d label="Check Selection \nChanged Process"];
+        {rank=same upSelectionChange->mouseforkleft [arrowhead=none]};
+        downcloop1->d1->d2->d3->d4->d5->d6->upSelectionChange [arrowhead=none style=invisible];
+        upSelectionChange->selectionchange[label="  child"];
+
+        {rank=same selectionchange->baidu->detect->google->upclick1 [style=invisible arrowhead=none]};
+
+        {node [ group=fixgoogle shape=point width=0 height=0 style=invisible] g1 g2 g3 g4 g5 g6 };
+        {rank=same upmouse->g1 [style=invisible arrowhead=none]};
+        {rank=same mouse->g2->entrance [style=invisible arrowhead=none]};
+        {rank=same tran2->g3 [style=invisible arrowhead=none]};
+        {rank=same mousefork->g4 [style=invisible arrowhead=none]};
+        {rank=same downmousefork->g5[arrowhead=none]};
+        {rank=same g6->createEntrance [style=invisible arrowhead=none]};
+
+        rightthread2->g1->g2->g3->g4 [style=invisible arrowhead=none];
+        g5->g6[arrowhead=none label="  child"];
+        g6->google;
+    }
+
+    subgraph googleprocess {
+
+        upgparal [shape=point width=0 height=0 style=invisible group=fixgoogle];
+        gparal [shape=parallelogram label="input() <python>" group=fixgoogle height=1 width=2];
+        google->upgparal[arrowhead=none];
+        {rank=same upgparal->upclick2[arrowhead=none style=invisible]}
+        upgparal->gparal [arrowhead=none];
+        {rank=same gparal->click [arrowhead=none style=invisible]};
+
+        {node [shape=diamond label="Fetch translation result successful?" height=2 group=fixgoogle] googlefetch};
+        gparal->googlefetch;
+
+        downfetchgoogle [shape=box label="Write Finish Flag\nto Shared Memory" group=fixgoogle height=1];
+        googlefetch->downfetchgoogle;
+
+        ddgooglefetch [shape=point width=0 height=0 group=fixgoogle];
+        downfetchgoogle->ddgooglefetch [arrowhead=none];
+    }
+
+    subgraph detectMouseAction {
+        upcheckaction [shape=point width=0 height=0 style=invisible group=m];
+        {rank=same upcheckaction->upgparal [arrowhead=none style=invisible]};
+        checkaction [height=2 shape=diamond group=m label="Single/Double Click or Slide \nor QuickSearchSubmit Event Comming"];
+        {detect->upcheckaction[arrowhead=none ]};
+        upcheckaction->checkaction [label="  select()"];
+        {rank=same checkaction->gparal [arrowhead=none style=invisible]};
+
+        leftcheckaction [shape=point width=0 height=0 style=invisible group=ml];
+        leftupcheckaction [shape=point width=0 height=0 style=invisible group=ml];
+        {rank=same upcheckaction->leftupcheckaction [dir=back]};
+        {rank=same checkaction->leftcheckaction [arrowhead=none label=NO]};
+        leftcheckaction->leftupcheckaction [arrowhead=none];
+    }
+
+    subgraph getClicpboard {
+        {node [shape=diamond label="shmaddr_selection[0] == '1'?\n<selection changed flag>" height=2 group=m] selectionchangeflag };
+        checkaction->selectionchangeflag;
+        {node [shape=point width=0 height=0 group=ml] leftcheckselectionflag};
+        leftcheckaction->leftcheckselectionflag [dir=back];
+    }
+
+    subgraph baiduprocess {
+        {node[shape=point width=0 height=0 style=invisible group=con]upbparal downbparal};
+        bparal [shape=parallelogram label="input() <python>" group=con height=1 width=2];
+        baidu->upbparal [arrowhead=none];
+        upbparal->bparal;
+
+        {node [shape=diamond label="Fetch translation result successful?" height=2 group=con] baidufetch};
+        bparal->downbparal [arrowhead=none];
+        downbparal->baidufetch;
+        {rank=same baidufetch->leftcheckselectionflag[rank=same style=invisible arrowhead=none]};
+
+        downfetchbaidu [shape=box label="Write Finish Flag\nto Shared Memory" group=con height=1];
+        baidufetch->downfetchbaidu;
+        ddbaidufetch [shape=point width=0 height=0 group=con];
+        downfetchbaidu->ddbaidufetch [arrowhead=none];
+    }
+
+    subgraph writePipeGoogle {
+        pipe [shape=box label="Get Data From Primary Selection \nand Then Write selection content\nto python endpoint" group=m height=1];
+        selectionchangeflag->pipe [label="  YES"];
+        downpipe [shape=point height=0 width=0 group=m];
+        pipe->downpipe;
+
+        {node [shape=point width=0 height=0 group=pg]pg1 pg2 pg3 pg4 pg5};
+        {rank=same downpipe->pg1 [style=invisible arrowhead=none]};
+        {rank=same pipe->pg2 [style=invisible arrowhead=none]};
+        {rank=same selectionchangeflag->pg3 [style=invisible arrowhead=none]};
+        {rank=same checkaction->pg4 [style=invisible arrowhead=none]};
+        {rank=same upcheckaction->pg5 [style=invisible arrowhead=none]};
+
+        {rank=same pg2->downfetchgoogle[style=invisible arrowhead=none]};
+        {rank=same pg3->googlefetch[style=invisible arrowhead=none]};
+        {rank=same pg4->gparal[style=invisible arrowhead=none]};
+
+        {rank=same selectionchangeflag->leftcheckselectionflag[arrowhead=none  label=NO]};
+        {rank=same leftcheckselectionflag->pg3 [arrowhead=none style=invisible arrowhead=none]};
+
+        pg1->pg2->pg3->pg4->pg5 [arrowhead=none];
+        {rank=same pg5->upgparal};
+        {rank=same downpipe->pg1};
+        {rank=same pg1->ddgooglefetch [style=invisible arrowhead=none]};
+        rightfetchgoogle [shape=point width=0 height=0 group=consetflag ];
+        {rank=same rightfetchgoogle->downclick};
+
+        dddgooglefetch [shape=point width=0 height=0 group=fixgoogle];
+    }
+
+    subgraph writePipeBaidu {
+
+        {node [shape=point width=0 height=0 group=pb] pb1 pb2 pb3 pb4 pb5 rightdownbparal};
+        {rank=same ddbaidufetch->pb1[arrowhead=none style=invisible]};
+        {rankdir=LR rank=same downfetchbaidu->pb2 [arrowhead=none style=invisible]};
+        {rank=same baidufetch->pb3[arrowhead=none style=invisible]};
+        {rank=same upbparal->pb5[arrowhead=none style=invisible]};
+        //{ rank=same downbparal->rightdownbparal->checkaction [arrowhead=none style=invisible]};
+
+        pb5->pb4->rightdownbparal->pb3->pb2->pb1 [rank=sink arrowhead=none];
+        ddbaidufetch->pb1[style=invisible arrowhead=none];
+        {rank=same pb1->downpipe [dir=back]};
+        upbparal->pb5 [dir=back];
+
+        dddbaidufetch [shape=point width=0 height=0 group=con];
+        ddbaidufetch->dddbaidufetch ;
+        ddgooglefetch->dddgooglefetch;
+        {rank=same dddbaidufetch->dddgooglefetch [arrowhead=none] };
+    }
+
+    subgraph conSetFlag {
+
+        leftdestroy [shape=point width=0 height=0 group=consetflag];
+        {rank=same leftdestroy->destroy [style=invisible arrowhead=none]};
+
+        {rank=same dddgooglefetch->leftdestroy};
+
+        rightddgooglefetch [shape=point width=0 height=0 group=consetflag];
+        {rank=same rightddgooglefetch->timeoutTransfer [arrowhead=none style=invisible]};
+
+        leftdestroy->rightddgooglefetch->rightfetchgoogle [rank=sink arrowhead=none];
+    }
+
+    subgraph selectonChange {
+
+        { node [shape=point height=0 width=0 group=b] b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14};
+        { rank=same b2->d2 [arrowhead=none style=invisible]};
+        { rank=same b3->d3[arrowhead=none style=invisible] };
+        { rank=same b4->d4 [arrowhead=none style=invisible]};
+        { rank=same b5->d5 [arrowhead=none style=invisible]};
+        { rank=same b6->d6 [arrowhead=none style=invisible]};
+        { rank=same b7->upSelectionChange [arrowhead=none style=invisible]};
+        { rank=same b8->selectionchange [arrowhead=none style=invisible]};
+
+
+        exit->b2->b3->b4->b5->b6->b7->b8->b9->b10->b11->b12->b13->b14[arrowhead=none style=invisible];
+        {node [shape=point height=0 width=0 group=d] upeventcome downeventcome};
+        {node [shape=point height=0 width=0 group=br] lefteventcome leftupeventcome leftdowneventcome};
+        eventcome [shape=diamond height=1 group=d label="Event Comming?"];
+        selectionchange->upeventcome->eventcome;
+        {rank=same lefteventcome->eventcome [arrowhead=none label="NO"]};
+        {rank=same leftupeventcome->upeventcome };
+        lefteventcome->leftupeventcome [arrowhead=none];
+
+        eventcome->downeventcome [label="  YES"];
+        {rank=same leftdowneventcome->downeventcome [arrowhead=none label="Return to wait\n for next event"]};
+        leftdowneventcome->lefteventcome;
+    }
+
+    subgraph sendSelectionChangeFlag {
+
+        { node [shape=point height=0 width=0 group=scf] s2 s3 s4 s5 s6}; 
+        { rank=same pb3->s3 [arrowhead=none style=invisible]};
+        { rank=same rightdownbparal->s4 };
+        s4->s3;
+        { rank=same s3->selectionchangeflag };
+        { rank=same downbparal->rightdownbparal [arrowhead=none]};
+        { rank=same upeventcome->upbparal [arrowhead=none style=invisible] };
+        { rank=same eventcome->bparal [arrowhead=none style=invisible] };
+        { rank=same b10->leftdowneventcome->downeventcome[arrowhead=none style=invisible]};
+        { rank=same downeventcome->downbparal [label="Set\n shmaddr_selection[0] == 1" arrowhead=none]};
+    }
+}
