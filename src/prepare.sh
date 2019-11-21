@@ -3,7 +3,7 @@
 #复制文件到家目录
 storage="$HOME/.stran"
 currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/Switch.png" 
-    "../gif_pic/volume.png" "./startup.sh" "./errNotification.sh" )
+    "../gif_pic/volume.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png")
 
 declare -i len
 len=${#currFile[*]}-1

@@ -11,6 +11,7 @@ extern char *shmaddr_keyboard;
 
 char *baidu_result[BAIDUSIZE] = { NULL };
 char *google_result[GOOGLESIZE] = { NULL };
+char *mysql_result[MYSQLSIZE] = { NULL };
 
 /* 用于和detectMouse通信，当已经新建翻译结果显示窗口时，
  * 不再检测鼠标动作*/
@@ -76,7 +77,7 @@ int detect_ctrl_c(void *arg) {
     /* 此处监听的是电脑全局，如果不希望其他地方的ctrl-c
      * 使本翻译界面关闭，请注释掉下面的代码段*/
 
-    /* Ctrl_C事件标志位*/
+    /* Ctrl_C事件标志位, 赋值位置 captureShortcutEvent.c <变量shmaddr>*/
     if ( shmaddr_keyboard[1] == '1' && 0) {
 
         printf("\033[0;32m窗口检测到Control-C\033[0m\n");
@@ -176,7 +177,7 @@ void *newNormalWindow() {
 
     printf("\n准备判断是否新建一般窗口\n\n");
 
-    /* 窗口打开标志位*/
+    /* 窗口打开标志位 changed in captureShortcutEvent.c <变量shmaddr>*/
     shmaddr_keyboard[2] = '1';
 
     int ret = waitForContinue();
@@ -196,11 +197,15 @@ void *newNormalWindow() {
     gtk_window_set_focus_on_map ( GTK_WINDOW(newWin), TRUE );
     gtk_widget_set_can_focus(newWin, TRUE);
 
+    /* quickSearch快捷键标志位, changed in captureShortcutEvent.c <变量shmaddr>*/
     if ( shmaddr_keyboard[0] == '1') {
         shmaddr_keyboard[0] = '0';
+
+        /* 快捷键调出的窗口放置于中央*/
         gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_CENTER);
     }
     else
+        /* 取词翻译的窗口跟随鼠标*/
         gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_MOUSE);
 
     //gtk_window_set_resizable(GTK_WINDOW(newWin), FALSE);
@@ -320,12 +325,16 @@ void *newNormalWindow() {
     /* 分离谷歌翻译共享内存数据,并保存应设窗口大小值*/
     separateGoogleDataSetWinSize ( index_google );
 
-    GtkWidget *button = newSwitchButton( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), button, bw.width-50, bw.height-45 );
+    GtkWidget *switchButton = newSwitchButton( &wd );
+    gtk_layout_put ( GTK_LAYOUT(layout), switchButton, bw.width-50, bw.height-45 );
+
+    GtkWidget *offlineButton = newOfflineButton ( &wd );
+    gtk_layout_put ( GTK_LAYOUT(layout), offlineButton, bw.width-100, bw.height-45 );
 
     wd.buf = buf;
     wd.iter = &iter;
-    wd.button = button;
+    wd.switchButton = switchButton;
+    wd.offlineButton = offlineButton;
     wd.volume = NULL;
     wd.scroll = scroll;
 
@@ -333,7 +342,7 @@ void *newNormalWindow() {
     wd.index_google[1] = index_google[1];
 
     /* 谷歌百度翻译结果切换显示回调函数*/
-    g_signal_connect(button, "clicked", G_CALLBACK(changeDisplay), (void*)&wd);
+    g_signal_connect(switchButton, "clicked", G_CALLBACK(changeDisplay), (void*)&wd);
 
     /*捕获resize window信号, 进行显示调整*/
     g_signal_connect (newWin, "configure-event", G_CALLBACK(syncNormalWinForConfigEvent), &wd);
@@ -510,6 +519,20 @@ int waitForContinue() {
         return newScrolledWin();
 
     return 0;
+}
+
+/* 初始化离线翻译结果存储空间*/
+void initMemoryMysql() {
+
+    if (mysql_result[0] != NULL)
+        return;
+
+    for (int i=0; i<MYSQLSIZE; i++) {
+
+        mysql_result[i] = calloc(SHMSIZE / MYSQLSIZE, sizeof ( char ) );
+        if (mysql_result[i] == NULL)
+            err_exit("Error occured when calloc memory in initMemoryMysql");
+    }
 }
 
 /* 初始化百度翻译结果存储空间*/
@@ -931,7 +954,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
             else {
                 show = ~show;
                 ((WinData*)arg)->hadRedirect  = 1;
-                return displayGoogleTrans ( ((WinData*)arg)->button, arg);
+                return displayGoogleTrans ( ((WinData*)arg)->switchButton, arg);
             }
         }
     }
@@ -1015,11 +1038,14 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
     gtk_widget_set_size_request ( (GtkWidget*)((WinData*)data)->scroll,  width, height);
 
     /* Unnecessary*/
-    gtk_widget_queue_draw ( ((WinData*)data)->button );
-    gtk_widget_show (  ((WinData*)data)->button  );
+    //gtk_widget_queue_draw ( ((WinData*)data)->switchButton );
+    //gtk_widget_show (  ((WinData*)data)->switchButton  );
 
-    gtk_layout_move ( (GtkLayout*)((WinData*)data)->layout, ((WinData*)data)->button, \
+    gtk_layout_move ( (GtkLayout*)((WinData*)data)->layout, ((WinData*)data)->switchButton, \
             width-50, height-45 );
+
+    gtk_layout_move ( (GtkLayout*)((WinData*)data)->layout, ((WinData*)data)->offlineButton, \
+            width-100, height-45 );
 
     /* mark*/
     syncImageSize ( ((WinData*)data)->window, data );
@@ -1045,7 +1071,7 @@ void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpoint
 
     gtk_window_resize ( GTK_WINDOW(((WinData*)wd)->window), width, height );
     gtk_widget_set_size_request ( (GtkWidget*)((WinData*)wd)->scroll,  width, height);
-    gtk_layout_move ( (GtkLayout*)((WinData*)wd)->layout, ((WinData*)wd)->button, width-50, height-45 );
+    gtk_layout_move ( (GtkLayout*)((WinData*)wd)->layout, ((WinData*)wd)->switchButton, width-50, height-45 );
 
     syncImageSize ( ((WinData*)wd)->window, (void*)wd );
     ((WinData*)wd)->width = width;
@@ -1066,7 +1092,7 @@ void resizeScrolledWin ( WinData *wd, gint width, gint height ) {
     gtk_window_resize ((GtkWindow*) wd->window, width, height );
     gtk_widget_set_size_request ( wd->scroll,  width, height);
 
-    gtk_layout_move ( (GtkLayout*)wd->layout, wd->button, width-50, height-45 );
+    gtk_layout_move ( (GtkLayout*)wd->layout, wd->switchButton, width-50, height-45 );
     gtk_widget_queue_draw ( wd->window );
 
     gtk_widget_show_all(wd->window);
@@ -1350,7 +1376,7 @@ int  newScrolledWin() {
     GtkTextIter iter;
 
     wd.layout = layout;
-    wd.button = button;
+    wd.switchButton = button;
     wd.scroll = scroll;
     wd.buf = gtb;
     wd.width = width;

@@ -45,6 +45,7 @@
 #define ACTUALSTART (10)
 #define BAIDUSIZE (6)
 #define GOOGLESIZE (3)
+#define MYSQLSIZE (BAIDUSIZE)
 #define LINELEN (28)
 
 typedef struct Google {
@@ -66,7 +67,6 @@ typedef struct WinData{
 
     GtkWidget *window;
     GtkWidget *layout;
-    GtkWidget *button;
     GtkWidget *view;
 
     GdkWindow *gdkwin;
@@ -79,6 +79,9 @@ typedef struct WinData{
 
     GtkWidget *image;
     GtkWidget *oldImage;
+
+    GtkWidget *offlineButton;
+    GtkWidget *switchButton;
 
     GdkPixbuf *srcBackgroundImage;
 
@@ -138,6 +141,7 @@ GtkWidget * getImageWidgetWithBG( gint width, gint height  ) ;
 GtkWidget *syncImageSize ( GtkWidget *window, gpointer *data ) ;
 
 GtkWidget *newSwitchButton ( WinData *win );
+GtkWidget *newOfflineButton ( WinData *win );
 
 int getLinesOfGoogleTrans ( int *index_google );
 

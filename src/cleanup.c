@@ -16,6 +16,7 @@ extern int shmid_mysql;
 
 extern char *baidu_result[BAIDUSIZE];
 extern char *google_result[GOOGLESIZE];
+extern char *mysql_result[GOOGLESIZE];
 
 extern int mousefd;
 
@@ -113,13 +114,20 @@ void quit() {
     else
         printf("\033[0;32mremove shared memory identifier successful (mysql)\033[0m\n");
 
+    /* 释放翻译结果存储空间 <Baidu>*/
     if ( baidu_result[0] != NULL)
         for (int i=0; i<BAIDUSIZE; i++)
             free(baidu_result[i]);
 
+    /* 释放翻译结果存储空间 <Google>*/
     if ( google_result[0] != NULL)
         for (int i=0; i<GOOGLESIZE; i++)
             free(google_result[i]);
+
+    /* 释放翻译结果存储空间 <Mysql>*/
+    if ( mysql_result[0] != NULL)
+        for (int i=0; i<MYSQLSIZE; i++)
+            free(mysql_result[i]);
 
 
     if ( BAIDU_TRANS_EXIT_FALG != 1 )
