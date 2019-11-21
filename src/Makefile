@@ -31,6 +31,7 @@ $(MONNITOR) : %.o : %.c
 install:
 	sudo cp -v stran /usr/bin/
 	sudo cp -v mstran /usr/bin/
+	sudo cp -v fetchDict /usr/bin/
 
 clean:
 	rm -f *.o stran *.out core.* sendToClipboard mstran StranMonitor checkSelectionChanged
