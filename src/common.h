@@ -129,7 +129,10 @@ void adjustStr(char *p[3], int len, char *storage[3]);
 int adjustStrForScrolledWin(int len, char *source);
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
 
-void separateDataForBaidu(int *index, int len);
+#define OFFLINE (1)
+#define ONLINE (2)
+
+void separateDataForBaidu(int *index, int len, int type);
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
 int countLines ( int len, char *source );
 int countCharNums ( char *source );
@@ -165,18 +168,18 @@ struct Arg {
 #define PROJECTID2  (2334)
 #define SHMSIZE (1024*1024)
 
-#define PhoneticFlag ( shmaddr_baidu[1] - '0' )
-#define NumZhTranFlag ( shmaddr_baidu[2] - '0')
-#define NumEnTranFlag ( shmaddr_baidu[3] - '0')
-#define OtherWordFormFlag ( shmaddr_baidu[4] - '0')
-#define NumAudioFlag ( shmaddr_baidu[5] - '0')
+#define PhoneticFlag(type) ( type == ONLINE ? ( shmaddr_baidu[1] - '0' ) : ( shmaddr_mysql[1] - '0' ))
+#define NumZhTranFlag(type) ( type == ONLINE ? ( shmaddr_baidu[2] - '0' ) : ( shmaddr_mysql[2] - '0' ))
+#define NumEnTranFlag(type) ( type == ONLINE ? ( shmaddr_baidu[3] - '0' ) : ( shmaddr_mysql[3] - '0' ))
+#define OtherWordFormFlag(type) ( type == ONLINE ? ( shmaddr_baidu[4] - '0' ) : ( shmaddr_mysql[4] - '0' ))
+#define NumAudioFlag(type) ( type == ONLINE ? ( shmaddr_baidu[5] - '0' ) : ( shmaddr_mysql[5] - '0' ))
 
-#define SourceInput ((char *)( baidu_result[0] ))
-#define Phonetic ((char *)( baidu_result[1] ))
-#define ZhTrans ((char *)( baidu_result[2] ))
-#define EnTrans ((char *)( baidu_result[3] ))
-#define OtherWordForm ((char *)( baidu_result[4] ))
-#define Audios ((char *)( baidu_result[5] ))
+#define SourceInput(type) ( type == ONLINE ? (( char *) baidu_result[0]) : ((char*)mysql_result[0]))
+#define Phonetic(type)( type == ONLINE ? (( char *) baidu_result[1]) : ((char*)mysql_result[1]))
+#define ZhTrans(type) ( type == ONLINE ? (( char *) baidu_result[2]) : ((char*)mysql_result[2]))
+#define EnTrans(type) ( type == ONLINE ? (( char *) baidu_result[3]) : ((char*)mysql_result[3]))
+#define OtherWordForm(type) ( type == ONLINE ? (( char *) baidu_result[4]) : ((char*)mysql_result[4]))
+#define Audios(type) ( type == ONLINE ? (( char *) baidu_result[5]) : ((char*)mysql_result[5]))
 
 
 /* For newWindow.c*/
@@ -187,6 +190,7 @@ void getIndex(int *index, char *addr);
 void get_paragraph();
 void clearMemory ();
 void initMemoryBaidu();
+void initMemoryMysql();
 void initMemoryGoogle();
 void printDebugInfo();
 int  newScrolledWin();
