@@ -1,0 +1,162 @@
+#!/usr/bin/python3
+
+from mysql import connector
+from mysql.connector import errorcode
+from termcolor import cprint
+import sysv_ipc as ipc
+import readline
+import warnings
+import os
+import sys
+import re
+
+"""
+百度翻译结果: test |   美:[test]   英:[test]|n.测验,考查,(医疗上的)检查，化验，检验,试验,测试.|v.测验,考查,试验,检查,化验,检验,测试.|an examination of sb's knowledge or ability, consisting of questions for them to answer or activities for them to perform ( 测验；考查 )|['三单形式:tests', '现在分词:testing', '过去分词:tested', '复数:tests', '过去式:tested']|https://fanyi.baidu.com/gettts?lan=en&spd=3&source=web&text=test%20|https://fanyi.baidu.com/gettts?lan=uk&spd=3&source=web&text=test%20|
+"""
+
+def isPartOfSpeech(key):
+
+    attributes = [  'n.，adj.', 'adv./n.', 'adv./conj.', 'pron./det.', 'vi.&vt.', 'prep./adv.', 'v./ adj.', 'n.&adv.', \
+            'pref./abbr.', 'phr.', 'adv.&adj.', 'inf.', 'v.& n.', 'adj./det.', 'abbr.& n.', 'aux./ v.', 'num./det.', 'a\
+            dj.& pron.', 'vt.&vi.', 'conj./adv.', 'v./n.', 'n.& adv.', 'ns.', 'suf.', 'n.&vt.', 'n./int.', 'det./ord.',\
+            'det./adj.', 'adv./pron.', 'conj./prep.', 'vt.& vi.', 'n./det.', 'adj./adv.', 'adj.& adv.', 'symb.', 'n.& i\
+            nt.', 'vi.& n.', 'pref.', 'prep./conj.', 'v．', 'adj./n.', 'modal', 'comb.', 'color', 'short', 'ord.', 'num\
+            .', 'adj./int.', 'v./aux.', 'adj.& n.', 'det./pron.', 'n./adv.', 'det.', 'n./v.', 'conv.', 'prep.& adv.', '\
+            adv./prep./conj.', 'vi.', 'vt.', 'prep.', 'adv./prep.', 'n./adj.', 'abbr.', 'art.', 'aux.', 'conj.', 'int./\
+            n.', 'int.', 'adv.', 'adj.', 'pron.', 'adj./pron.', 'v.', 'n.', 'other']
+
+    return key in attributes
+
+
+#Fetch raw data from mysql
+def fetchWord(word, attributes):
+    cnx = connector.connect(
+            user='root',
+            password='',
+            host='127.0.0.1',
+            database='dict',
+            )
+
+    cursor = cnx.cursor()
+
+    query = ( "select * from data where word like %s" )
+    cursor.execute ( query, (word,) )
+    result = cursor.fetchall()
+    value = ()
+    try:
+        for r in result[0]:
+            value += (r, )
+    except IndexError as e:
+        cprint(str(e)+"(In fetchDict <fetchWord func>)", 'red')
+        return None
+
+    cursor.execute("desc data")
+    result = cursor.fetchall()
+    column = ()
+    for r in result:
+        column += (r[0], )
+
+    data = {}
+    for i in range(len(column)):
+        if value[i] is not None and column[i] != 'id':
+            data[str(column[i])] = str(value[i])
+            attributes.append(column)
+            pass
+
+    cnx.close()
+    
+    return data;
+
+#Convert raw data to data that can be recognized by ScreenTranslation
+def formatData(word):
+
+    output = ""
+    attributes = []
+    data = fetchWord(word, attributes);
+
+    if data is None:
+        return data
+
+    for i, value in enumerate(data):
+        if value != 'synonym' and value != 'example':
+
+            if  isPartOfSpeech(str(value)):
+                output += str(value) + str(data[value]) + '|'
+                continue
+
+            if value == 'word':
+                output += str(data[value]) + ' |'
+                continue
+
+            if value == 'phon_en':
+                if 'phon_am' in attributes:
+                    output += '   ' + str(data[value])
+                    continue
+
+                output += '   ' + str(data[value]) + '|'
+
+            if value == 'phon_am':
+                output += '   ' + str(data[value]) + '|'
+
+
+    path1 = os.path.expanduser('~')+'/'+'WordMp3/'+str(data['word'])[0]+'/'+str(data['word'])+'_en.mp3'
+    path2 = os.path.expanduser('~')+'/'+'WordMp3/'+str(data['word'])[0]+'/'+str(data['word'])+'_uk.mp3'
+
+    if os.path.exists(path1):
+        output += path1
+
+    output += '|'
+
+    if os.path.exists(path2):
+        output += path2
+
+    output += '|'
+
+    return output
+
+def connectShm():
+
+    warnings.simplefilter("ignore")
+    path = "/tmp"
+    projectID = 2338
+    key = ipc.ftok(path, projectID)
+    shm = ipc.SharedMemory(key, 0, 0)
+    shm.attach(0,0)
+
+    return shm 
+
+def main():
+
+    #Connect to the shared memory
+    shm = connectShm()
+    offset = 0
+    actualStart = 10
+
+    while True:
+        try:
+            rawInput = str(input("> "))
+        except KeyboardInterrupt as e:
+            cprint('Good bye\n', 'blue')
+            sys.exit()
+
+        cprint('Offline Translation get the raw: ' +rawInput , 'blue')
+
+        result = re.findall(r'\w+', rawInput);
+        if len(result) > 1:
+            cprint('Not a word: '+str(result), 'red')
+            continue
+        
+        #Remove the space characters
+        word = rawInput.replace(' ', '');
+
+        if not str.isspace(word) and word != '':
+            data = formatData(word)
+            if data is not None:
+                cprint(data, 'blue')
+                shm.write(data, actualStart)
+                shm.write('1', 0)
+            else:
+                cprint("NULL", 'blue')
+
+
+main()
