@@ -2,9 +2,11 @@
 
 extern char *shmaddr_baidu;
 extern char *shmaddr_google;
+extern char *shmaddr_mysql;
 
 extern char *baidu_result[BAIDUSIZE] ;
 extern char *google_result[GOOGLESIZE] ;
+extern char *mysql_result[MYSQLSIZE] ;
 
 extern char *baidu_result[BAIDUSIZE];
 
@@ -13,15 +15,31 @@ extern char *text;
 char audio_en[512] = { '\0' };
 char audio_uk[512] = { '\0' };
 
-void separateDataForBaidu(int *index, int len) {
+void separateDataForBaidu(int *index, int len, int type) {
+
+    char **result = NULL;
+    char *shmaddr = NULL;
+
+    /* 根据类型设置操作地址*/
+    if ( type == ONLINE ) {
+
+        result = baidu_result;
+        shmaddr = shmaddr_baidu;
+    }
+    else if ( type ==  OFFLINE ) {
+
+        result = mysql_result;
+        shmaddr = shmaddr_mysql;
+    }
+
 
     if ( index[0] == 0)
         return;
 
-    if ( baidu_result[0] == NULL)
+    if ( result[0] == NULL)
         err_exit("Doesn't init memory yet\n");
 
-    /* TODO:去除SourceInput末尾的回车符后，比较新输入的字符串
+    /* TODO:去除SourceInput(ONLINE)末尾的回车符后，比较新输入的字符串
      * 是否与之相等，相等说明复制过了，取消本次复制 ( <130的判断
      * 是因为>=130时, 原始字符是不显示的, 没必要复制)*/
     if ( strlen ( text ) < 130 ) {
@@ -38,11 +56,11 @@ void separateDataForBaidu(int *index, int len) {
             p++;
         }
 
-        if ( strcmp ( tmp, SourceInput ) != 0 ) {
+        if ( strcmp ( tmp, SourceInput(ONLINE) ) != 0 ) {
 
-            strcat ( SourceInput, tmp );
-            //strcat ( SourceInput, "\n" );
-            adjustStrForBaidu(len, SourceInput, 0, 0);
+            strcat ( SourceInput(ONLINE), tmp );
+            //strcat ( SourceInput(ONLINE), "\n" );
+            adjustStrForBaidu(len, SourceInput(ONLINE), 0, 0);
         }
     }
 
@@ -50,7 +68,7 @@ void separateDataForBaidu(int *index, int len) {
     for ( int n=1, i=0, count=0; n<=BAIDUSIZE; n++ ) {
 
         /*shmaddr_baidu[] 中0~BAIDUSIZE各字节的含义见gif_pic/protocol.png*/
-        if ( shmaddr_baidu[n] - '0' == 0) 
+        if ( shmaddr[n] - '0' == 0) 
         {
             i++;
             continue;
@@ -59,41 +77,45 @@ void separateDataForBaidu(int *index, int len) {
         /* 提取音频链接*/
         if ( n == 5 ) {
 
-            strcat ( audio_en, &shmaddr_baidu[index[i++]] );
-            strcat ( audio_uk, &shmaddr_baidu[index[i++]] );
+            strcat ( audio_en, &shmaddr[index[i++]] );
+            strcat ( audio_uk, &shmaddr[index[i++]] );
             continue;
         }
 
         count = 0;
-        while ( count <  shmaddr_baidu[n] - '0') 
+        while ( count <  shmaddr[n] - '0') 
         {
 
-            strcat ( baidu_result[n],  &shmaddr_baidu[index[i++]]);
-            strcat ( baidu_result[n], "\n");
+            strcat ( result[n],  &shmaddr[index[i++]]);
+            strcat ( result[n], "\n");
 
             /* 最后一条中文翻译前的解释都加上回车*/
-            if ( n == 2 && count + 1 < shmaddr_baidu[n] - '0') {
-                strcat ( ZhTrans, "\n");
+            if ( n == 2 && count + 1 < shmaddr[n] - '0') {
+                strcat ( ZhTrans(ONLINE), "\n");
             }
 
             count++;
         }
 
-        /* ZhTrans*/
+        /* ZhTrans(ONLINE)*/
         if ( n == 2 ) {
             /*单个翻译结果不能加空格前缀 addSpace=0*/
-            if ( PhoneticFlag == 0 && NumZhTranFlag == 1 && NumEnTranFlag == 0 && OtherWordFormFlag == 0 )
-                adjustStrForBaidu(len, baidu_result[n], 0, 1);
+            if ( PhoneticFlag(ONLINE) == 0 && NumZhTranFlag(ONLINE) == 1 &&\
+                    NumEnTranFlag(ONLINE) == 0 && OtherWordFormFlag(ONLINE) == 0 ) {
+
+                adjustStrForBaidu(len, result[n], 0, 1);
+            }
+
             else
-                adjustStrForBaidu(len, baidu_result[n], 1, 1);
+                adjustStrForBaidu(len, result[n], 1, 1);
         }
 
         else if ( n == 3 || n == 4)
-            adjustStrForBaidu(len, baidu_result[n], 0, 1);
+            adjustStrForBaidu(len, result[n], 0, 1);
 
         /* 这条语句貌似是统计行数用的 */
         else if ( n == 1 )
-            adjustStrForBaidu(len, baidu_result[n], 0, 0);
+            adjustStrForBaidu(len, result[n], 0, 0);
     }
 
     /*打印提取结果*/

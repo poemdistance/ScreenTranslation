@@ -8,6 +8,7 @@ extern char *text;
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 extern char *shmaddr_keyboard;
+extern char *shmaddr_mysql;
 
 char *baidu_result[BAIDUSIZE] = { NULL };
 char *google_result[GOOGLESIZE] = { NULL };
@@ -74,11 +75,11 @@ int detect_ctrl_c(void *arg) {
     }
 
 
-    /* 此处监听的是电脑全局，如果不希望其他地方的ctrl-c
-     * 使本翻译界面关闭，请注释掉下面的代码段*/
+    /* 此处监听的是电脑全局，如果希望其他地方的ctrl-c
+     * 使本翻译界面关闭，请注释掉下面代码中的: < 0 & >*/
 
     /* Ctrl_C事件标志位, 赋值位置 captureShortcutEvent.c <变量shmaddr>*/
-    if ( shmaddr_keyboard[1] == '1' && 0) {
+    if ( 0 & (shmaddr_keyboard[1] == '1') ) {
 
         printf("\033[0;32m窗口检测到Control-C\033[0m\n");
 
@@ -98,7 +99,7 @@ int detect_ctrl_c(void *arg) {
 void syncVolumeBtn ( WinData *wd ) {
 
     /* 含音标，添加播放按钮*/
-    if ( strlen ( Phonetic ) != 0) {
+    if ( strlen ( Phonetic(ONLINE) ) != 0) {
 
         GtkWidget *volume =  ((WinData*)wd)->volume;
 
@@ -292,14 +293,13 @@ void *newNormalWindow() {
         printf("\033[0;33m%d \033[0m ", index_baidu[i]);
     printf("\n");
 
-    /*初始化百度翻译结果存储空间*/
-    if ( baidu_result[0] == NULL)
-        initMemoryBaidu();
-
+    /*初始化百度以及离线翻译结果存储空间*/
+    initMemoryBaidu();
+    initMemoryMysql();
 
     /* 从共享内存数据流中分离相关数据到baidu_result相关功能内存区域,
      * 第二个参数是单行显示字符长度*/
-    separateDataForBaidu(index_baidu, 28);
+    separateDataForBaidu(index_baidu, 28, ONLINE);
 
     int maxlen_baidu  = 0, lines_baidu = 0;
     maxlen_baidu = getMaxLenOfBaiduTrans();
@@ -455,7 +455,8 @@ int waitForContinue() {
     printf("\033[0;32mCanNewWin=%d \033[0m\n", CanNewWin);
 
     /*等待任意一方python端的翻译数据全部写入共享内存*/
-    while(/* (CanNewWin != 1) || */ ( shmaddr_google[0] != FINFLAG && shmaddr_baidu[0] != FINFLAG )) {
+    while(/* (CanNewWin != 1) || */ ( shmaddr_google[0] != FINFLAG && shmaddr_baidu[0] != FINFLAG \
+                && shmaddr_mysql[0] != FINFLAG )) {
 
         printf("\033[0;32mI an coming here \033[0m\n");
 
@@ -579,7 +580,7 @@ void reGetBaiduTransAndSetWin (gpointer *arg, int which ) {
 
     getIndex(index_baidu, shmaddr_baidu);
 
-    separateDataForBaidu(index_baidu, 28);
+    separateDataForBaidu(index_baidu, 28, ONLINE);
 
     int maxlen_baidu = getMaxLenOfBaiduTrans();
     int lines_baidu = getLinesOfBaiduTrans();
@@ -643,7 +644,7 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
     else 
     {
         /*还未获取到结果，应重新获取并设置窗口大小*/
-        if ( strlen ( ZhTrans ) == 0) {
+        if ( strlen ( ZhTrans(ONLINE) ) == 0) {
 
             printf("\033[0;36m百度翻译结果长度为0\033[0m\n");
             reGetBaiduTransAndSetWin ( arg, which );
@@ -817,9 +818,9 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
     printf("\033[0;36m显示百度翻译结果\033[0m\n");
 
-    if ( strlen (ZhTrans) == 0 && strlen ( EnTrans ) == 0 ) {
+    if ( strlen (ZhTrans(ONLINE)) == 0 && strlen ( EnTrans(ONLINE) ) == 0 ) {
 
-        printf("\033[0;36mZhTrans & EnTrans长度皆为0 \033[0m\n");
+        printf("\033[0;36mZhTrans(ONLINE) & EnTrans(ONLINE)长度皆为0 \033[0m\n");
 
         reGetBaiduTransAndSetWin ( arg, -1 );
     }
@@ -880,7 +881,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
             }
             else if ( i != 0 ) {
 
-                if ( strlen(Phonetic) == 0 && strlen(ZhTrans) != 0 && strlen(EnTrans) == 0 && strlen(OtherWordForm) == 0){
+                if ( strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE)) != 0 && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
 
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
@@ -908,8 +909,8 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
                 else  
                 {   
-                    if (!(strlen(Phonetic) == 0 && strlen(ZhTrans) != 0 && strlen(EnTrans) == 0\
-                                && strlen(OtherWordForm) == 0 && strlen(ZhTrans) != 0) ){
+                    if (!(strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE)) != 0 && strlen(EnTrans(ONLINE)) == 0\
+                                && strlen(OtherWordForm(ONLINE)) == 0 && strlen(ZhTrans(ONLINE)) != 0) ){
                         gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                         gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                     }
@@ -934,14 +935,14 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
         } 
 
         /* 翻译结果检测为空*/
-        //else if ( i == 0  && PhoneticFlag == 0 && NumZhTranFlag==0
-        /*&& NumEnTranFlag == 0 && OtherWordFormFlag == 0) */
+        //else if ( i == 0  && Phonetic(ONLINE)Flag == 0 && NumZhTranFlag==0
+        /*&& NumEnTranFlag == 0 && OtherWordForm(ONLINE)Flag == 0) */
 
         /* 这里不要再用上面的用标志位检测，存在一种情况，翻译结果没复制过来，上面的结果插入语句无法执行
          * 刚好到这里的时候标志位又被刚好翻译结果写入完成的python端修改，导致重定向失败，这里的所有逻辑
          * 都不要用标志位判断*/
-        else if ( i == 0  && strlen(Phonetic) == 0 && strlen(ZhTrans)==0 \
-                && strlen(EnTrans) == 0 && strlen(OtherWordForm) == 0){
+        else if ( i == 0  && strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE))==0 \
+                && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
 
             /* 一般来说谷歌翻译的结果获取快一点，如果百度翻译此时还没获取到，
              * 先返回谷歌翻译的结果, 显示顺序改变，需同步show*/
@@ -999,7 +1000,7 @@ void printDebugInfo() {
     printf("\033[0;35m(In printDebugInfo) \033[0m\n");
 
     printf("\n\033[0;36mFinish标志位: %c\033[0m", shmaddr_baidu[0]);
-    printf("\n\033[0;36mPhonetic标志位: %c\033[0m", shmaddr_baidu[1]);
+    printf("\n\033[0;36mPhonetic(ONLINE)标志位: %c\033[0m", shmaddr_baidu[1]);
     printf("\n\033[0;36mNumbers of zhTrans标志位: %c\033[0m", shmaddr_baidu[2]);
     printf("\n\033[0;36mNumbers of enTrans标志位: %c\033[0m", shmaddr_baidu[3]);
     printf("\n\033[0;36mOther forms of word标志位: %c\033[0m", shmaddr_baidu[4]);
@@ -1144,7 +1145,7 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
                 wd->height = 600;
 
             adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
-            strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
+            strcpy ( ZhTrans(ONLINE),  &shmaddr_baidu[ACTUALSTART+2]);
         }
     }
 
@@ -1208,7 +1209,7 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
 
     /* getIndex 会将分隔符修改为'\0', 再一次进入这个函数index[1]会成0
      * 所以这里是为了区分是否是第一次进入这里，如果不是，插入已经保存
-     * 到ZhTrans的数据, 否则先生成ZhTrans*/
+     * 到ZhTrans(ONLINE)的数据, 否则先生成ZhTrans(ONLINE)*/
     if ( index[1] != 0 ) {
 
         shmaddr_baidu[0] = '0';
@@ -1218,31 +1219,31 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
         resizeScrolledWin ( wd, wd->width, wd->height );
         printf("\033[0;36m (showBaiduScrolledWin) width=%d height=%d\n", wd->width, wd->height);
 
-        strcpy ( ZhTrans,  &shmaddr_baidu[2+ACTUALSTART]);
+        strcpy ( ZhTrans(ONLINE),  &shmaddr_baidu[2+ACTUALSTART]);
 
-        printf("\033[0;31m 调整后输出的百度翻译结果:%s\033[0m\n", ZhTrans);
+        printf("\033[0;31m 调整后输出的百度翻译结果:%s\033[0m\n", ZhTrans(ONLINE));
 
-        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans, -1,\
+        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans(ONLINE), -1,\
                 "brown-font", "font-size-14", "bold-style", NULL );
     }
 
-    else if ( strlen ( ZhTrans ) != 0 ) {
+    else if ( strlen ( ZhTrans(ONLINE) ) != 0 ) {
 
         //adjustStrForScrolledWin ( 30, &shmaddr_baidu[ACTUALSTART+2] );
-        //strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
+        //strcpy ( ZhTrans(ONLINE),  &shmaddr_baidu[ACTUALSTART+2]);
 
         /* 窗口大了，对显示的字符串进行相应调整, 扩大单行显示长度为46*/
         if ( wd->width >= 900 ) {
 
             adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
-            strcpy ( ZhTrans,  &shmaddr_baidu[ACTUALSTART+2]);
+            strcpy ( ZhTrans(ONLINE),  &shmaddr_baidu[ACTUALSTART+2]);
         }
 
         resizeScrolledWin ( wd, wd->width, wd->height );
 
-        printf("\033[0;36m ZhTrans里的结果输出\033[0m\n");
+        printf("\033[0;36m ZhTrans(ONLINE)里的结果输出\033[0m\n");
 
-        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans, -1,\
+        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans(ONLINE), -1,\
                 "brown-font", "font-size-14", "bold-style", NULL );
     }
     else {

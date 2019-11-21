@@ -6,6 +6,7 @@
 int audioShow = -1;
 
 extern char *baidu_result[BAIDUSIZE]; /* For Phonetic*/
+extern char *mysql_result[BAIDUSIZE]; /* For Phonetic*/
 
     static gboolean
 bus_call (GstBus     *bus,
@@ -141,7 +142,7 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd 
 {
     GtkWidget *button = newVolumeBtn();
 
-    int charNum = countCharNums ( Phonetic );
+    int charNum = countCharNums ( Phonetic(ONLINE) );
     //int charNum = countCharNums ( SourceInput );
     printf("\033[0;35mPhonetic charNum = %d \033[0m\n", charNum);
 
