@@ -214,7 +214,6 @@ void *newNormalWindow() {
 
     /*创建layout用于显示背景图片,以及放置文本*/
     GtkWidget * layout = gtk_layout_new(NULL, NULL);
-    gtk_container_add(GTK_CONTAINER(newWin), layout);
 
     /*创建scrolled window*/
     GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
@@ -241,8 +240,12 @@ void *newNormalWindow() {
     gtk_text_view_set_left_margin ( (GtkTextView*)view, 10 );
     gtk_text_view_set_top_margin ( (GtkTextView*)view, 10 );
 
+    /* window->layout->scroll->view*/
     gtk_container_add (GTK_CONTAINER(scroll), view);
-    gtk_layout_put(GTK_LAYOUT(layout), scroll, 0, 0);
+    gtk_container_add (GTK_CONTAINER(layout), scroll);
+    gtk_container_add (GTK_CONTAINER(newWin), layout);
+
+    //gtk_layout_put(GTK_LAYOUT(layout), scroll, 0, 0);
 
     //printDebugInfo();
     setFontProperties(buf, &iter);
@@ -328,6 +331,7 @@ void *newNormalWindow() {
     GtkWidget *switchButton = newSwitchButton( &wd );
     gtk_layout_put ( GTK_LAYOUT(layout), switchButton, bw.width-50, bw.height-45 );
 
+    /* 离线翻译结果切换按钮*/
     GtkWidget *offlineButton = newOfflineButton ( &wd );
     gtk_layout_put ( GTK_LAYOUT(layout), offlineButton, bw.width-100, bw.height-45 );
 
@@ -767,7 +771,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
     if ( strlen( text )  < 30 ) {
 
         gtk_text_buffer_insert_with_tags_by_name(buf, iter, text, -1, 
-                "black-font", "gray_background", "bold-style",  "font-size-15", "underline", NULL);
+                "black-font",  "bold-style",  "font-size-15", "underline", NULL);
 
         gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         //gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
@@ -788,7 +792,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
                 }
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
-                        "brown-font", "gray_background", "bold-style",  "font-size-11", NULL);
+                        "brown-font",  "bold-style",  "font-size-11", NULL);
 
                 if ( google_result[1][0] != '\0'  || google_result[2][0] != '\0') {
 
@@ -798,11 +802,11 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
             else if ( i == 1 ) {
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
-                        "green-font", "gray_background", "bold-style",  "font-size-11", NULL);
+                        "green-font",  "bold-style",  "font-size-11", NULL);
             }
             else if ( i == 2 )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
-                        "brown-font", "gray_background", "bold-style",  "font-size-11", NULL);
+                        "brown-font",  "bold-style",  "font-size-11", NULL);
 
             gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         }
@@ -853,7 +857,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
             if ( i == 0 && strlen(baidu_result[i]) < 30 ) {
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i], \
-                        -1,"black-font", "gray_background", "bold-style", \
+                        -1,"black-font",  "bold-style", \
                         "font-size-15", "letter-spacing","underline", NULL);
             }
             else if ( i == 1 ) {
@@ -863,7 +867,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
                 gtk_text_buffer_create_mark ( buf, "GOD", &end, TRUE);
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
-                        -1, "blue-font", "gray_background", "heavy-font", \
+                        -1, "blue-font",  "heavy-font", \
                         "font-size-11", "letter-spacing", NULL);
 
                 syncVolumeBtn ( (WinData*)arg );
@@ -871,7 +875,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
             else if ( i == 4 ) {
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
-                        -1, "brown-font", "gray_background", "heavy-font", \
+                        -1, "brown-font",  "heavy-font", \
                         "font-size-11","letter-spacing", NULL);
             }
             else if ( i != 0 ) {
@@ -880,13 +884,13 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
-                            -1, "brown-font", "gray_background", "heavy-font", \
+                            -1, "brown-font",  "heavy-font", \
                             "font-size-11", "letter-spacing", NULL);
 
                 } else {
 
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
-                            -1, "green-font", "gray_background", "heavy-font", \
+                            -1, "green-font",  "heavy-font", \
                             "font-size-11", "letter-spacing", NULL);
                 }
 
@@ -949,7 +953,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
              * 界面都没有变化太难受了*/
             if (  ((WinData*)arg)->hadRedirect )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, "获取百度翻译结果失败\n",\
-                        -1, "brown-font", "gray_background", "heavy-font", \
+                        -1, "brown-font",  "heavy-font", \
                         "font-size-11","letter-spacing", NULL);
             else {
                 show = ~show;
@@ -1357,6 +1361,7 @@ int  newScrolledWin() {
     gtk_text_view_set_editable ( (GtkTextView*)view, FALSE );
     gtk_text_view_set_cursor_visible ( ( GtkTextView* )view, FALSE );
 
+    /* window->layout->scroll->view*/
     gtk_container_add ( GTK_CONTAINER(scroll), view );
     gtk_container_add ( GTK_CONTAINER(layout), scroll );
     gtk_container_add (GTK_CONTAINER(window), layout);
