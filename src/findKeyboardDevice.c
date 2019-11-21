@@ -32,7 +32,7 @@ char **getKeyboardDevice(char (*buf)[100])
         strcat ( devname, itoa(i) );
 
         if ( access (devname, F_OK) != 0) {
-            printf("\033[0;31maccess failed %s \033[0m\n\n", devname);
+            //printf("\033[0;31maccess failed %s \033[0m\n\n", devname);
             break;
         }
 
@@ -43,10 +43,10 @@ char **getKeyboardDevice(char (*buf)[100])
 
         close ( fd );
 
-        printf("\033[0;35minfo = %s \033[0m\n", info);
+        //printf("\033[0;35minfo = %s \033[0m\n", info);
         if ( strstr ( info, "Keyboard" ) != NULL || strstr ( info, "keyboard" ) != NULL ) {
 
-            fprintf(stdout, "\033[0;32mFound keyboard device:%s\033[0;m\n", devname);
+            fprintf(stdout, "\033[0;32mFound keyboard device:%s <In findKeyboardDevice.c>\033[0;m\n\n", devname);
             strcpy ( buf[count++], devname );
             continue;
         }

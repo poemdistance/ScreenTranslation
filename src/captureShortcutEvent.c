@@ -20,7 +20,7 @@ int *myopen( char (*dev)[100] )  {
     for ( int i=0; i<KEYBOARD_NUM; i++ ) {
         if ( strlen(dev[i]) > 0 ) {
             fds[i] = open((char*)dev[i], O_RDONLY);
-            printf("\033[0;35mopen device %s \033[0m\n", dev[i]);
+            printf("\n\033[0;35mopen device %s <In captureShortcutEvent.c>\033[0m\n\n", dev[i]);
         }
     }
 
@@ -48,6 +48,7 @@ void captureShortcutEvent(int socket) {
     int AltPress = 0;
     int CtrlPress = 0;
 
+    /* Just connect to the shared memory already exist */
     char *shmaddr;
     shared_memory_for_keyboard_event(&shmaddr);
 

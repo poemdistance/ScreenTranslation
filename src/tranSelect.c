@@ -6,6 +6,7 @@ char *shmaddr_baidu;
 char *shmaddr_selection;
 char *shmaddr_searchWin;
 char *shmaddr_keyboard;
+char *shmaddr_mysql;
 
 int action = 0;
 int timeout_id_1;
@@ -17,6 +18,7 @@ int shmid_baidu;
 int shmid_selection;
 int shmid_searchWin;
 int shmid_keyboard;
+int shmid_mysql;
 
 void *newNormalWindowThread() {
 
@@ -51,6 +53,7 @@ void tranSelect() {
     shmid_selection = shared_memory_for_selection(&addr_selection);
     shmid_searchWin = shared_memory_for_quickSearch( &shmaddr_searchWin );
     shmid_keyboard = shared_memory_for_keyboard_event ( &shmaddr_keyboard );
+    shmid_mysql = shared_memory_for_mysql ( &shmaddr_mysql );
 
     shmaddr_google = addr_google;
     shmaddr_baidu = addr_baidu;

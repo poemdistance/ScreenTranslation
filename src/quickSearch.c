@@ -74,8 +74,8 @@ void quickSearch()
         if ( sigaction ( SIGCHLD, &sa, NULL) != 0 )
             err_exit_qs("Sigaction error in quickSearch 2");
 
-        printf("\033[0;36mquickSearch pid = %d \033[0m\n", getpid());
-        printf("\033[0;36mquickSearch child pid = %d \033[0m\n", pid);
+        //printf("\033[0;36mquickSearch pid = %d \033[0m\n", getpid());
+        //printf("\033[0;36mquickSearch child pid = %d \033[0m\n", pid);
         close ( fd[0] );
 
         /* 将键盘监听后写回socket的结果一一读取，防止未读取数据影响程序逻辑*/

@@ -274,6 +274,8 @@ void *newNormalWindow() {
 
     int index_baidu[13] = { 0 };
 
+    printDebugInfo();
+
     //TODO:if ( shmaddr_baidu[0] !=ERRCHAR )
     getIndex(index_baidu, shmaddr_baidu);
 

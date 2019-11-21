@@ -120,6 +120,7 @@ void *DetectMouse(void *arg);
 int shared_memory_for_google_translate(char **addr);
 int shared_memory_for_baidu_translate(char **addr);
 int shared_memory_for_selection(char **addr);
+int shared_memory_for_mysql(char **addr);
 void *newNormalWindow();
 void adjustStr(char *p[3], int len, char *storage[3]);
 int adjustStrForScrolledWin(int len, char *source);

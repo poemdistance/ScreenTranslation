@@ -32,6 +32,7 @@ extern int quickSearchFlag;
 pid_t baidu_translate_pid;
 pid_t google_translate_pid;
 pid_t check_selectionEvent_pid;
+pid_t fetch_data_from_mysql_pid;
 
 int mousefd;
 extern int action;
@@ -51,10 +52,10 @@ void *DetectMouse(void *arg) {
     double inTimeout = 0;
     int thirdClick;
 
-    int fd_google[2], fd_baidu[2];
-    int fd_python[2];
+    int fd_google[2], fd_baidu[2], fd_mysql[2];
+    int fd_python[3];
     int status;
-    pid_t pid_google = -1, pid_baidu = -1;
+    pid_t pid_google = -1, pid_baidu = -1, pid_mysql = -1;
     pid_t retpid;
 
     if ( (status = pipe(fd_google)) != 0 ) {
@@ -64,6 +65,11 @@ void *DetectMouse(void *arg) {
 
     if ( (status = pipe(fd_baidu)) != 0 ) {
         fprintf(stderr, "create pipe fail (baidu)\n");
+        exit(1);
+    }
+    
+    if ( (status = pipe(fd_mysql)) != 0 ) {
+        fprintf(stderr, "create pipe fail (mysql)\n");
         exit(1);
     }
 
@@ -92,13 +98,30 @@ void *DetectMouse(void *arg) {
         if ( ( retpid = fork() ) == -1) 
             err_exit ("Fork check_selectionEvent failed");
 
-        if ( retpid == 0)
-        {
-            pid_google = -1;
+        if ( retpid == 0) {
 
+            pid_google = -1;
             checkSelectionChanged();
         }
         else {
+            /* 用于后期退出时清理进程*/
+            check_selectionEvent_pid = retpid;
+        }
+    }
+
+    /* 咱再fork一个用于离线翻译的*/
+    if ( pid_google > 0 ) {
+
+        if ( ( retpid = fork() ) == -1) 
+            err_exit ("Fork check_selectionEvent failed");
+
+        /* In child process*/
+        if ( retpid == 0 ) {
+
+            pid_google = -1;
+            pid_mysql = 0;
+        }
+        else if ( retpid > 0) {
             /* 用于后期退出时清理进程*/
             check_selectionEvent_pid = retpid;
         }
@@ -114,6 +137,7 @@ void *DetectMouse(void *arg) {
 
         fd_python[0] = fd_google[1];
         fd_python[1] = fd_baidu[1];
+        fd_python[2] = fd_mysql[1];
 
         shmaddr_searchWin[0] =  *itoa(fd_python[0]);
         shmaddr_searchWin[strlen(itoa(fd_python[0]))] =  '\0';
@@ -343,6 +367,31 @@ void *DetectMouse(void *arg) {
             exit(1);
         }
         printf("detectMouse.c (baidu)子进程已经退出...\n");
+        exit(1);
+
+    }
+
+    if ( pid_mysql == 0 ) {
+
+        close(fd_mysql[1]); /*关闭写端口*/
+
+        /*重映射标准输入为管道读端口*/
+        if ( fd_mysql[0] != STDIN_FILENO) {
+            if ( dup2( fd_mysql[0], STDIN_FILENO ) != STDIN_FILENO) {
+                fprintf(stderr, "dup2 error (mysql)");
+                close(fd_mysql[0]);
+                exit(1);
+            }
+        }
+
+        printf("\033[0;34mExecute the offline translation process\033[0m\n\n");
+        char * const cmd[3] = {"fetchDict","-s", (char*)0};
+        if ( execv( "/usr/bin/fetchDict", cmd ) < 0) {
+            fprintf(stderr, "Execv error (mysql)\n");
+            perror("Execv error(mysql):");
+            exit(1);
+        }
+        printf("detectMouse.c (mysql)子进程已经退出...\n");
         exit(1);
 
     }

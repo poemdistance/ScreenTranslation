@@ -25,7 +25,7 @@ extern int action;
 
 extern int HadDestroied;
 
-void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
+void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
 
     char appName[100];
 
@@ -112,6 +112,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     writePipe(text, fd[0]);
     writePipe(text, fd[1]);
+    writePipe(text, fd[2]);
 
     /* 情况1: 双击单词后再点击了一次形成的三击选段，此时的3击不能再弹出入口图标
      * 情况2: 从空白处直接3击取段，此时应弹出入口图标
