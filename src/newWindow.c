@@ -3,6 +3,10 @@
 
 #include "common.h"
 
+#define BOTTOM_OFFSET ( 45 )
+#define RIGHT_BORDER_OFFSET ( 50 )
+#define INDICATE_OFFSET ( 80 )
+
 extern char *text;
 
 extern char *shmaddr_google;
@@ -25,8 +29,11 @@ int scrollShow = -1;
 /* 鼠标动作标志位*/
 extern int action;
 
-extern char audio_en[512];
-extern char audio_uk[512];
+extern char audioOnline_en[512];
+extern char audioOnline_uk[512];
+
+extern char audioOffline_en[512];
+extern char audioOffline_uk[512];
 
 extern int CanNewWin;
 
@@ -67,11 +74,11 @@ void focusOurWindow( WinData *wd ) {
 
 }
 
-int detect_ctrl_c(void *arg) {
+int detect_ctrl_c(void *data) {
 
     /* 每隔一定时间多次尝试重新聚焦窗口防止聚焦窗口被抢占*/
     if ( focustimes++ <= 5 ) {
-        focusOurWindow ( (WinData*)arg );
+        focusOurWindow ( WINDATA(data) );
     }
 
 
@@ -83,7 +90,7 @@ int detect_ctrl_c(void *arg) {
 
         printf("\033[0;32m窗口检测到Control-C\033[0m\n");
 
-        WinData *wd = (WinData*)arg;
+        WinData *wd = WINDATA(data);
 
         gtk_window_present_with_time ( GTK_WINDOW(wd->window), time(NULL) );
         gtk_window_set_focus ( (GtkWindow*)wd->window, wd->view );
@@ -96,21 +103,23 @@ int detect_ctrl_c(void *arg) {
     return TRUE;
 }
 
-void syncVolumeBtn ( WinData *wd ) {
+void syncVolumeBtn ( WinData *wd, int type ) {
 
     /* 含音标，添加播放按钮*/
-    if ( strlen ( Phonetic(ONLINE) ) != 0) {
+    if ( strlen ( Phonetic(type) ) != 0) {
 
         GtkWidget *volume =  ((WinData*)wd)->volume;
 
         if ( volume == NULL ) {
 
             printf("\033[0;34m插入音频播放按钮 \033[0m\n");
-            bw.audio[0] = audio_en;
-            bw.audio[1] = audio_uk;
+            bw.audio_online[0] = audio_en(ONLINE);
+            bw.audio_online[1] = audio_uk(ONLINE);
 
-            ((WinData*)wd)->volume = insertVolumeIcon(\
-                ((WinData*)wd)->window, ((WinData*)wd)->layout, ((WinData*)wd));
+            bw.audio_offline[0] = audio_en(OFFLINE);
+            bw.audio_offline[1] = audio_uk(OFFLINE);
+
+            ((WinData*)wd)->volume = insertVolumeIcon(((WinData*)wd)->window, ((WinData*)wd)->layout, ((WinData*)wd), type);
         }
         else {
 
@@ -125,7 +134,7 @@ void syncVolumeBtn ( WinData *wd ) {
 /* 程序会在oh前面崩溃*/
 void mark_set(GtkTextBuffer *buf, gpointer *data) {
 
-    WinData *wd = (WinData*)data;
+    WinData *wd = WINDATA(data);
 
     GtkTextIter start ;
     GdkRectangle loc;
@@ -136,7 +145,7 @@ void mark_set(GtkTextBuffer *buf, gpointer *data) {
     printf("please\n");
     gtk_text_view_get_iter_location ( (GtkTextView*)(wd->view), &start, &loc );
     printf("oh\n");
-    ((WinData*)data)->lineHeight = loc.y;
+    (WINDATA(data))->lineHeight = loc.y;
 
     printf("\033[0;31mloc.x=%d loc.y=%d \033[0m\n", loc.x, loc.y);
 
@@ -145,10 +154,10 @@ void mark_set(GtkTextBuffer *buf, gpointer *data) {
 
 void text_changed ( GtkTextBuffer *buf, gpointer *data ) {
 
-    if ( ((WinData*)data)->lineHeight > 0 )
+    if ( (WINDATA(data))->lineHeight > 0 )
         return;
 
-    gtk_widget_show(((WinData*)data)->window);
+    gtk_widget_show((WINDATA(data))->window);
 
     /*
        int charnum = gtk_text_buffer_get_char_count ( buf );
@@ -159,9 +168,9 @@ void text_changed ( GtkTextBuffer *buf, gpointer *data ) {
     GdkRectangle loc;
     gtk_text_buffer_get_start_iter ( buf, &start);
     gtk_text_buffer_get_end_iter ( buf, &end );
-    //gtk_text_view_get_iter_location ( GTK_TEXT_VIEW(((WinData*)data)->view), &iter, &loc );
-    gtk_text_view_get_iter_location ( GTK_TEXT_VIEW(((WinData*)data)->view), &end, &loc );
-    ((WinData*)data)->lineHeight = loc.y;
+    //gtk_text_view_get_iter_location ( GTK_TEXT_VIEW((WINDATA(data))->view), &iter, &loc );
+    gtk_text_view_get_iter_location ( GTK_TEXT_VIEW((WINDATA(data))->view), &end, &loc );
+    (WINDATA(data))->lineHeight = loc.y;
 
     printf("\033[0;31mloc.x=%d loc.y=%d \033[0m\n", loc.x, loc.y);
 
@@ -172,6 +181,9 @@ void text_changed ( GtkTextBuffer *buf, gpointer *data ) {
 /*新建翻译结果窗口, 本文件入口函数*/
 void *newNormalWindow() {
 
+    /* Storage the relative element or data in this window*/
+    WinData wd;
+
     focustimes = 1;
     show = -1;
     InNewWin = 1;
@@ -181,13 +193,12 @@ void *newNormalWindow() {
     /* 窗口打开标志位 changed in captureShortcutEvent.c <变量shmaddr>*/
     shmaddr_keyboard[2] = '1';
 
-    int ret = waitForContinue();
+    wd.getOfflineTranslation = 0;
+
+    int ret = waitForContinue( &wd );
 
     if (ret == 1)
         return (void*)0;
-
-    /* Storage the relative element or data in this window*/
-    WinData wd;
 
     /*新建并设置窗口基本属性*/
     gtk_init(NULL, NULL);
@@ -337,32 +348,39 @@ void *newNormalWindow() {
     /* 分离谷歌翻译共享内存数据,并保存应设窗口大小值*/
     separateGoogleDataSetWinSize ( index_google );
 
-    GtkWidget *switchButton = newSwitchButton( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), switchButton, bw.width-50, bw.height-45 );
+    /* 百度翻译结果显示按钮*/
+    GtkWidget *baiduButton = newBaiduButton( &wd );
+    gtk_layout_put ( GTK_LAYOUT(layout), baiduButton, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET );
+    g_signal_connect(baiduButton, "clicked", G_CALLBACK(displayBaiduTrans), &wd);
+
+    /* 谷歌翻译结果显示按钮*/
+    GtkWidget *googleButton = newGoogleButton ( &wd );
+    gtk_layout_put ( GTK_LAYOUT(layout), googleButton, bw.width-RIGHT_BORDER_OFFSET*2, bw.height-BOTTOM_OFFSET );
+    g_signal_connect ( googleButton, "clicked", G_CALLBACK(displayGoogleTrans), &wd );
 
     /* 离线翻译结果切换按钮*/
     GtkWidget *offlineButton = newOfflineButton ( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), offlineButton, bw.width-100, bw.height-45 );
+    gtk_layout_put ( GTK_LAYOUT(layout), offlineButton, bw.width-RIGHT_BORDER_OFFSET*3, bw.height-BOTTOM_OFFSET );
     g_signal_connect ( offlineButton, "clicked", G_CALLBACK(displayOfflineTrans), &wd );
+
+    /* 指示当前翻译所属*/
+    wd.indicateButton = newIndicateButton ( &wd );
+    gtk_layout_put ( GTK_LAYOUT(layout), wd.indicateButton, bw.width-RIGHT_BORDER_OFFSET, bw.height-INDICATE_OFFSET );
 
     wd.buf = buf;
     wd.iter = &iter;
-    wd.switchButton = switchButton;
-    wd.offlineButton = offlineButton;
     wd.volume = NULL;
     wd.scroll = scroll;
 
     wd.index_google[0] = index_google[0];
     wd.index_google[1] = index_google[1];
 
-    /* 谷歌百度翻译结果切换显示回调函数*/
-    g_signal_connect(switchButton, "clicked", G_CALLBACK(changeDisplay), (void*)&wd);
 
     /*捕获resize window信号, 进行显示调整*/
     g_signal_connect (newWin, "configure-event", G_CALLBACK(syncNormalWinForConfigEvent), &wd);
 
 
-    timeout_id = g_timeout_add(100, detect_ctrl_c, &wd);
+    timeout_id = g_timeout_add(RIGHT_BORDER_OFFSET*2, detect_ctrl_c, &wd);
 
     gtk_widget_show_all(newWin);
 
@@ -372,7 +390,7 @@ void *newNormalWindow() {
     //g_signal_connect ( buf, "mark-set", G_CALLBACK(mark_set), (void*)&wd );
 
     /*显示百度翻译结果*/
-    displayBaiduTrans(buf, &iter, (void*)&wd);
+    displayBaiduTrans(baiduButton, (void*)&wd );
 
     gtk_main();
 
@@ -389,13 +407,13 @@ void clearMemory () {
     memset(shmaddr_baidu, '\0', SHMSIZE-10);
     memset(shmaddr_mysql, '\0', SHMSIZE-10);
 
-    memset ( audio_uk, '\0', 512 );
-    memset ( audio_en, '\0', 512 );
+    memset ( audioOnline_uk, '\0', 512 );
+    memset ( audioOnline_en, '\0', 512 );
 
     for ( int i=0; i<BAIDUSIZE; i++ )
         if ( baidu_result[i] != NULL)
             memset( baidu_result[i], '\0', SHMSIZE / BAIDUSIZE );
-    
+
     for ( int i=0; i<MYSQLSIZE; i++ )
         if ( mysql_result[i] != NULL)
             memset( mysql_result[i], '\0', SHMSIZE / MYSQLSIZE );
@@ -415,7 +433,7 @@ int destroyNormalWin(GtkWidget *window, WinData *wd) {
     shmaddr_keyboard[2] = '0';
     shmaddr_keyboard[1] = '0';
 
-    gtk_widget_destroy ( wd->image );
+    //gtk_widget_destroy ( wd->image );
 
     /*清除相关标记*/
     shmaddr_baidu[0] = CLEAR;
@@ -458,12 +476,12 @@ void getIndex(int *index, char *addr) {
         p++; i++;
     }
 
-    /* 清除翻译结果写入完成标志*/
+    /*Can somebody tell me why? 清除翻译结果写入完成标志*/
     if ( addr[0] == '1')
         addr[0] = '\0';
 }
 
-int waitForContinue() {
+int waitForContinue(WinData *wd) {
 
     int flag = 0;
     int time = 0;
@@ -519,9 +537,11 @@ int waitForContinue() {
             shmaddr_baidu[0] = ERRCHAR;
             break;
         }
+
     }
 
     printf("\033[0;32m准备创建窗口 %p \033[0m\n", text);
+
     if ( text == NULL )
         if (( text = calloc(TEXTSIZE, 1)) == NULL)
             err_exit("malloc failed in notify.c");
@@ -533,6 +553,9 @@ int waitForContinue() {
     }
 
     action = 0;
+
+    if ( shmaddr_mysql[0] == FINFLAG )
+        wd->getOfflineTranslation = 1;
 
     /*原始数据超过一定长度，在ScrolledWin中显示, 并返回1，
      * 不再执行newWin函数*/
@@ -585,30 +608,29 @@ void initMemoryGoogle() {
 }
 
 /* 重新从共享内存获取百度翻译结果并设置窗口大小*/
-void reGetBaiduTransAndSetWin (gpointer *arg, int which ) { 
+void reGetBaiduTransAndSetWin (gpointer *data, int which ) { 
 
     printf("\033[0;36mIn reGetBaiduTrans \033[0m\n");
     printf("\033[0;36m重新从共享内存获取百度翻译数据 \033[0m\n");
 
-    int index_baidu[13] = { 0 };
+    int index[13] = { 0 };
 
     //printDebugInfo();
 
-    getIndex(index_baidu, shmaddr_baidu);
+    getIndex(index, shmaddr_baidu );
 
-    separateDataForBaidu(index_baidu, 28, ONLINE);
+    separateDataForBaidu(index, 28, ONLINE );
 
-    int maxlen_baidu = getMaxLenOfBaiduTrans(ONLINE);
-    int lines_baidu = getLinesOfBaiduTrans(ONLINE);
+    int maxlen= getMaxLenOfBaiduTrans(ONLINE);
+    int lines= getLinesOfBaiduTrans(ONLINE);
 
-    setWinSizeForNormalWin ( maxlen_baidu, lines_baidu, shmaddr_baidu, ONLINE );
+    setWinSizeForNormalWin ( maxlen, lines, shmaddr_baidu, ONLINE);
 
-    printf("\033[0;36m(reGetBaiduTrans)maxlen=%d lines_baidu=%d bw.width=%f bw.height=%f\033[0m\n", maxlen_baidu, \
-            lines_baidu, bw.width, bw.height);
+    printf("\033[0;36m(reGetBaiduTrans)maxlen=%d lines_baidu=%d bw.width=%f bw.height=%f\033[0m\n", maxlen, lines, bw.width, bw.height);
 
 }
 
-void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
+void adjustWinSize(GtkWidget *button, gpointer *data, int which ) {
 
     if ( !which ) 
     {
@@ -625,16 +647,16 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         if ( gw.width <= bw.width && gw.height <= bw.height) {
 
             /* 原谷歌scrolled window小于百度的，窗口没变，但scrolled window要随之扩大*/
-            gtk_window_resize ( (GtkWindow*)((WinData*)arg)->window, bw.width, bw.height );
-            gtk_widget_set_size_request ( ((WinData*)arg)->scroll, bw.width, bw.height );
-            gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, bw.width-50, bw.height-45);
-            gtk_widget_queue_draw ( ((WinData*)arg)->window );
-            gtk_widget_show_all(((WinData*)arg)->window);
+            gtk_window_resize ( (GtkWindow*)WINDATA(data)->window, bw.width, bw.height );
+            gtk_widget_set_size_request ( WINDATA(data)->scroll, bw.width, bw.height );
+            //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET);
+            //gtk_widget_queue_draw ( WINDATA(data)->window );
+            gtk_widget_show_all(WINDATA(data)->window);
             return;
         }
 
-        if (gw.width < 350)
-            gw.width = 350;
+        if (gw.width < 400)
+            gw.width = 400;
 
         if ( gw.height < 230 )
             gw.height = 230;
@@ -645,15 +667,15 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         if ( gw.height > 900 )
             gw.height = 900;
 
-        ((WinData*)arg)->width = gw.width;
-        ((WinData*)arg)->height = gw.height;
+        WINDATA(data)->width = gw.width;
+        WINDATA(data)->height = gw.height;
 
         /* 以下代码段会触发configure-event事件而调用对应回调函数: syncNormalWinForConfiEvent*/
-        gtk_window_resize((GtkWindow*)((WinData*)arg)->window, gw.width, gw.height);
-        gtk_widget_set_size_request ( ((WinData*)arg)->scroll, gw.width, gw.height );
-        gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, gw.width-50, gw.height-45);
-        gtk_widget_queue_draw ( ((WinData*)arg)->window );
-        gtk_widget_show_all(((WinData*)arg)->window);
+        gtk_window_resize((GtkWindow*)WINDATA(data)->window, gw.width, gw.height);
+        gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
+        //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, gw.width-RIGHT_BORDER_OFFSET, gw.height-BOTTOM_OFFSET);
+        //gtk_widget_queue_draw ( WINDATA(data)->window );
+        gtk_widget_show_all(WINDATA(data)->window);
         printf("\033[0;31m\n谷歌翻译重设窗口大小:gw width=%f gw.height=%f\033[0m\n", gw.width, gw.height);
     } 
 
@@ -663,23 +685,23 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         if ( strlen ( ZhTrans(ONLINE) ) == 0) {
 
             printf("\033[0;36m百度翻译结果长度为0\033[0m\n");
-            reGetBaiduTransAndSetWin ( arg, which );
+            reGetBaiduTransAndSetWin ( data, which );
         }
 
         /*如果新窗口的宽高都小于上一个的，不调整窗口大小*/
         if ( gw.width >= bw.width && gw.height >= bw.height) {
 
             printf("\033[0;34m百度翻译窗口小于谷歌，可不必调整 \033[0m\n");
-            gtk_window_resize ( (GtkWindow*)((WinData*)arg)->window, gw.width, gw.height );
-            gtk_widget_set_size_request ( ((WinData*)arg)->scroll, gw.width, gw.height );
-            gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, gw.width-50, gw.height-45);
-            gtk_widget_queue_draw ( ((WinData*)arg)->window );
-            gtk_widget_show_all(((WinData*)arg)->window);
+            gtk_window_resize ( (GtkWindow*)WINDATA(data)->window, gw.width, gw.height );
+            gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
+            //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, gw.width-RIGHT_BORDER_OFFSET, gw.height-BOTTOM_OFFSET);
+            //gtk_widget_queue_draw ( WINDATA(data)->window );
+            gtk_widget_show_all(WINDATA(data)->window);
             return;
         }
 
-        if ( bw.width < 300 )
-            bw.width = 300;
+        if ( bw.width < 400 )
+            bw.width = 400;
 
         if ( bw.height <= 0 )
             bw.height = bw.width * 0.618;
@@ -690,48 +712,64 @@ void adjustWinSize(GtkWidget *button, gpointer *arg, int which) {
         if ( bw.height > 900 )
             bw.height = 900;
 
-        ((WinData*)arg)->width = bw.width;
-        ((WinData*)arg)->height = bw.height;
+        WINDATA(data)->width = bw.width;
+        WINDATA(data)->height = bw.height;
 
         printf("\033[0;35mbw width=%f %f\033[0m\n", bw.width, bw.height);
         printf("\033[0;35m百度翻译重设窗口大小 \033[0m\n");
-        gtk_window_resize((GtkWindow*)((WinData*)arg)->window, bw.width, bw.height);
-        gtk_widget_set_size_request ( ((WinData*)arg)->scroll, bw.width, bw.height );
-        gtk_layout_move((GtkLayout*)((WinData*)arg)->layout, button, bw.width-50, bw.height-45);
-        gtk_widget_queue_draw ( ((WinData*)arg)->window );
-        gtk_widget_show_all(((WinData*)arg)->window);
+        gtk_window_resize((GtkWindow*)WINDATA(data)->window, bw.width, bw.height);
+        gtk_widget_set_size_request ( WINDATA(data)->scroll, bw.width, bw.height );
+        //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET);
+        //gtk_widget_queue_draw ( WINDATA(data)->window );
+        gtk_widget_show_all(WINDATA(data)->window);
     }
 }
 
-/* 切换百度和谷歌翻译结果的显示*/
-void changeDisplay(GtkWidget *button, gpointer *arg) {
+int nextWindow ( int who ) {
 
-    show = ~show;
+    if ( who < 3 )
+        return who+1;
 
-    adjustWinSize ( button, arg, show );
-
-    if ( show ) {
-        displayBaiduTrans( ((WinData*)arg)->buf,((WinData*)arg)->iter, arg);
-    }
-    else 
-        displayGoogleTrans(button, arg);
+    return 1;
 }
 
-void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
+/* 切换各个翻译结果的显示*/
+void changeDisplay(GtkWidget *button, gpointer *data) {
+
+    WINDATA(data)->who = nextWindow((WINDATA(data)->who));
+
+    adjustWinSize ( button, data, WINDATA(data)->who );
+
+    if ( WINDATA(data)->who == BAIDU )
+        displayBaiduTrans( WINDATA(data)->baiduButton, data );
+    else if ( WINDATA(data)->who == GOOGLE )
+        displayGoogleTrans(button, data);
+    else if ( WINDATA(data)->who == OFFLINE )
+        displayOfflineTrans(button, data);
+}
+
+void displayGoogleTrans(GtkWidget *button, gpointer *data) {
+
+    WINDATA(data)->who = GOOGLE;
+
+    gtk_layout_move ( (GtkLayout*)WINDATA(data)->layout,\
+            WINDATA(data)->indicateButton, WINDATA(data)->width-RIGHT_BORDER_OFFSET*2, WINDATA(data)->height-INDICATE_OFFSET );
+
+    gtk_widget_queue_draw ( WINDATA(data)->window );
 
     printf("\033[0;33m\n显示谷歌翻译结果:\033[0m\n\n");
 
     /* 调整窗口大小*/
-    adjustWinSize ( button, arg, 0 );
+    adjustWinSize ( button, data, 0 );
 
-    if ( ((WinData*)arg)->volume != NULL ) {
+    if ( WINDATA(data)->volume != NULL ) {
         printf("\033[0;31m隐藏音频按钮 \033[0m\n");
-        gtk_widget_hide ( ((WinData*)arg)->volume  );
+        gtk_widget_hide ( WINDATA(data)->volume  );
     }
 
     GtkTextIter *iter, start, end;
-    iter = ((WinData*)arg)->iter;
-    GtkTextBuffer *buf = ((WinData*)arg)->buf;
+    iter = WINDATA(data)->iter;
+    GtkTextBuffer *buf = WINDATA(data)->buf;
 
     gtk_text_buffer_get_start_iter(buf, &start);
     gtk_text_buffer_get_end_iter(buf, &end);
@@ -740,7 +778,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
     gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
 
     /* TODO:*/
-    ((WinData*)arg)->iter = iter ;
+    WINDATA(data)->iter = iter ;
 
     int index_google[2] = { 0 };
 
@@ -752,8 +790,8 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
         printf("ACTUALSTART=>%s<\n",&shmaddr_google[ACTUALSTART] );
 
         for ( int i=0; i<2; i++ ) {
-            if ( shmaddr_google[((WinData*)arg)->index_google[i] - 1] == '\0') {
-                shmaddr_google[((WinData*)arg)->index_google[i] - 1] = '|';
+            if ( shmaddr_google[WINDATA(data)->index_google[i] - 1] == '\0') {
+                shmaddr_google[WINDATA(data)->index_google[i] - 1] = '|';
             }
         }
 
@@ -780,7 +818,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
     printf("\033[0;31mCall syncImageSize in disGoogle \033[0m\n");
 
     /* mark*/
-    syncImageSize ( ((WinData*)arg)->window, arg) ;
+    syncImageSize ( WINDATA(data)->window, data) ;
 
     char enter[] = "\n";
 
@@ -830,12 +868,21 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
     }
 }
 
-/* 离线翻译结果展示窗口*/
-void displayOfflineTrans ( GtkWidget *button, gpointer *arg ) {
+/* 离线翻译结果展示窗口, 跟displayBaiduTrans重复较多*/
+void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
+
+    WINDATA(data)->who = OFFLINE;
+
+    gtk_layout_move ( (GtkLayout*)WINDATA(data)->layout,\
+            WINDATA(data)->indicateButton, WINDATA(data)->width-RIGHT_BORDER_OFFSET*3, WINDATA(data)->height-INDICATE_OFFSET );
+
+    gtk_widget_queue_draw ( WINDATA(data)->window );
+
+    printf("\033[0;36mDisplaying offline translation \033[0m\n");
 
     GtkTextIter *iter, start, end;
-    iter = ((WinData*)arg)->iter;
-    GtkTextBuffer *buf = ((WinData*)arg)->buf;
+    iter = WINDATA(data)->iter;
+    GtkTextBuffer *buf = WINDATA(data)->buf;
 
     gtk_text_buffer_get_start_iter(buf, &start);
     gtk_text_buffer_get_end_iter(buf, &end);
@@ -844,8 +891,14 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *arg ) {
     gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
 
     /* ? TODO*/
-    ((WinData*)arg)->iter = iter ;
-    syncImageSize ( ((WinData*)arg)->window, arg) ;
+    WINDATA(data)->iter = iter ;
+    syncImageSize ( WINDATA(data)->window, data) ;
+
+    if ( ! WINDATA(data)->getOfflineTranslation )
+        gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n  NOT FOUND ANYTHING",\
+                -1, "yellow-font",  "heavy-font", \
+                "font-size-11", "letter-spacing", NULL);
+
 
     char enter[] = "\n";
 
@@ -872,7 +925,7 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *arg ) {
                         -1, "blue-font",  "heavy-font", \
                         "font-size-11", "letter-spacing", NULL);
 
-                syncVolumeBtn ( (WinData*)arg );
+                syncVolumeBtn ( WINDATA(data), ONLINE );
             }
             else if ( i == 4 ) {
 
@@ -936,14 +989,24 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *arg ) {
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         } 
     }
-
-    gint lines = gtk_text_buffer_get_line_count ( buf );
-    printf("\033[0;31mgtk text buffer lines = %d \033[0m\n", lines);
 }
 
 
 /* Baidu online translation display window */
-void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
+void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
+
+
+    adjustWinSize ( button, data, 1 );
+
+    WINDATA(data)->who = BAIDU;
+
+    gtk_layout_move ( (GtkLayout*)WINDATA(data)->layout,\
+            WINDATA(data)->indicateButton, WINDATA(data)->width-RIGHT_BORDER_OFFSET, WINDATA(data)->height-INDICATE_OFFSET );
+
+    gtk_widget_queue_draw ( WINDATA(data)->window );
+
+
+    GtkTextBuffer *buf = WINDATA(data)->buf;
 
     printf("\033[0;36m显示百度翻译结果\033[0m\n");
 
@@ -951,7 +1014,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
         printf("\033[0;36mZhTrans(ONLINE) & EnTrans(ONLINE)长度皆为0 \033[0m\n");
 
-        reGetBaiduTransAndSetWin ( arg, -1 );
+        reGetBaiduTransAndSetWin ( data, -1 );
     }
 
     if ( strcmp ( &shmaddr_baidu[ACTUALSTART], baidu_result[0] ) != 0) {
@@ -959,10 +1022,11 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
         printf("\033[0;31m字符串不相等，接收到新的百度翻译，重新获取 \033[0m\n");
         printf("\033[0;35m>%s< \033[0m\n",&shmaddr_baidu[ACTUALSTART]);
         printf("\033[0;35m>%s< \033[0m\n",baidu_result[0]);
-        reGetBaiduTransAndSetWin ( arg, -1 );
+        reGetBaiduTransAndSetWin ( data, -1 );
     }
 
-    GtkTextIter start, end;
+    GtkTextIter start, end, *iter;
+    iter = WINDATA(data)->iter;
 
     /*找到开头和结尾并删除，重新定位到初始为位置0*/
     gtk_text_buffer_get_end_iter(buf, &end);
@@ -970,10 +1034,10 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
     gtk_text_buffer_delete(buf, &start, &end);
     gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
 
-    ((WinData*)arg)->iter = iter ;
+    WINDATA(data)->iter = iter ;
 
     /* mark*/
-    syncImageSize ( ((WinData*)arg)->window, arg) ;
+    syncImageSize ( WINDATA(data)->window, data) ;
 
     char enter[] = "\n";
 
@@ -1000,7 +1064,7 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
                         -1, "blue-font",  "heavy-font", \
                         "font-size-11", "letter-spacing", NULL);
 
-                syncVolumeBtn ( (WinData*)arg );
+                syncVolumeBtn ( WINDATA(data) , ONLINE);
             }
             else if ( i == 4 ) {
 
@@ -1075,27 +1139,30 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
                 && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
 
             /* 一般来说谷歌翻译的结果获取快一点，如果百度翻译此时还没获取到，
-             * 先返回谷歌翻译的结果, 显示顺序改变，需同步show*/
-
-            printf("\033[0;31m百度翻译结果为空，尚未成功获取，重定向到谷歌翻译结果 \033[0m\n");
-
-
-            /* 只做一次重定向，之后再按切换按钮如果还没有获取到结果显示错误信息，不然一直刷新
+             * 先返回谷歌翻译的结果
+             *
+             * 只做一次重定向，之后再按切换按钮如果还没有获取到结果显示错误信息，不然一直刷新
              * 界面都没有变化太难受了*/
-            if (  ((WinData*)arg)->hadRedirect )
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, "获取百度翻译结果失败\n",\
+            if (  WINDATA(data)->hadRedirect )
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n\n   获取百度翻译结果失败\n",\
                         -1, "brown-font",  "heavy-font", \
                         "font-size-11","letter-spacing", NULL);
-            else {
-                show = ~show;
-                ((WinData*)arg)->hadRedirect  = 1;
-                return displayGoogleTrans ( ((WinData*)arg)->switchButton, arg);
+
+            else if ( WINDATA(data)->hadRedirect != 1 ){
+
+                printf("\033\n\n[0;31m 翻译结果重定向 \033[0m\n\n");
+
+                WINDATA(data)->hadRedirect = 1;
+
+                printf("\033[0;31mflag:%c \033[0m\n", shmaddr_mysql[0]);
+
+                if ( WINDATA(data)->getOfflineTranslation )
+                    return displayOfflineTrans ( WINDATA(data)->offlineButton, data);
+                else
+                    return displayGoogleTrans ( WINDATA(data)->googleButton, data);
             }
         }
     }
-
-    gint lines = gtk_text_buffer_get_line_count ( buf );
-    printf("\033[0;31mgtk text buffer lines = %d \033[0m\n", lines);
 }
 
 void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter) {
@@ -1159,10 +1226,10 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
 
     gtk_window_get_size ( (GtkWindow*)window, &width, &height );
 
-    if ( ((WinData*)data)->width > width ||  ((WinData*)data)->height > height ) {
+    if ( (WINDATA(data))->width > width ||  (WINDATA(data))->height > height ) {
 
-        width  = ((WinData*)data)->width ;
-        height  = ((WinData*)data)->height ;
+        width  = (WINDATA(data))->width ;
+        height  = (WINDATA(data))->height ;
     }
 
     //printf("\033[0;35m当前窗口大小 width=%d height=%d \033[0m\n", width, height);
@@ -1177,21 +1244,27 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
 
     //printf("\033[0;35m同步普通窗口相关控件 \033[0m\n");
 
-    gtk_window_resize ( GTK_WINDOW(((WinData*)data)->window), width, height );
-    gtk_widget_set_size_request ( (GtkWidget*)((WinData*)data)->scroll,  width, height);
+    gtk_window_resize ( GTK_WINDOW((WINDATA(data))->window), width, height );
+    gtk_widget_set_size_request ( (GtkWidget*)(WINDATA(data))->scroll,  width, height);
 
     /* Unnecessary*/
-    //gtk_widget_queue_draw ( ((WinData*)data)->switchButton );
-    //gtk_widget_show (  ((WinData*)data)->switchButton  );
+    //gtk_widget_queue_draw ( (WINDATA(data))->baiduButton );
+    //gtk_widget_show (  (WINDATA(data))->baiduButton  );
 
-    gtk_layout_move ( (GtkLayout*)((WinData*)data)->layout, ((WinData*)data)->switchButton, \
-            width-50, height-45 );
+    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout, \
+            (WINDATA(data))->baiduButton, width-RIGHT_BORDER_OFFSET, height-BOTTOM_OFFSET );
 
-    gtk_layout_move ( (GtkLayout*)((WinData*)data)->layout, ((WinData*)data)->offlineButton, \
-            width-100, height-45 );
+    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
+            (WINDATA(data))->googleButton, width-RIGHT_BORDER_OFFSET*2, height-BOTTOM_OFFSET );
+
+    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
+            (WINDATA(data))->offlineButton, width-RIGHT_BORDER_OFFSET*3, height-BOTTOM_OFFSET );
+
+    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
+            (WINDATA(data))->indicateButton, width-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who), height-INDICATE_OFFSET );
 
     /* mark*/
-    syncImageSize ( ((WinData*)data)->window, data );
+    syncImageSize ( (WINDATA(data))->window, data );
 
     gtk_widget_queue_draw ( window );
 }
@@ -1214,7 +1287,7 @@ void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpoint
 
     gtk_window_resize ( GTK_WINDOW(((WinData*)wd)->window), width, height );
     gtk_widget_set_size_request ( (GtkWidget*)((WinData*)wd)->scroll,  width, height);
-    gtk_layout_move ( (GtkLayout*)((WinData*)wd)->layout, ((WinData*)wd)->switchButton, width-50, height-45 );
+    gtk_layout_move ( (GtkLayout*)((WinData*)wd)->layout, ((WinData*)wd)->baiduButton, width-RIGHT_BORDER_OFFSET, height-BOTTOM_OFFSET );
 
     syncImageSize ( ((WinData*)wd)->window, (void*)wd );
     ((WinData*)wd)->width = width;
@@ -1235,7 +1308,7 @@ void resizeScrolledWin ( WinData *wd, gint width, gint height ) {
     gtk_window_resize ((GtkWindow*) wd->window, width, height );
     gtk_widget_set_size_request ( wd->scroll,  width, height);
 
-    gtk_layout_move ( (GtkLayout*)wd->layout, wd->switchButton, width-50, height-45 );
+    gtk_layout_move ( (GtkLayout*)wd->layout, wd->baiduButton, width-RIGHT_BORDER_OFFSET, height-BOTTOM_OFFSET );
     gtk_widget_queue_draw ( wd->window );
 
     gtk_widget_show_all(wd->window);
@@ -1261,10 +1334,10 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
             printf("\033[0;35m (showBaiduScrolledWin) lines=%d\n", lines);
             adjustStrForScrolledWin ( 30, &shmaddr_baidu[2+ACTUALSTART] );
             wd->width = 650;
-            wd->height = lines * 30;
+            wd->height = lines * 30 + 45;
 
-            if ( wd->height < 300 )
-                wd->height = 300;
+            if ( wd->height < 400 )
+                wd->height = 400;
 
             if ( wd->height > 600 )
                 wd->height = 600;
@@ -1276,8 +1349,8 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
             wd->width = 950;
             wd->height = lines * 30;
 
-            if ( wd->height < 300 )
-                wd->height = 300;
+            if ( wd->height < 400 )
+                wd->height = 400;
 
             if ( wd->height > 600 )
                 wd->height = 600;
@@ -1302,8 +1375,8 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
             adjustStrForScrolledWin( 30, &shmaddr_google[ACTUALSTART] );
             wd->width = 650;
             wd->height = lines * 30;
-            if ( wd->height < 300 )
-                wd->height = 300;
+            if ( wd->height < 500 )
+                wd->height = 400;
 
             if ( wd->height > 600 )
                 wd->height = 600;
@@ -1313,8 +1386,8 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
             int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
             wd->width = 950;
             wd->height = lines * 30;
-            if ( wd->height < 300 )
-                wd->height = 300;
+            if ( wd->height < 400 )
+                wd->height = 400;
 
             if ( wd->height > 600 )
                 wd->height = 600;
@@ -1448,11 +1521,11 @@ void switchScrolledWin(GtkWidget *button, gpointer data) {
     scrollShow= ~scrollShow;
 
     if ( scrollShow ) {
-        showBaiduScrolledWin(((WinData*)data)->buf, ((WinData*)data)->iter, (WinData*)data);
+        showBaiduScrolledWin((WINDATA(data))->buf, (WINDATA(data))->iter, WINDATA(data));
         return;
     }
 
-    showGoogleScrolledWin(((WinData*)data)->buf, ((WinData*)data)->iter, (WinData*)data);
+    showGoogleScrolledWin((WINDATA(data))->buf, (WINDATA(data))->iter, WINDATA(data));
 }
 
 int  newScrolledWin() {
@@ -1513,14 +1586,14 @@ int  newScrolledWin() {
 
     WinData wd;
 
-    GtkWidget *button = newSwitchButton( (WinData*)&wd );
+    GtkWidget *button = newBaiduButton( (WinData*)&wd );
 
-    gtk_layout_put ( (GtkLayout*)layout, button, width-50, height-45 );
+    gtk_layout_put ( (GtkLayout*)layout, button, width-RIGHT_BORDER_OFFSET, height-BOTTOM_OFFSET );
 
     GtkTextIter iter;
 
     wd.layout = layout;
-    wd.switchButton = button;
+    wd.baiduButton = button;
     wd.scroll = scroll;
     wd.buf = gtb;
     wd.width = width;
@@ -1646,17 +1719,17 @@ void setWinSizeForNormalWin ( int maxlen, int lines, char *addr, int type) {
         double width, height;
 
         width = maxlen * 15.6 + 40;
-        height = lines * 24;
+        height = lines * 24 + 45;
 
         /*别让窗口过小*/
-        if ( width < 300 ) {
-            width = 300;
+        if ( width < 400 ) {
+            width = 400;
         }
 
         if ( height < 200 )
             height = 200;
 
-        /*Update the window size only when the new size is larger than older's*/
+        /*Update the window size only when the new size is ldataer than older's*/
         if ( width > bw.width && height > bw.height ) {
 
             bw.width = width;
