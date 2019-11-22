@@ -18,8 +18,8 @@ extern char *google_result[GOOGLESIZE];
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 
-extern char audio_en[512];
-extern char audio_uk[512];
+extern char audioOnline_en[512];
+extern char audioOnline_uk[512];
 
 int HadDestroied = 1;
 int quickSearchFlag = 0;
