@@ -12,8 +12,11 @@ extern char *baidu_result[BAIDUSIZE];
 
 extern char *text;
 
-char audio_en[512] = { '\0' };
-char audio_uk[512] = { '\0' };
+char audioOnline_en[512] = { '\0' };
+char audioOnline_uk[512] = { '\0' };
+
+char audioOffline_en[512] = { '\0' };
+char audioOffline_uk[512] = { '\0' };
 
 void separateDataForBaidu(int *index, int len, int type) {
 
@@ -77,8 +80,8 @@ void separateDataForBaidu(int *index, int len, int type) {
         /* 提取音频链接*/
         if ( n == 5 ) {
 
-            strcat ( audio_en, &shmaddr[index[i++]] );
-            strcat ( audio_uk, &shmaddr[index[i++]] );
+            strcat ( audio_en(type), &shmaddr[index[i++]] );
+            strcat ( audio_uk(type), &shmaddr[index[i++]] );
             continue;
         }
 
@@ -122,8 +125,8 @@ void separateDataForBaidu(int *index, int len, int type) {
     //for ( int i=0; i<BAIDUSIZE; i++ )
     //printf("\033[0;35mbaidu_result[%d]=%s\033[0m\n", i, baidu_result[i]);
 
-    printf("\033[0;35maudio_en= %s \033[0m\n", audio_en);
-    printf("\033[0;35maudio_uk= %s \033[0m\n", audio_uk);
+    printf("\033[0;35maudioOnline_en= %s \033[0m\n", audio_en(type));
+    printf("\033[0;35maudioOnline_uk= %s \033[0m\n", audio_uk(type));
 }
 
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
@@ -368,7 +371,7 @@ void separateGoogleDataSetWinSize ( int *index ) {
 
         /*存于全局变量*/
         gw.width = 15 * maxlen + 40;
-        gw.height = lines * 28;
+        gw.height = lines * 28 + 45;
 
         printf("\033[0;33m(separadata.c)gw.width=%f, gw.height=%f \033[0m\n", gw.width, gw.height);
     }
@@ -378,7 +381,7 @@ void separateGoogleDataSetWinSize ( int *index ) {
         lines = 2;
 
         gw.width = 250;
-        gw.height = gw.width * 0.618;
+        gw.height = gw.width * 0.618 + 45;
         maxlen = 12;
     }
 }
