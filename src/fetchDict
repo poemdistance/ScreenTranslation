@@ -89,6 +89,9 @@ def formatData(word, attributes):
                 else:
                     output += str(value) + str(data[value]) + '|'
                 pos += 1
+
+                if 'entran' not in attributes:
+                    output += '|'
                 continue
 
             if value == 'word':
