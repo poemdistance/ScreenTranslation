@@ -58,12 +58,19 @@ Google gw;
 typedef struct Baidu {
     double width;
     double height;
-    char *audio[2];
+    char *audio_online[2];
+    char *audio_offline[2];
 }Baidu;
 
 Baidu bw;
 
+#define BAIDU (3)
+#define GOOGLE (2)
+
 typedef struct WinData{
+
+    int who;
+    int getOfflineTranslation;
 
     GtkWidget *window;
     GtkWidget *layout;
@@ -80,8 +87,10 @@ typedef struct WinData{
     GtkWidget *image;
     GtkWidget *oldImage;
 
+    GtkWidget *baiduButton;
     GtkWidget *offlineButton;
-    GtkWidget *switchButton;
+    GtkWidget *googleButton;
+    GtkWidget *indicateButton;
 
     GdkPixbuf *srcBackgroundImage;
 
@@ -137,14 +146,16 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
 int countLines ( int len, char *source );
 int countCharNums ( char *source );
 GtkWidget* newVolumeBtn () ;
-GtkWidget* insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd ) ;
+GtkWidget* insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd, int type ) ;
 
 int mp3play (GtkWidget *button, gpointer *data);
 GtkWidget * getImageWidgetWithBG( gint width, gint height  ) ;
 GtkWidget *syncImageSize ( GtkWidget *window, gpointer *data ) ;
 
-GtkWidget *newSwitchButton ( WinData *win );
+GtkWidget *newBaiduButton ( WinData *win );
 GtkWidget *newOfflineButton ( WinData *win );
+GtkWidget *newIndicateButton ( WinData *win );
+GtkWidget *newGoogleButton ( WinData *win );
 
 int getLinesOfGoogleTrans ( int *index_google );
 
@@ -167,6 +178,13 @@ struct Arg {
 #define PROJECTID  (2333)
 #define PROJECTID2  (2334)
 #define SHMSIZE (1024*1024)
+
+
+#define WINDATA(addr) ((WinData*)addr)
+
+
+#define audio_en(type)  ( type == ONLINE ? ( audioOnline_en ) : ( audioOffline_en ))
+#define audio_uk(type)  ( type == ONLINE ? ( audioOnline_uk ) : ( audioOffline_uk ))
 
 #define PhoneticFlag(type) ( type == ONLINE ? ( shmaddr_baidu[1] - '0' ) : ( shmaddr_mysql[1] - '0' ))
 #define NumZhTranFlag(type) ( type == ONLINE ? ( shmaddr_baidu[2] - '0' ) : ( shmaddr_mysql[2] - '0' ))
@@ -197,7 +215,7 @@ int  newScrolledWin();
 void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter);
 void changeDisplay(GtkWidget *button, gpointer *arg);
 void displayGoogleTrans(GtkWidget *button, gpointer *arg);
-void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg);
+void displayBaiduTrans(GtkWidget *button,  void **arg );
 void displayOfflineTrans ( GtkWidget *button, gpointer *arg );
 void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer *wd );
 void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer scroll );
