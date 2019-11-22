@@ -2,6 +2,9 @@
 #include <gst/gst.h>
 #include <glib.h>
 
+#define status(who) ( ( who ) == BAIDU ? ( ONLINE ) : ( OFFLINE ) )
+#define audio(type)  ( ( type ) == ONLINE ? ( url_online ) : ( url_offline ) )
+
 /* 用于切换英音和美音*/
 int audioShow = -1;
 
@@ -45,13 +48,23 @@ bus_call (GstBus     *bus,
 
 int mp3play (GtkWidget *button, gpointer *data)
 {
-    audioShow = ~audioShow;
-    char url[512] = { '\0' };
 
-    if ( audioShow )
-        strcpy ( url, bw.audio[0] );
-    else
-        strcpy ( url, bw.audio[1] );
+    int type = *(int *)data;
+
+    audioShow = ~audioShow;
+    char url_online[512] = { '\0' };
+    char url_offline[512] = { '\0' };
+
+    if ( audioShow ) {
+
+        strcpy ( url_online, bw.audio_online[0] );
+        strcpy ( url_offline, bw.audio_offline[0] );
+    }
+    else {
+
+        strcpy ( url_online, bw.audio_online[1] );
+        strcpy ( url_offline, bw.audio_offline[1] );
+    }
 
     GMainLoop *loop;
 
@@ -68,8 +81,12 @@ int mp3play (GtkWidget *button, gpointer *data)
     pipeline = gst_pipeline_new ("audio-player");
 
     /* This works well*/
-    source   = gst_element_factory_make ("souphttpsrc",       "file-source");
-    //source   = gst_element_factory_make ("filesrc",       "file-source");
+    if ( type == BAIDU )
+        source   = gst_element_factory_make ("souphttpsrc",       "file-source");
+    else if ( type == OFFLINE )
+        source   = gst_element_factory_make ("filesrc",       "file-source");
+    else
+        return -1;
 
     parser  = gst_element_factory_make ("mpegaudioparse", "mp3-parser");
     decoder  = gst_element_factory_make ("mpg123audiodec", "mp3-decoder");
@@ -84,7 +101,7 @@ int mp3play (GtkWidget *button, gpointer *data)
     }
 
     /*This work well with souphttpsrc, we set the input url to the source element */
-    g_object_set (G_OBJECT (source), "location", url, NULL);
+    g_object_set (G_OBJECT (source), "location", audio(status(((WinData*)data)->who)), NULL);
 
     /* we add a message handler */
     bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
@@ -138,7 +155,7 @@ GtkWidget* newVolumeBtn ()
     return button;
 }
 
-GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd ) 
+GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd, int type ) 
 {
     GtkWidget *button = newVolumeBtn();
 
@@ -157,7 +174,7 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd 
     //else
     //    x = charNum * 12;
 
-    g_signal_connect ( button, "clicked", G_CALLBACK(mp3play), NULL );
+    g_signal_connect ( button, "clicked", G_CALLBACK(mp3play), &wd->who );
 
     printf("\033[0;34m重绘窗口 \033[0m\n");
 
