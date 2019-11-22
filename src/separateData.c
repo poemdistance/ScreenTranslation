@@ -39,7 +39,7 @@ void separateDataForBaidu(int *index, int len, int type) {
     if ( result[0] == NULL)
         err_exit("Doesn't init memory yet\n");
 
-    /* TODO:去除SourceInput(ONLINE)末尾的回车符后，比较新输入的字符串
+    /* TODO:去除SourceInput(type)末尾的回车符后，比较新输入的字符串
      * 是否与之相等，相等说明复制过了，取消本次复制 ( <130的判断
      * 是因为>=130时, 原始字符是不显示的, 没必要复制)*/
     if ( strlen ( text ) < 130 ) {
@@ -56,11 +56,11 @@ void separateDataForBaidu(int *index, int len, int type) {
             p++;
         }
 
-        if ( strcmp ( tmp, SourceInput(ONLINE) ) != 0 ) {
+        if ( strcmp ( tmp, SourceInput(type) ) != 0 ) {
 
-            strcat ( SourceInput(ONLINE), tmp );
-            //strcat ( SourceInput(ONLINE), "\n" );
-            adjustStrForBaidu(len, SourceInput(ONLINE), 0, 0);
+            strcat ( SourceInput(type), tmp );
+            //strcat ( SourceInput(type), "\n" );
+            adjustStrForBaidu(len, SourceInput(type), 0, 0);
         }
     }
 
@@ -91,17 +91,17 @@ void separateDataForBaidu(int *index, int len, int type) {
 
             /* 最后一条中文翻译前的解释都加上回车*/
             if ( n == 2 && count + 1 < shmaddr[n] - '0') {
-                strcat ( ZhTrans(ONLINE), "\n");
+                strcat ( ZhTrans(type), "\n");
             }
 
             count++;
         }
 
-        /* ZhTrans(ONLINE)*/
+        /* ZhTrans(type)*/
         if ( n == 2 ) {
             /*单个翻译结果不能加空格前缀 addSpace=0*/
-            if ( PhoneticFlag(ONLINE) == 0 && NumZhTranFlag(ONLINE) == 1 &&\
-                    NumEnTranFlag(ONLINE) == 0 && OtherWordFormFlag(ONLINE) == 0 ) {
+            if ( PhoneticFlag(type) == 0 && NumZhTranFlag(type) == 1 &&\
+                    NumEnTranFlag(type) == 0 && OtherWordFormFlag(type) == 0 ) {
 
                 adjustStrForBaidu(len, result[n], 0, 1);
             }
@@ -114,8 +114,8 @@ void separateDataForBaidu(int *index, int len, int type) {
             adjustStrForBaidu(len, result[n], 0, 1);
 
         /* 这条语句貌似是统计行数用的 */
-        else if ( n == 1 )
-            adjustStrForBaidu(len, result[n], 0, 0);
+        //else if ( n == 1 )
+            //adjustStrForBaidu(len, result[n], 0, 0);
     }
 
     /*打印提取结果*/
@@ -129,6 +129,8 @@ void separateDataForBaidu(int *index, int len, int type) {
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
     //printf("In adjustStrForBaidu\n");
+
+    printf("\033[0;34mAdjust String: %s \033[0m\n", source);
 
     int nowlen = 0;
     int asciich = 0;
@@ -160,6 +162,7 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         if ( source[j] == '\0' )
             break;
 
+        /* 空格为可分割字符，记录下该下标*/
         if ( source[j] == ' ')
             cansplit = k;
 
@@ -176,7 +179,10 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         if (addSpace && validDot && source[j] == '.' \
                 && source[j+1] != '\n' && source[j+1] != ' ' ) {
 
+            /* 新前面应该加的空格长度，应连个ascii作一个字符长，因乘2,
+             * start是上一个遇到的回车符的下标*/
             prefixLen = (j+1-start)*2;
+
             //printf("\033[0;34mj=%d start=%d prefixLen=%d\033[0m\n", j, start, prefixLen);
             nowlen = (j-start)/2;
             validDot = 0;
@@ -184,18 +190,22 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
             //printf("\033[0;32m j=%d start=%d nowlen=%d \033[0m\n\n",j, start, nowlen);
         }
 
+        /* 单个汉字的最后一个字节*/
         if ( (((source[j] & 0xff) >> 6) & 0x03) == 2  
                 && (((source[j+1] & 0xff) >> 6) & 0x03) != 2 ) {
 
             nowlen++;
 
+            /* 汉字可分割，如果下标大于上一个可分割空格字符的，则替换之*/
             if ( k > cansplit )
                 cansplit = k;
         }
 
+        /* ascii字符范围*/
         if ( (source[j]&0xff) < 128 && (source[j]&&0xff >= 0) )
             asciich++;
 
+        /* 两个ascii码作一个字符长度*/
         if ( asciich == 2 ) {
             nowlen++;
             asciich = 0;
@@ -204,6 +214,9 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         if ( nowlen == len ) {
 
             char nextchar = source[j+1];
+            int forward = 0;
+            int start = 0;
+            int end = 0;
 
             /* 如果不是数字和字母，直接用回车符切割*/
             if ( ! (\
@@ -217,23 +230,31 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
             } 
             else {
 
-
-                /* 离上一个空格的距离*/
+                /* 离上一个可分割字符的距离*/
                 int count = k - cansplit;
                 int right = k+1;
                 int left = k;
 
+                /* 如果上一个可分割字符在起点或者离上一个可分割字符超过一行的长度，那么强制分割，并返回for循环*/
                 if ( count > len || cansplit == 0) {
                     storage[++k] = '\n';
                     nowlen = 0;
                     continue;
                 }
 
+                /*分割点前移了，再加回车符使原本已复制好的数据后移，先备份*/
                 strncpy ( buf, &storage[cansplit+1], count );
                 strcat ( buf, "\0" );
-                nowlen = countCharNums ( buf );
-                k++;
 
+                /*后移的数据作为新行，同时其长度为当前新行长度*/
+                nowlen = countCharNums ( buf );
+
+                if ( addSpace ) {
+                    right = right + prefixLen;
+                    end = right; 
+                }
+
+                /*分割点后面原先数据整体后移一个字节*/
                 while ( count-- ) {
                     storage[right] = storage[left];
                     right--;
@@ -241,15 +262,28 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
                 }
 
                 storage[left+1] = '\n';
+
+                k++;
+                start = left + 2;
+                forward = 1;
             }
 
+            /*pressing*/
             if ( addSpace ) {
+
+                if ( forward == 1 )
+                    k = start-1;
+
                 int tmp = prefixLen;
                 while(tmp--) {
                     storage[++k] = ' ';
                     nowlen++;
                 }
-                nowlen /= 2;
+                //nowlen /= 2;
+                nowlen -= prefixLen/2;
+
+                if ( forward == 1 )
+                k = end;
             }
             continue;
         }
@@ -257,6 +291,8 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
     if ( copy )
         strcpy(source, storage);
+
+    printf("\033[0;34mAfter: %s \033[0m\n", source);
 }
 
 int getLinesOfGoogleTrans ( int *index ) {

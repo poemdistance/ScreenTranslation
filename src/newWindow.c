@@ -282,11 +282,13 @@ void *newNormalWindow() {
     wd.image = syncImageSize ( newWin, (void*)&wd );
 
     int index_baidu[13] = { 0 };
+    int index_mysql[13] = { 0 };
 
     printDebugInfo();
 
     //TODO:if ( shmaddr_baidu[0] !=ERRCHAR )
     getIndex(index_baidu, shmaddr_baidu);
+    getIndex(index_mysql, shmaddr_mysql);
 
     printf("\033[0;36m百度翻译分隔符索引结果:\033[0m ");
     for (int i=0; i<13; i++)
@@ -300,13 +302,20 @@ void *newNormalWindow() {
     /* 从共享内存数据流中分离相关数据到baidu_result相关功能内存区域,
      * 第二个参数是单行显示字符长度*/
     separateDataForBaidu(index_baidu, 28, ONLINE);
+    separateDataForBaidu(index_mysql, 28, OFFLINE);
 
-    int maxlen_baidu  = 0, lines_baidu = 0;
-    maxlen_baidu = getMaxLenOfBaiduTrans();
-    lines_baidu = getLinesOfBaiduTrans();
+    int maxlen_baidu  = getMaxLenOfBaiduTrans ( ONLINE );
+    int lines_baidu =  getLinesOfBaiduTrans ( ONLINE );
 
-    /*根据翻译结果的最大长度和行数设置窗口大小*/
-    setWinSizeForNormalWin ( maxlen_baidu, lines_baidu, shmaddr_baidu );
+    int maxlen_mysql  = getMaxLenOfBaiduTrans ( OFFLINE );
+    int lines_mysql =  getLinesOfBaiduTrans ( OFFLINE );
+
+    /*根据翻译结果的最大长度和行数设置窗口大小, 
+     *The result of below two statements are equivalent in normal condition,
+     *but the first one might not get the proper size of window because of 
+     *the failure of getting translation data from baidu.translate.com sometimes*/
+    setWinSizeForNormalWin ( maxlen_baidu, lines_baidu, shmaddr_baidu, ONLINE );
+    setWinSizeForNormalWin ( maxlen_mysql, lines_mysql, shmaddr_mysql, OFFLINE );
 
     printf("\033[0;33m(NewWin) baidu_maxlen=%d lines_baidu=%d \n\033[0m",maxlen_baidu, lines_baidu);
 
@@ -334,6 +343,7 @@ void *newNormalWindow() {
     /* 离线翻译结果切换按钮*/
     GtkWidget *offlineButton = newOfflineButton ( &wd );
     gtk_layout_put ( GTK_LAYOUT(layout), offlineButton, bw.width-100, bw.height-45 );
+    g_signal_connect ( offlineButton, "clicked", G_CALLBACK(displayOfflineTrans), &wd );
 
     wd.buf = buf;
     wd.iter = &iter;
@@ -373,9 +383,11 @@ void clearMemory () {
 
     /* 标志位空间用字符0填充*/
     memset(shmaddr_baidu, '0', 10);
+    memset(shmaddr_mysql, '0', 10);
 
     memset(shmaddr_google, '\0', SHMSIZE);
     memset(shmaddr_baidu, '\0', SHMSIZE-10);
+    memset(shmaddr_mysql, '\0', SHMSIZE-10);
 
     memset ( audio_uk, '\0', 512 );
     memset ( audio_en, '\0', 512 );
@@ -383,6 +395,10 @@ void clearMemory () {
     for ( int i=0; i<BAIDUSIZE; i++ )
         if ( baidu_result[i] != NULL)
             memset( baidu_result[i], '\0', SHMSIZE / BAIDUSIZE );
+    
+    for ( int i=0; i<MYSQLSIZE; i++ )
+        if ( mysql_result[i] != NULL)
+            memset( mysql_result[i], '\0', SHMSIZE / MYSQLSIZE );
 
     for ( int i=0; i<GOOGLESIZE; i++ )
         if ( google_result[i] != NULL)
@@ -582,10 +598,10 @@ void reGetBaiduTransAndSetWin (gpointer *arg, int which ) {
 
     separateDataForBaidu(index_baidu, 28, ONLINE);
 
-    int maxlen_baidu = getMaxLenOfBaiduTrans();
-    int lines_baidu = getLinesOfBaiduTrans();
+    int maxlen_baidu = getMaxLenOfBaiduTrans(ONLINE);
+    int lines_baidu = getLinesOfBaiduTrans(ONLINE);
 
-    setWinSizeForNormalWin ( maxlen_baidu, lines_baidu, shmaddr_baidu );
+    setWinSizeForNormalWin ( maxlen_baidu, lines_baidu, shmaddr_baidu, ONLINE );
 
     printf("\033[0;36m(reGetBaiduTrans)maxlen=%d lines_baidu=%d bw.width=%f bw.height=%f\033[0m\n", maxlen_baidu, \
             lines_baidu, bw.width, bw.height);
@@ -814,6 +830,119 @@ void displayGoogleTrans(GtkWidget *button, gpointer *arg) {
     }
 }
 
+/* 离线翻译结果展示窗口*/
+void displayOfflineTrans ( GtkWidget *button, gpointer *arg ) {
+
+    GtkTextIter *iter, start, end;
+    iter = ((WinData*)arg)->iter;
+    GtkTextBuffer *buf = ((WinData*)arg)->buf;
+
+    gtk_text_buffer_get_start_iter(buf, &start);
+    gtk_text_buffer_get_end_iter(buf, &end);
+
+    gtk_text_buffer_delete(buf, &start, &end);
+    gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
+
+    /* ? TODO*/
+    ((WinData*)arg)->iter = iter ;
+    syncImageSize ( ((WinData*)arg)->window, arg) ;
+
+    char enter[] = "\n";
+
+    /*根据得到的相关结果进行翻译内容输出*/
+    for ( int i=0; i<BAIDUSIZE-1; i++ ) {
+
+        /* 翻译结果不为空*/
+        if ( mysql_result[i][0] != '\0') {
+
+            /* 翻译结果输出控制代码段*/
+            if ( i == 0 && strlen(mysql_result[i]) < 30 ) {
+
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i], \
+                        -1,"black-font",  "bold-style", \
+                        "font-size-15", "letter-spacing","underline", NULL);
+            }
+            else if ( i == 1 ) {
+
+                gtk_text_buffer_get_end_iter ( buf, &end );
+                printf("create mark\n");
+                gtk_text_buffer_create_mark ( buf, "GOD", &end, TRUE);
+
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i],\
+                        -1, "blue-font",  "heavy-font", \
+                        "font-size-11", "letter-spacing", NULL);
+
+                syncVolumeBtn ( (WinData*)arg );
+            }
+            else if ( i == 4 ) {
+
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i],\
+                        -1, "brown-font",  "heavy-font", \
+                        "font-size-11","letter-spacing", NULL);
+            }
+            else if ( i != 0 ) {
+
+                if ( strlen(Phonetic(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE)) != 0\
+                        && strlen(EnTrans(OFFLINE)) == 0 && strlen(OtherWordForm(OFFLINE)) == 0){
+
+                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i],\
+                            -1, "brown-font",  "heavy-font", \
+                            "font-size-11", "letter-spacing", NULL);
+
+                } else {
+
+                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i],\
+                            -1, "green-font",  "heavy-font", \
+                            "font-size-11", "letter-spacing", NULL);
+                }
+
+            }
+
+            /* 回车符控制输出代码段*/
+            if ( i == 0 )  {
+
+                /* 只有源输入而之后没结果了，插入一个回车符*/
+                if (( strlen(mysql_result[3]) ==0 && strlen(mysql_result[4]) == 0\
+                            && strlen(mysql_result[2]) == 0 && strlen(mysql_result[1]) == 0)) 
+                {
+                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+                }
+
+                else  
+                {   
+                    if (!(strlen(Phonetic(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE)) != 0 && strlen(EnTrans(OFFLINE)) == 0\
+                                && strlen(OtherWordForm(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE)) != 0) ){
+                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+                    }
+                    else
+                    {
+                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+                    }
+                }
+            }
+
+            else if ( i == 1 && strlen(mysql_result[1]) != 0 && ( strlen(mysql_result[2]) != 0\
+                        || strlen(mysql_result[3]) != 0 || strlen(mysql_result[4]) != 0))
+
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+
+            else if ( i == 2 && ( strlen(mysql_result[3]) != 0 || strlen(mysql_result[4]) != 0 ) )
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+
+
+            else if ( i == 3 && ( strlen(mysql_result[4]) != 0) )
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+        } 
+    }
+
+    gint lines = gtk_text_buffer_get_line_count ( buf );
+    printf("\033[0;31mgtk text buffer lines = %d \033[0m\n", lines);
+}
+
+
+/* Baidu online translation display window */
 void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
 
     printf("\033[0;36m显示百度翻译结果\033[0m\n");
@@ -881,7 +1010,8 @@ void displayBaiduTrans(GtkTextBuffer *buf, GtkTextIter* iter, gpointer *arg) {
             }
             else if ( i != 0 ) {
 
-                if ( strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE)) != 0 && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
+                if ( strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE)) != 0\
+                        && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
 
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
@@ -1006,6 +1136,14 @@ void printDebugInfo() {
     printf("\n\033[0;36mOther forms of word标志位: %c\033[0m", shmaddr_baidu[4]);
     printf("\n\033[0;36mNumbers of audio links标志位: %c\033[0m\n", shmaddr_baidu[5]);
 
+    printf("\n\n\033[0;36mFinish标志位: %c\033[0m", shmaddr_mysql[0]);
+    printf("\n\033[0;36mPhonetic(ONLINE)标志位: %c\033[0m", shmaddr_mysql[1]);
+    printf("\n\033[0;36mNumbers of zhTrans标志位: %c\033[0m", shmaddr_mysql[2]);
+    printf("\n\033[0;36mNumbers of enTrans标志位: %c\033[0m", shmaddr_mysql[3]);
+    printf("\n\033[0;36mOther forms of word标志位: %c\033[0m", shmaddr_mysql[4]);
+    printf("\n\033[0;36mNumbers of audio links标志位: %c\033[0m\n\n", shmaddr_mysql[5]);
+
+    printf("\033[0;34m离线翻译结果: %s \033[0m\n", &shmaddr_mysql[ACTUALSTART]);
     printf("\n\033[0;36m百度翻译结果: %s\n\n\033[0m", &shmaddr_baidu[ACTUALSTART]);
     printf("\033[0;33m谷歌翻译结果: %s\033[0m\n\n", &shmaddr_google[ACTUALSTART]);
     printf("\033[0;35m(out printDebugInfo) \033[0m\n");
@@ -1431,7 +1569,13 @@ int  newScrolledWin() {
     return 1;
 }
 
-int getLinesOfBaiduTrans () {
+int getLinesOfBaiduTrans (int type) {
+
+    char **result = NULL;
+    if ( type == ONLINE )
+        result = baidu_result;
+    else if ( type == OFFLINE )
+        result = mysql_result;
 
     int resultNum = 0;
 
@@ -1442,9 +1586,9 @@ int getLinesOfBaiduTrans () {
     char *p = NULL;
 
     for ( int i=0; i<BAIDUSIZE; i++ ) {
-        if ( baidu_result[i][0] != '\0' ) {
+        if ( result[i][0] != '\0' ) {
             resultNum++;
-            p = baidu_result[i];
+            p = result[i];
             while ( *p ) {
                 if ( *p++ == '\n' )
                     lines++;
@@ -1459,13 +1603,19 @@ int getLinesOfBaiduTrans () {
     return lines;
 }
 
-int getMaxLenOfBaiduTrans() {
+int getMaxLenOfBaiduTrans(int type) {
+
+    char **result = NULL;
+    if ( type == ONLINE )
+        result = baidu_result;
+    else if ( type == OFFLINE ) 
+        result = mysql_result;
 
     int maxlen = 0;
 
     for ( int i=0, len=0; i<BAIDUSIZE; i++ ) {
-        if ( baidu_result[i][0] != '\0')
-            len = countCharNums ( baidu_result[i] );
+        if ( result[i][0] != '\0')
+            len = countCharNums ( result[i] );
 
         if ( len > maxlen )
             maxlen = len;
@@ -1478,17 +1628,17 @@ int getMaxLenOfBaiduTrans() {
 }
 
 /* 设置NormalWin的窗口大小*/
-void setWinSizeForNormalWin ( int maxlen, int lines, char *addr ) {
+void setWinSizeForNormalWin ( int maxlen, int lines, char *addr, int type) {
 
     maxlen = 0;
     lines = 0;
 
     printf("\033[0;35mIn setWinSizeForNormalWin \033[0m\n");
 
-    if ( addr == shmaddr_baidu ) {
+    if ( addr == shmaddr_baidu || addr == shmaddr_mysql) {
 
-        maxlen = getMaxLenOfBaiduTrans();
-        lines = getLinesOfBaiduTrans ();
+        maxlen = getMaxLenOfBaiduTrans ( type );
+        lines = getLinesOfBaiduTrans ( type );
 
         printf("\033[0;36mmaxlen=%d lines=%d \033[0m\n", maxlen, lines);
 
@@ -1506,8 +1656,12 @@ void setWinSizeForNormalWin ( int maxlen, int lines, char *addr ) {
         if ( height < 200 )
             height = 200;
 
-        bw.width = width;
-        bw.height = height;
+        /*Update the window size only when the new size is larger than older's*/
+        if ( width > bw.width && height > bw.height ) {
+
+            bw.width = width;
+            bw.height = height;
+        }
 
         if ( bw.width > 1000 )
             bw.width = 1000;
