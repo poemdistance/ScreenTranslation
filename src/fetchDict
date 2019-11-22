@@ -30,6 +30,7 @@ def isPartOfSpeech(key):
 
 #Fetch raw data from mysql
 def fetchWord(word, attributes):
+
     cnx = connector.connect(
             user='root',
             password='',
@@ -44,6 +45,7 @@ def fetchWord(word, attributes):
     result = cursor.fetchall()
     value = ()
     try:
+        #result = ([]); result[0] = []
         for r in result[0]:
             value += (r, )
     except IndexError as e:
@@ -60,19 +62,20 @@ def fetchWord(word, attributes):
     for i in range(len(column)):
         if value[i] is not None and column[i] != 'id':
             data[str(column[i])] = str(value[i])
-            attributes.append(column)
+            attributes.append ( str(column[i]) )
             pass
 
     cnx.close()
-    
+
     return data;
 
 #Convert raw data to data that can be recognized by ScreenTranslation
-def formatData(word):
+def formatData(word, attributes):
 
     output = ""
-    attributes = []
     data = fetchWord(word, attributes);
+
+    global pos
 
     if data is None:
         return data
@@ -81,7 +84,11 @@ def formatData(word):
         if value != 'synonym' and value != 'example':
 
             if  isPartOfSpeech(str(value)):
-                output += str(value) + str(data[value]) + '|'
+                if str(value) == 'other':
+                    output += str(value) + '.' + str(data[value]) + '|'
+                else:
+                    output += str(value) + str(data[value]) + '|'
+                pos += 1
                 continue
 
             if value == 'word':
@@ -92,11 +99,14 @@ def formatData(word):
                 if 'phon_am' in attributes:
                     output += '   ' + str(data[value])
                     continue
-
-                output += '   ' + str(data[value]) + '|'
+                else:
+                    output += '   ' + str(data[value]) + '|'
 
             if value == 'phon_am':
                 output += '   ' + str(data[value]) + '|'
+
+            else:
+                output += str(data[value]) + '|'
 
 
     path1 = os.path.expanduser('~')+'/'+'WordMp3/'+str(data['word'])[0]+'/'+str(data['word'])+'_en.mp3'
@@ -125,6 +135,34 @@ def connectShm():
 
     return shm 
 
+def writeFlags(shm, attributes):
+
+    cprint('attributes:'+str(attributes), 'blue')
+
+    flagStr = ""
+
+    if 'phon_en' in attributes or 'phon_am' in attributes:
+        flagStr = '1'
+    else:
+        flagStr = '0'
+
+    flagStr += str(pos)
+
+    if 'entran' in attributes:
+        flagStr += '1'
+    else:
+        flagStr += '0'
+    
+    if 'wordform' in attributes:
+        flagStr += '1'
+    else:
+        flagStr += '0'
+
+    flagStr += '2'
+
+    cprint('Offline Translation flags:'+flagStr, 'blue')
+    shm.write ( flagStr, 1 )
+
 def main():
 
     #Connect to the shared memory
@@ -147,16 +185,23 @@ def main():
             continue
         
         #Remove the space characters
+        global pos
+        pos = 0
         word = rawInput.replace(' ', '');
+        attributes = []
 
         if not str.isspace(word) and word != '':
-            data = formatData(word)
+            data = formatData(word, attributes)
             if data is not None:
                 cprint(data, 'blue')
                 shm.write(data, actualStart)
+                writeFlags(shm, attributes)
                 shm.write('1', 0)
             else:
                 cprint("NULL", 'blue')
 
 
+
+#Global Value
+pos = 0
 main()
