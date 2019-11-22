@@ -4,8 +4,10 @@
 
 /* 键值掩码在gdk/gdkkeysyms.h*/
 
-extern char audio_en[512];
-extern char audio_uk[512];
+extern char audioOnline_en[512];
+extern char audioOnline_uk[512];
+extern char audioOffline_en[512];
+extern char audioOffline_uk[512];
 extern int show;
 
 gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data ) {
@@ -26,16 +28,16 @@ gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data ) {
     if ( event->keyval == GDK_KEY_space ) {
         g_print ("Press Space\n");
 
-        printf("\033[0;34maudio_en:%s \033[0m\n", audio_en);
-        printf("\033[0;34maudio_uk:%s \033[0m\n", audio_uk);
-
-        if ( (strlen(audio_en)==0 && strlen(audio_uk)==0)  || !show ) {
+        if ( (strlen(audioOnline_en)==0 && strlen(audioOnline_uk)==0)  || !show ) {
             g_print ("No audio\n");
             return TRUE;
         }
 
-        bw.audio[0] = audio_en;
-        bw.audio[1] = audio_uk;
+        bw.audio_online[0] = audioOnline_en;
+        bw.audio_online[1] = audioOnline_uk;
+
+        bw.audio_offline[0] = audioOffline_en;
+        bw.audio_offline[1] = audioOffline_uk;
 
         mp3play (NULL, data);
     }
