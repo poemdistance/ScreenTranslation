@@ -3,13 +3,20 @@
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 extern char *shmaddr_selection;
+extern char *shmaddr_searchWin;
+extern char *shmaddr_keyboard;
+extern char *shmaddr_mysql;
 
 extern int shmid_google;
 extern int shmid_baidu;
 extern int shmid_selection;
+extern int shmid_searchWin;
+extern int shmid_keyboard;
+extern int shmid_mysql;
 
 extern char *baidu_result[BAIDUSIZE];
 extern char *google_result[GOOGLESIZE];
+extern char *mysql_result[GOOGLESIZE];
 
 extern int mousefd;
 
@@ -19,6 +26,8 @@ extern int fd_key;
 extern pid_t baidu_translate_pid;
 extern pid_t google_translate_pid;
 extern pid_t check_selectionEvent_pid;
+extern pid_t quickSearchProcess_pid;
+extern pid_t fetch_data_from_mysql_pid;
 
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
@@ -69,7 +78,7 @@ void quit() {
     else
         printf("\033[0;32mremove shared memory identifier successful (baidu)\033[0m\n");
 
-    /* 清除与共享内存*/
+    /* 清除共享内存*/
     if ( shmdt(shmaddr_selection) < 0)
         err_exit("shmdt error");
 
@@ -78,14 +87,47 @@ void quit() {
     else
         printf("\033[0;32mremove shared memory identifier successful (selection)\033[0m\n");
 
+    /* 清除共享内存*/
+    if ( shmdt(shmaddr_searchWin) < 0)
+        err_exit("shmdt error");
 
+    if (shmctl(shmid_searchWin, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error");
+    else
+        printf("\033[0;32mremove shared memory identifier successful (search window)\033[0m\n");
+
+    /* 清除共享内存: keyboard event*/
+    if ( shmdt(shmaddr_keyboard) < 0)
+        err_exit("shmdt error");
+
+    if (shmctl(shmid_keyboard, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error");
+    else
+        printf("\033[0;32mremove shared memory identifier successful (keyboard event)\033[0m\n");
+    
+    /* 清除共享内存: for mysql*/
+    if ( shmdt(shmaddr_mysql) < 0)
+        err_exit("shmdt error <mysql>");
+
+    if (shmctl(shmid_mysql, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error <mysql>");
+    else
+        printf("\033[0;32mremove shared memory identifier successful (mysql)\033[0m\n");
+
+    /* 释放翻译结果存储空间 <Baidu>*/
     if ( baidu_result[0] != NULL)
         for (int i=0; i<BAIDUSIZE; i++)
             free(baidu_result[i]);
 
+    /* 释放翻译结果存储空间 <Google>*/
     if ( google_result[0] != NULL)
         for (int i=0; i<GOOGLESIZE; i++)
             free(google_result[i]);
+
+    /* 释放翻译结果存储空间 <Mysql>*/
+    if ( mysql_result[0] != NULL)
+        for (int i=0; i<MYSQLSIZE; i++)
+            free(mysql_result[i]);
 
 
     if ( BAIDU_TRANS_EXIT_FALG != 1 )
@@ -94,6 +136,8 @@ void quit() {
         kill ( google_translate_pid, SIGKILL );
 
     kill ( check_selectionEvent_pid, SIGKILL );
+    kill ( quickSearchProcess_pid, SIGTERM );
+    kill ( fetch_data_from_mysql_pid, SIGTERM );
 
     /* 进程所在文件也进行了清理，判断一下防止多次释放,
      * (释放后display会被置为空)*/

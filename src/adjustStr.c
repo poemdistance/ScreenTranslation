@@ -1,8 +1,5 @@
 #include "common.h"
-
-
-int maxlen_google=0;
-int lines_google = 0;
+#include <ctype.h>
 
 /*字符串调整函数:
  * 向每超过一定长度的字符串中添加回车字符,避免单行过长
@@ -13,14 +10,10 @@ int lines_google = 0;
  */
 void adjustStr(char *p[], int len, char *storage[]) {
 
-    printf("\nIn adjustStr function\n");
-
-    printf("\033[0;31m(adjustStr)1.%s \033[0m\n", storage[0]);
-    printf("\033[0;31m(adjustStr)2.%s \033[0m\n", storage[1]);
-    printf("\033[0;31m(adjustStr)3.%s \033[0m\n", storage[2]);
-
     int nowlen = 0;
     int asciich = 0;
+    int cansplit = 0;
+
     for ( int i=0; i<3; i++ ) 
     {
         nowlen = 0;
@@ -32,13 +25,14 @@ void adjustStr(char *p[], int len, char *storage[]) {
 
             /*读到结尾字符时退出内层for循环，处理下一个字符串*/
             if ( p[i][j] == '\0' ) {
-                if ( j != 0 ) {
+                if ( j != 0 && i != 0) {
                     strcat ( storage[i], "\n" );
-                    lines_google++;
-                    printf("\033[0;33mlines_google++ \033[0m\n");
                 }
                 break;
             }
+
+            if ( p[i][j] == ' ')
+                cansplit = k;
 
             /*此处需要了解一下utf8编码格式
              *
@@ -53,9 +47,13 @@ void adjustStr(char *p[], int len, char *storage[]) {
              * 另说明这里与上0xff纯粹是为了有时打印成int型值时提供方便,因为int型
              * 有4个字节，需要截断才能显示正确的值*/
             if ( (((p[i][j] & 0xff) >> 6) & 0x03) == 2  
-                    && (((p[i][j+1] & 0xff) >> 6) & 0x03) != 2 )
+                    && (((p[i][j+1] & 0xff) >> 6) & 0x03) != 2 ) {
 
                 nowlen++;
+
+                if ( k > cansplit )
+                    cansplit = k;
+            }
 
             if ( (p[i][j]&0xff) < 128 && (p[i][j]&&0xff >= 0) )
                 asciich++;
@@ -65,27 +63,28 @@ void adjustStr(char *p[], int len, char *storage[]) {
                 asciich = 0;
             }
 
-            if ( nowlen > maxlen_google )
-                maxlen_google = nowlen;
-            //printf("maxlen_google=%d\n", maxlen_google);
-
             /* 防止单词被割裂为两行(上一行末尾 下一行开头) */ 
             if (nowlen == len && isalnum(p[i][j]) && isalnum(p[i][j+1]))
             {
-                int goback = 0;
-                while (isalnum(p[i][j--]))
-                {
-                    storage[i][k - goback++] = ' ';
+                int count = k - cansplit;
+
+                /* 排除可分割下标在行头或者待回退字符过长,此种情况强制切割*/
+                if (! (count > len || k == 0)) {
+
+                    int goback = 0;
+                    while (isalnum(p[i][j--]))
+                    {
+                        storage[i][k - goback++] = ' ';
+                    }
                 }
             }
 
             if ( nowlen == len ) {
+
                 storage[i][++k] = '\n';
-                lines_google++;
                 nowlen = 0;
+                continue;
             }
         }
     }
-
-    printf("\nOut adjustStr\n\n");
 }

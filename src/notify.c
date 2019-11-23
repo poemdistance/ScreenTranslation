@@ -25,7 +25,7 @@ extern int action;
 
 extern int HadDestroied;
 
-void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
+void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
 
     char appName[100];
 
@@ -34,7 +34,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     /* 必须延迟一下, 原因:
      * 检测Primary Selection的程序跑的没这边快，
      * 需要等到对方写完1后才能继续(如果对方正在写1)*/
-    usleep(100000);
+    usleep(230000);
 
     if ( shmaddr_selection[0] == '1') {
 
@@ -43,9 +43,13 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
         /* 去吧, 皮卡丘*/
         pikaqiuGo = 1;
+
+        printf("\033[0;35mPikaqiu Go \033[0m\n");
     }
 
     if ( ! pikaqiuGo ) {
+
+        printf("\033[0;35mPikaqiu return \033[0m\n");
 
         action = 0;
         memset(*history, 0, sizeof(*history));
@@ -58,14 +62,14 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     *releaseButton = 1;
 
+    /* TODO: Please remove relative codes of opening this device*/
     if ( fd_key < 0 )
         if ((fd_key = open("/dev/input/event3", O_RDWR)) < 0 ) 
             err_exit("opened keyboard device fail");
 
 
     /*需每次都执行才能判断当前的窗口是什么*/
-    fp = popen("ps -p `xdotool getwindowfocus getwindowpid`\
-            | awk '{print $NF}' | tail -n 1", "r");
+    fp = popen("ps -p `xdotool getwindowfocus getwindowpid` | awk '{print $NF}' | tail -n 1", "r");
 
     memset ( appName, 0, sizeof(appName) );
 
@@ -92,8 +96,8 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
     memset(text, 0, TEXTSIZE);
     int retval = 0;
 
-    if ( (retval = getClipboard(text) ) == 1) {
-        printf("Not copy event\n");
+    if ( (retval = getClipboard(text) ) == 1 || isEmpty(text)) {
+        printf("Not copy event or empty text\n");
         action = 0;
         memset(*history, 0, sizeof(*history));
         CanNewEntrance = 0;
@@ -108,6 +112,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]) {
 
     writePipe(text, fd[0]);
     writePipe(text, fd[1]);
+    writePipe(text, fd[2]);
 
     /* 情况1: 双击单词后再点击了一次形成的三击选段，此时的3击不能再弹出入口图标
      * 情况2: 从空白处直接3击取段，此时应弹出入口图标

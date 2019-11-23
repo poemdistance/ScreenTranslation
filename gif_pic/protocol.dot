@@ -1,0 +1,25 @@
+digraph protocol {
+
+    addr [shape="record" height=.7 width=3 label="<f0> Finish | <f1> Phonetic | <f2> numbers of zhTrans | <f3> numbers of enTrans | <f4> otherWordForm\
+            | <f5> Numbers of audio links"]
+    indicate [shape=none label="Finished Flag(First Byte)"]
+
+    explain1 [shape=none, label="\l0: Not finish yet\n\l1: Finished"]
+    indicate->addr:f0
+    addr:f0->explain1
+
+    indicate2 [shape=none label="Wether has phonetics"]
+    indicate2->addr:f1
+
+    explain2 [shape=none, label="\l0: Doesn't have phonetic\n\l1: Has"  ]
+    addr:f1->explain2
+
+    explain3 [shape=none, label="\lNumbers of Chinese translation results\n"  ]
+    addr:f2->explain3
+
+    explain4 [shape=none, label="\lNumbers of English translation of word\n"  ]
+    addr:f3->explain4
+
+    explain5 [shape=none, label="\lOther forms of word\n"  ]
+    explain5->addr:f4
+}

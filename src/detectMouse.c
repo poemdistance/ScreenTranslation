@@ -14,16 +14,25 @@
 
 
 #include "common.h"
+#include "quickSearch.h"
 
 extern char *shmaddr;
 extern char *shmaddr_selection;
 extern int InNewWin;
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
+extern int CanNewWin;
+
+extern char *shmaddr_searchWin;
+extern int shmid_searchWin ;
+
+extern char *text;
+extern int quickSearchFlag;
 
 pid_t baidu_translate_pid;
 pid_t google_translate_pid;
 pid_t check_selectionEvent_pid;
+pid_t fetch_data_from_mysql_pid;
 
 int mousefd;
 extern int action;
@@ -36,15 +45,17 @@ void *DetectMouse(void *arg) {
     int releaseButton = 1;
     fd_set readfds;
     struct timeval tv;
-    struct timeval old, now;
+    struct timeval old, now, whenTimeout;
     double oldtime = 0;
     double newtime = 0;
     double lasttime = 0;
+    double inTimeout = 0;
     int thirdClick;
 
-    int fd_google[2], fd_baidu[2], fd[2];
+    int fd_google[2], fd_baidu[2], fd_mysql[2];
+    int fd_python[3];
     int status;
-    pid_t pid_google = -1, pid_baidu = -1;
+    pid_t pid_google = -1, pid_baidu = -1, pid_mysql = -1;
     pid_t retpid;
 
     if ( (status = pipe(fd_google)) != 0 ) {
@@ -54,6 +65,11 @@ void *DetectMouse(void *arg) {
 
     if ( (status = pipe(fd_baidu)) != 0 ) {
         fprintf(stderr, "create pipe fail (baidu)\n");
+        exit(1);
+    }
+    
+    if ( (status = pipe(fd_mysql)) != 0 ) {
+        fprintf(stderr, "create pipe fail (mysql)\n");
         exit(1);
     }
 
@@ -82,13 +98,30 @@ void *DetectMouse(void *arg) {
         if ( ( retpid = fork() ) == -1) 
             err_exit ("Fork check_selectionEvent failed");
 
-        if ( retpid == 0)
-        {
-            pid_google = -1;
+        if ( retpid == 0) {
 
+            pid_google = -1;
             checkSelectionChanged();
         }
         else {
+            /* 用于后期退出时清理进程*/
+            check_selectionEvent_pid = retpid;
+        }
+    }
+
+    /* 咱再fork一个用于离线翻译的*/
+    if ( pid_google > 0 ) {
+
+        if ( ( retpid = fork() ) == -1) 
+            err_exit ("Fork check_selectionEvent failed");
+
+        /* In child process*/
+        if ( retpid == 0 ) {
+
+            pid_google = -1;
+            pid_mysql = 0;
+        }
+        else if ( retpid > 0) {
             /* 用于后期退出时清理进程*/
             check_selectionEvent_pid = retpid;
         }
@@ -102,8 +135,15 @@ void *DetectMouse(void *arg) {
         close(fd_google[0]);
         close(fd_baidu[0]);
 
-        fd[0] = fd_google[1];
-        fd[1] = fd_baidu[1];
+        fd_python[0] = fd_google[1];
+        fd_python[1] = fd_baidu[1];
+        fd_python[2] = fd_mysql[1];
+
+        shmaddr_searchWin[0] =  *itoa(fd_python[0]);
+        shmaddr_searchWin[strlen(itoa(fd_python[0]))] =  '\0';
+
+        shmaddr_searchWin[10] =  *itoa(fd_python[1]);
+        shmaddr_searchWin[10 + strlen(itoa(fd_python[1]))] =  '\0';
 
         sa.sa_handler = handler;
         sigemptyset(&sa.sa_mask);
@@ -120,7 +160,7 @@ void *DetectMouse(void *arg) {
             fprintf(stderr, "Failed to open mice\
                     \nTry to execute as superuser or add \
                     current user to group which /dev/input/mice belong to\n");
-            exit(1);
+            quit();
         }
 
         int history[4] = { 0 };
@@ -130,15 +170,40 @@ void *DetectMouse(void *arg) {
 
             /*超时时间*/
             tv.tv_sec = 0;
-            tv.tv_usec = 2000000;
+            tv.tv_usec = 1000;
 
             FD_ZERO( &readfds );
             FD_SET( mousefd, &readfds );
 
             retval = select( mousefd+1, &readfds, NULL, NULL, &tv );
 
+            if ( shmaddr_searchWin[TEXT_SUBMIT_BYTE] == '1') {
+
+                if ( text == NULL )
+                    if (( text = calloc(TEXTSIZE, 1)) == NULL)
+                        err_exit("malloc failed in notify.c");
+
+                shmaddr_searchWin[TEXT_SUBMIT_BYTE] = '0';
+                strcpy ( text,  &shmaddr_searchWin[SUBMIT_TEXT] );
+                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[0] );
+                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
+                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[2] );
+                CanNewWin = 1;
+            }
+
             /*超时*/
             if(retval==0) {
+
+                gettimeofday( &whenTimeout, NULL );
+                inTimeout = (whenTimeout.tv_usec + whenTimeout.tv_sec*1000000) / 1000;
+
+                /* 超时自动清零history*/
+                if ( abs (inTimeout - oldtime) > 700 && ! isAction(history, i, ALLONE))
+                    if ( history[0] | history[1] |  history[2] | history[3]) {
+                        memset(history, 0, sizeof(history));
+                        releaseButton = 1;
+                    }
+
                 continue;
             }
 
@@ -209,12 +274,14 @@ void *DetectMouse(void *arg) {
                             && lasttime != 0 && action == DOUBLECLICK) {
 
                         thirdClick = 1;
-                        notify(&history, &thirdClick, &releaseButton, fd);
+                        notify(&history, &thirdClick, &releaseButton, fd_python);
                     }
                     else { /*不是3击事件则按单击处理，更新oldtime*/
                         oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                         thirdClick = 0;
                         action = SINGLECLICK;
+
+                        printf("\033[0;35m单击事件 \033[0m\n");
                     }
                     releaseButton = 0;
 
@@ -232,18 +299,23 @@ void *DetectMouse(void *arg) {
 
                 /*双击超过700ms的丢弃掉*/
                 if ( abs (newtime - oldtime) > 700)  {
+                    gettimeofday(&old, NULL);
+                    oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                     memset(history, 0, sizeof(history));
+                    printf("\033[0;31m超时丢弃 \033[0m\n");
                     continue;
                 }
+
+                printf("\033[0;35m有效双击事件 \033[0m\n");
                 /*更新最后一次有效双击事件的发生时间*/
                 lasttime = newtime;
 
-                notify(&history, &thirdClick, &releaseButton, fd);
+                notify(&history, &thirdClick, &releaseButton, fd_python);
                 continue;
             }
 
             if ( isAction( history, i, SLIDE ) )
-                notify(&history, &thirdClick, &releaseButton, fd);
+                notify(&history, &thirdClick, &releaseButton, fd_python);
 
         } /*while loop*/
 
@@ -268,6 +340,7 @@ void *DetectMouse(void *arg) {
         char * const cmd[3] = {"tranen","-s", (char*)0};
         if ( execv( "/usr/bin/tranen", cmd ) < 0) {
             fprintf(stderr, "Execv error (google)\n");
+            perror("Execv error(google):");
             exit(1);
         }
         printf("detectMouse.c (google)子进程已经退出...\n");
@@ -291,6 +364,7 @@ void *DetectMouse(void *arg) {
         char * const cmd[3] = {"bdtran","-s", (char*)0};
         if ( execv( "/usr/bin/bdtran", cmd ) < 0) {
             fprintf(stderr, "Execv error (baidu)\n");
+            perror("Execv error(baidu):");
             exit(1);
         }
         printf("detectMouse.c (baidu)子进程已经退出...\n");
@@ -298,6 +372,30 @@ void *DetectMouse(void *arg) {
 
     }
 
+    if ( pid_mysql == 0 ) {
+
+        close(fd_mysql[1]); /*关闭写端口*/
+
+        /*重映射标准输入为管道读端口*/
+        if ( fd_mysql[0] != STDIN_FILENO) {
+            if ( dup2( fd_mysql[0], STDIN_FILENO ) != STDIN_FILENO) {
+                fprintf(stderr, "dup2 error (mysql)");
+                close(fd_mysql[0]);
+                exit(1);
+            }
+        }
+
+        printf("\033[0;34mExecute the offline translation process\033[0m\n\n");
+        char * const cmd[3] = {"fetchDict","-s", (char*)0};
+        if ( execv( "/usr/bin/fetchDict", cmd ) < 0) {
+            fprintf(stderr, "Execv error (mysql)\n");
+            perror("Execv error(mysql):");
+            exit(1);
+        }
+        printf("detectMouse.c (mysql)子进程已经退出...\n");
+        exit(1);
+
+    }
     pthread_exit(NULL);
 }
 

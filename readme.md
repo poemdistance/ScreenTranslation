@@ -1,9 +1,9 @@
-### 作者正在爬取离线库，完成后准备添加并发布离线功能，速度不敢太快，可能再有几天就爬取完成了，总词数约38万。
-
 # 一. 程序功能
 ## (一). 目前功能
-### 1. 屏幕取词翻译 -- 中英互译 
-   
+### 1. 屏幕取词翻译 -- 中英互译 （全局）
+### 2. 快速搜索功能 -- 快捷键调出搜索框，输入后回车获取翻译（全局）
+### 3. 添加了离线支持 -- 仅支持单词（总词数约38万）
+
   #### Ubuntu 19.04 测试通过:
 
    ![img](./gif_pic/ubuntu.png)
@@ -19,21 +19,17 @@
 * 切换谷歌百度翻译
 
 
-## (二). 后期预计完成功能
-1. 单词收藏
-2. 离线翻译
-3. 音频播放
- 
- <br> 
-
-
 # 二. 运行效果图示 
 * [x] 终端演示<br><br>
 ![gif](./gif_pic/1.gif) <br><br>
 
-* [x] 浏览器演示
-
+* [x] 浏览器演示<br><br>
 ![gif](./gif_pic/peek.gif) 
+
+<br> 
+
+* [x] 快速查找功能 \<Alt-J> 触发， Ctrl-C 或 ESC 关闭，翻译界面只支持ctrl-C关闭，窗口失焦状态ctrl-c同样适用，要关闭此功能需修改源码，后期发布详情 （修改源码可更改快捷键，详情见issue）<br><br>
+![gif](./gif_pic/quick-search.gif)
 
 <br>
 
@@ -66,59 +62,62 @@
 
    * For Arch Linux 
 
-          $  sudo pacman -S gtk3  libxtst libx11  xdotool    
+          $  sudo pacman -S gtk3  libxtst libx11  xdotool  python-pip  
 
   
-4. 终端执行命令完成项目安装 (**以下可用 `bash prepare.sh` `make && make install` 两个命令代替,如果这个命令执行后未能正常运行，尝试以下具体步骤, <font color='red'>注意安装好后必须重启</font>**) <br>
-   
-   * 复制资源文件 
-
-          $ mkdir ~/.stran
-          $ cp ../gif_pic/tran.png ../gif_pic/Switch.png ../gif_pic/background.jpg errNotification.sh startup.sh ../gif_pic/volume.png ~/.stran -v
-
-   * 修改源码适应用户 
-  
-          $ echo $HOME         #记下这个结果输出 
-
-          $ sed -i 's/\/home\/rease/<上一个命令的输出结果>/g' GuiEntrance.c newWindow.c background.c  audioPlayer.c  Mstran.desktop switchButton.c  
-          #不要带上尖括号. 记得在斜杠前加反斜杠
-
-          #如: sed -i 's/\/home\/rease/\/home\/username/g' GuiEntrance.c newWindow.c background.c  audioPlayer.c  Mstran.desktop switchButton.c 
-
-   * 添加桌面图标,创建日志文件
-
-           #复制启动图标，创建日志文件,修改读写权限，(**启动图标的生效可能要等计算机重启或gnome shell重启**)
-
-            sudo cp Mstran.desktop /usr/share/applications/ -v
-            sudo touch /var/log/mstran.log
-            sudo chmod -c 750 /var/log/mstran.log
-            sudo chown -c $USER /var/log/mstran.log
-
-
-   * 添加用户到 `/dev/input/mice` 所在组: 
-    
-         $ sudo usermod -aG `ls -l /dev/input/mice | awk '{print $4}' | xargs` $USER  
-         #需要重启
-
-   * 编译源码并安装 
-    
-          $ sudo make && make install
-
-5. 依赖项目安装
-
-      a. 返回项目根目录 `ScreenTranslation/` 
-   
-     b. 依次 cd 进 `baidu-translate/` 以及 `google-translate/` 
-         
-    c. 执行以下命令完成百度翻译和谷歌翻译命令行版本的安装
-
-         $ pip3 install -r requirements.txt
-
-         $ sudo ./setup.py install 
+4. 终端执行命令完成项目安装
         
-6. 请务必阅读下面的使用注意事项
+        make prepare && make && make install
 
-# 五. 使用过程中的问题
+
+
+5. 请务必阅读下面的使用注意事项
+<br><br>
+
+# 五. 离线库下载与安装
+
+* 百度云速度太慢，不考虑作为上传地址，github有上传大小限制，也放弃了，选择了一个国外的云盘Mega，速度很不错，限流不限速，需要使用离线功能的童鞋可能需要先注册一个Mega账号，下载好后再往下操作。
+ 
+  * 下载链接:https://mega.nz/#F!BuJQmSZA!aRwJ65QBHwnq55qy2S4_Bw
+ 
+ <br>
+
+1. 解压下载文件 <br> 
+
+* 将`WordMp3`放置于家目录，`dict.sql`请随意. <br>
+  解压命令:
+
+         tar xfv offlineTranslationResources.tar.gz 
+
+
+
+2. 安装数据库 
+ 
+ * For Arch <br>
+                
+         sudo pacman -s mariadb
+   
+  * For Debian serias
+        
+         sudo apt install  mariadb-server 
+   
+3. 创建数据库并导入dict.sql (请在普通用户模式下执行) 
+
+        sudo mysql -u root -p  #在普通用户模式下执行，然后一路回车设置空密码
+
+        # 出现如 MariaDB [(none)]> 画面时输入下面的命令：
+        create database dict;  #创建好后Ctrl-c退出
+
+        sudo mysqldump -u root -p dict < dict.sql  #终端命令导入数据库
+
+4. 设置Mariadb自启动
+
+         systemctl enable mariadb
+         systemctl start mariadb
+
+<br>
+
+# 六. 使用过程中的问题
  
 1. 运行后长时间未使用软件，在第一次双击后可能会不弹出图标，或者翻译结果呈现上一次未知的复制，是因为复制操作有延时，程序获取成了上一次的复制结果
  
@@ -133,7 +132,7 @@
 6. 软件是有桌面图标的，安装成功并重启后按Super键，搜索Mstran即可找到，点击图标会打开或者重启翻译软件。
 
 
-# 六. 更新上游项目并安装
+# 七. 更新上游项目并安装
 
 ## 1. 项目更新 
 
@@ -164,38 +163,37 @@
 
 <br> 
 
-# 七. 程序运行与停止
-1. 运行**先决条件** <br>
-     * **安装这个项目 https://github.com/poemdistance/google-translate 以及这个项目 https://github.com/poemdistance/baidu-translate 上的在线翻译程序**，其安装使用等相关事项见项目根目录的README. 确保此翻译程序能正常运行。另外，一般情况下，谷歌翻译爬虫项目会跟屏幕取词翻译同步更新，想要更新任何一个的话，两边都git pull一下。<br><br>
-     * **NOTE**: **电脑如果安装了wayland，需要禁用**，不然终端中无法正常使用xdotool,方法如下：<br>
-        *  打开/etc/gdm/custom.conf
-           添加如下两行(完成后需要重启)
-           ```
-           [daemon]
-           WaylandEnable=false
-           ``` 
-     * **相关依赖**： 
-         1. C语言库: Xlib X11 Xtst Xext gtk3开发环境
-         2. 终端命令行工具: xdotool, ps, awk, tail 
-   
-           
-      * **在某些应用中禁用取词翻译** <br>
+# 八. 程序运行与停止
 
-          找到`fordetectMouse.c`中的如下内容:
+  * **NOTE**: **电脑如果安装了wayland，需要禁用**，不然终端中无法正常使用xdotool,方法如下：<br>
+     *  打开/etc/gdm/custom.conf
+        添加如下两行(完成后需要重启)
+        ```
+        [daemon]
+        WaylandEnable=false
+        ``` 
+  * **相关依赖**： 
+      1. C语言库: Xlib X11 Xtst Xext gtk3开发环境
+      2. 终端命令行工具: xdotool, ps, awk, tail 
 
-            const static char wantToIgnore[][20] = {
-              "VirtualBox",
-              "VirtualBoxVM",
-              "vlc",
-              "qemu-system-arm",
-              "nautilus",
-              "eog",
-              "gimp-2.10"
-            };
+        
+   * **在某些应用中禁用取词翻译** <br>
 
-         **将需要忽略的应用名称添加进数组保存，重新编译项目并安装。**
+       找到`fordetectMouse.c`中的如下内容:
 
-2. 直接运行编译后生成的可执行文件mstran (**软件有应用图标，名为Mstran，点击图标亦可运行**)
+         const static char wantToIgnore[][20] = {
+           "VirtualBox",
+           "VirtualBoxVM",
+           "vlc",
+           "qemu-system-arm",
+           "nautilus",
+           "eog",
+           "gimp-2.10"
+         };
+
+      **将需要忽略的应用名称添加进数组保存，重新编译项目并安装。**
+
+1. 直接运行编译后生成的可执行文件mstran (**软件有应用图标，名为Mstran，点击图标亦可运行**)
  
         $  mstran 
     
@@ -207,13 +205,13 @@
 
      停止运行:   
 
-        $ kill `ps -aux | grep mstran | head -n 1 |awk '{print $2}'|xargs` 
+        $ bash ~/.stran/stop.sh
 
 
 <br> 
 
 
-# 八. 程序运行异常问题
+# 九. 程序运行异常问题
 
    
 1. 如果**运行报错failed to open mice的问题**，这个是因为没有权限打开文件进行读写导致的，可以有如下解决办法：    
@@ -239,3 +237,6 @@
          中途测试过程中以root用户或者说sudo执行时Xdisplay发生过 No protocol specified的错误，所以此方法不一定奏效，但也可能是当时系统忘记关闭Wayland导致的。
 
 <br>
+
+# 十. 程序内部逻辑流程图
+![img](gif_pic/FlowChart.png)

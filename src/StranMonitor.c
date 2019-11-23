@@ -62,6 +62,8 @@ main(int argc, char **argv)
     pid_t pid = 0;
     static int count = 0;
 
+    printf("\033[0;35mMonitor Process %d \033[0m\n", getpid());
+
     sa.sa_handler = handler;;
     sigemptyset ( &sa.sa_mask );
     sa.sa_flags = SA_RESTART;

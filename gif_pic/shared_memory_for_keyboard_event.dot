@@ -1,0 +1,15 @@
+digraph shm_kb {
+
+    node1 [shape=point, label=""]
+    node2 [shape=point, label=""]
+    shm [shape=none, label="shared memeory for keyboard event"]
+    addr [shape="record" label="<f0> 搜索窗口快捷键按下标志位 | <f1> 销毁窗口快捷键按下标志位 | <f2> 进入翻译窗口标志位"]
+
+    shm->node2 [dir=back]
+    {rank=same node2->node1 [arrowhead=none]}
+    {rank=same node1->addr:f1 [dir=back]}
+
+    offset [shape=none, label="First byte"]
+    offset->addr:f0
+
+}

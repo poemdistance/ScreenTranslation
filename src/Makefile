@@ -1,12 +1,14 @@
 CC = gcc
-CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb #-fsanitize=address 
+CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g #-fsanitize=address 
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  notify.o detectMouse.o shmCreate.o newWindow.o\
 		  separateData.o cleanup.o adjustStr.o Main.o\
 		  countLines.o countCharNums.o adjustStrForScrolledWin.o\
-		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o
+		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
+		  keyPressEvent.o quickSearch.o findKeyboardDevice.o\
+		  captureShortcutEvent.o  searchWindow.o tranSelect.o isEmpty.o
 
 MONNITOR = StranMonitor.o
 
@@ -29,6 +31,19 @@ $(MONNITOR) : %.o : %.c
 install:
 	sudo cp -v stran /usr/bin/
 	sudo cp -v mstran /usr/bin/
+	sudo cp -v fetchDict /usr/bin/
+	sudo cp -v Mstran.desktop /usr/share/applications/
+	sudo desktop-file-install /usr/share/applications/Mstran.desktop
+	sudo update-desktop-database
 
 clean:
 	rm -f *.o stran *.out core.* sendToClipboard mstran StranMonitor checkSelectionChanged
+
+uninstall:
+	sudo rm -rf ~/.stran 
+	sudo rm -rf /usr/bin/mstran
+	sudo rm -rf /usr/bin/stran
+	sudo rm -rf /usr/share/applications/Mstran.desktop
+
+prepare:
+	bash prepare.sh
