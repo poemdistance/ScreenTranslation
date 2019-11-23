@@ -1,10 +1,9 @@
-### 作者正在往项目里融合离线功能，更新的代码不影响正常使用（可以不必着急更新），离线功能已基本完成，但添加了新功能需要对项目相关逻辑进行优化修改，还需要一会儿，完成后再上传离线库。
-
 # 一. 程序功能
 ## (一). 目前功能
 ### 1. 屏幕取词翻译 -- 中英互译 （全局）
-### 2》 快速搜索功能 -- 快捷键调出搜索框，输入后回车获取翻译（全局）
-   
+### 2. 快速搜索功能 -- 快捷键调出搜索框，输入后回车获取翻译（全局）
+### 3. 添加了离线支持 -- 仅支持单词（总词数约38万）
+
   #### Ubuntu 19.04 测试通过:
 
    ![img](./gif_pic/ubuntu.png)
@@ -70,57 +69,16 @@
 
    * For Arch Linux 
 
-          $  sudo pacman -S gtk3  libxtst libx11  xdotool    
+          $  sudo pacman -S gtk3  libxtst libx11  xdotool  python-pip  
 
   
-4. 终端执行命令完成项目安装 (**以下可用 `bash prepare.sh` `make && make install` 两个命令代替,如果这个命令执行后未能正常运行，尝试以下具体步骤, <font color='red'>注意安装好后必须重启</font>**) <br>
-   
-   * 复制资源文件 
-
-          $ mkdir ~/.stran
-          $ cp ../gif_pic/tran.png ../gif_pic/Switch.png ../gif_pic/background.jpg errNotification.sh startup.sh ../gif_pic/volume.png ~/.stran -v
-
-   * 修改源码适应用户 
-  
-          $ echo $HOME         #记下这个结果输出 
-
-          $ sed -i 's/\/home\/rease/<上一个命令的输出结果>/g' GuiEntrance.c newWindow.c background.c  audioPlayer.c  Mstran.desktop switchButton.c  
-          #不要带上尖括号. 记得在斜杠前加反斜杠
-
-          #如: sed -i 's/\/home\/rease/\/home\/username/g' GuiEntrance.c newWindow.c background.c  audioPlayer.c  Mstran.desktop switchButton.c 
-
-   * 添加桌面图标,创建日志文件
-
-           #复制启动图标，创建日志文件,修改读写权限，(**启动图标的生效可能要等计算机重启或gnome shell重启**)
-
-            sudo cp Mstran.desktop /usr/share/applications/ -v
-            sudo touch /var/log/mstran.log
-            sudo chmod -c 750 /var/log/mstran.log
-            sudo chown -c $USER /var/log/mstran.log
-
-
-   * 添加用户到 `/dev/input/mice` 所在组: 
-    
-         $ sudo usermod -aG `ls -l /dev/input/mice | awk '{print $4}' | xargs` $USER  
-         #需要重启
-
-   * 编译源码并安装 
-    
-          $ sudo make && make install
-
-5. 依赖项目安装
-
-      a. 返回项目根目录 `ScreenTranslation/` 
-   
-     b. 依次 cd 进 `baidu-translate/` 以及 `google-translate/` 
-         
-    c. 执行以下命令完成百度翻译和谷歌翻译命令行版本的安装
-
-         $ pip3 install -r requirements.txt
-
-         $ sudo ./setup.py install 
+4. 终端执行命令完成项目安装
         
-6. 请务必阅读下面的使用注意事项
+        make prepare && make && make install
+
+
+
+5. 请务必阅读下面的使用注意事项
 
 # 五. 使用过程中的问题
  
@@ -169,37 +127,36 @@
 <br> 
 
 # 七. 程序运行与停止
-1. 运行**先决条件** <br>
-     * **安装这个项目 https://github.com/poemdistance/google-translate 以及这个项目 https://github.com/poemdistance/baidu-translate 上的在线翻译程序**，其安装使用等相关事项见项目根目录的README. 确保此翻译程序能正常运行。另外，一般情况下，谷歌翻译爬虫项目会跟屏幕取词翻译同步更新，想要更新任何一个的话，两边都git pull一下。<br><br>
-     * **NOTE**: **电脑如果安装了wayland，需要禁用**，不然终端中无法正常使用xdotool,方法如下：<br>
-        *  打开/etc/gdm/custom.conf
-           添加如下两行(完成后需要重启)
-           ```
-           [daemon]
-           WaylandEnable=false
-           ``` 
-     * **相关依赖**： 
-         1. C语言库: Xlib X11 Xtst Xext gtk3开发环境
-         2. 终端命令行工具: xdotool, ps, awk, tail 
-   
-           
-      * **在某些应用中禁用取词翻译** <br>
 
-          找到`fordetectMouse.c`中的如下内容:
+  * **NOTE**: **电脑如果安装了wayland，需要禁用**，不然终端中无法正常使用xdotool,方法如下：<br>
+     *  打开/etc/gdm/custom.conf
+        添加如下两行(完成后需要重启)
+        ```
+        [daemon]
+        WaylandEnable=false
+        ``` 
+  * **相关依赖**： 
+      1. C语言库: Xlib X11 Xtst Xext gtk3开发环境
+      2. 终端命令行工具: xdotool, ps, awk, tail 
 
-            const static char wantToIgnore[][20] = {
-              "VirtualBox",
-              "VirtualBoxVM",
-              "vlc",
-              "qemu-system-arm",
-              "nautilus",
-              "eog",
-              "gimp-2.10"
-            };
+        
+   * **在某些应用中禁用取词翻译** <br>
 
-         **将需要忽略的应用名称添加进数组保存，重新编译项目并安装。**
+       找到`fordetectMouse.c`中的如下内容:
 
-2. 直接运行编译后生成的可执行文件mstran (**软件有应用图标，名为Mstran，点击图标亦可运行**)
+         const static char wantToIgnore[][20] = {
+           "VirtualBox",
+           "VirtualBoxVM",
+           "vlc",
+           "qemu-system-arm",
+           "nautilus",
+           "eog",
+           "gimp-2.10"
+         };
+
+      **将需要忽略的应用名称添加进数组保存，重新编译项目并安装。**
+
+1. 直接运行编译后生成的可执行文件mstran (**软件有应用图标，名为Mstran，点击图标亦可运行**)
  
         $  mstran 
     
@@ -211,7 +168,7 @@
 
      停止运行:   
 
-        $ kill `ps -aux | grep mstran | head -n 1 |awk '{print $2}'|xargs` 
+        $ bash ~/.stran/stop.sh
 
 
 <br> 
@@ -245,4 +202,4 @@
 <br>
 
 # 九. 程序内部逻辑流程图
-![img](./src/FlowChart.png)
+![img](gif_pic/FlowChart.png)
