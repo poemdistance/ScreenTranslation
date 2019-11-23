@@ -37,6 +37,9 @@ do
 
 done
 
+echo 'Modify the connect user of mariadb'
+sed -i "s/rease/$USER/g" ./fetchDict
+
 #复制启动图标，创建日志文件,修改读写权限
 sudo cp Mstran.desktop /usr/share/applications/ -v
 sudo touch /var/log/mstran.log
