@@ -116,7 +116,7 @@ void *GuiEntrance(void *arg) {
     /*移动入口图标防止遮挡视线*/
     gint cx, cy;
     gtk_window_get_position(GTK_WINDOW(window), &cx, &cy);
-    gtk_window_move(GTK_WINDOW(window), cx, cy-50);
+    gtk_window_move(GTK_WINDOW(window), cx-30, cy-50);
     gtk_widget_show_all(window);
 
     /*添加超时和单击销毁图标回调函数*/
