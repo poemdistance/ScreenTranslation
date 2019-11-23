@@ -678,7 +678,7 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
         if ( gw.height > 900 )
             gw.height = 900;
 
-        if ( gw.width > WINDATA(data)->width && gw.height > WINDATA(data)->height) {
+        if ( gw.width > WINDATA(data)->width || gw.height > WINDATA(data)->height) {
 
             WINDATA(data)->width = gw.width;
             WINDATA(data)->height = gw.height;
