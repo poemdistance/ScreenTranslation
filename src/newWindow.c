@@ -187,6 +187,12 @@ void *newNormalWindow() {
     /* Storage the relative element or data in this window*/
     WinData wd;
 
+    /*Important: Pay attention to clear the values the global variables*/
+    bw.width = 0;
+    bw.height = 0;
+    gw.width = 0;
+    gw.height = 0;
+
     focustimes = 1;
     show = -1;
     InNewWin = 1;
@@ -678,11 +684,11 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
             WINDATA(data)->height = gw.height;
 
             /* 以下代码段会触发configure-event事件而调用对应回调函数: syncNormalWinForConfiEvent*/
-            gtk_window_resize((GtkWindow*)WINDATA(data)->window, gw.width, gw.height);
-            gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
+            //gtk_window_resize((GtkWindow*)WINDATA(data)->window, gw.width, gw.height);
+            //gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
             //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, gw.width-RIGHT_BORDER_OFFSET, gw.height-BOTTOM_OFFSET);
             //gtk_widget_queue_draw ( WINDATA(data)->window );
-            gtk_widget_show_all(WINDATA(data)->window);
+            //gtk_widget_show_all(WINDATA(data)->window);
             printf("\033[0;31m\n谷歌翻译重设窗口大小:gw width=%f gw.height=%f\033[0m\n", gw.width, gw.height);
         }
     } 
@@ -690,7 +696,7 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     else 
     {
         /*还未获取到结果，应重新获取并设置窗口大小*/
-        if ( strlen ( ZhTrans(ONLINE) ) == 0) {
+        if ( strlen ( ZhTrans(type(who)) ) == 0) {
 
             printf("\033[0;36m百度翻译结果长度为0\033[0m\n");
             reGetBaiduTransAndSetWin ( data, who );
@@ -700,11 +706,11 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
         if ( gw.width >= bw.width && gw.height >= bw.height) {
 
             printf("\033[0;34m百度翻译窗口小于谷歌，可不必调整 \033[0m\n");
-            gtk_window_resize ( (GtkWindow*)WINDATA(data)->window, gw.width, gw.height );
-            gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
+            //gtk_window_resize ( (GtkWindow*)WINDATA(data)->window, gw.width, gw.height );
+            //gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
             //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, gw.width-RIGHT_BORDER_OFFSET, gw.height-BOTTOM_OFFSET);
             //gtk_widget_queue_draw ( WINDATA(data)->window );
-            gtk_widget_show_all(WINDATA(data)->window);
+            //gtk_widget_show_all(WINDATA(data)->window);
             return;
         }
 
@@ -721,16 +727,17 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
             bw.height = 900;
 
         if ( bw.width > WINDATA(data)->width && bw.height > WINDATA(data)->height) {
+
             WINDATA(data)->width = bw.width;
             WINDATA(data)->height = bw.height;
 
             printf("\033[0;35mbw width=%f %f\033[0m\n", bw.width, bw.height);
             printf("\033[0;35m百度翻译重设窗口大小 \033[0m\n");
-            gtk_window_resize((GtkWindow*)WINDATA(data)->window, bw.width, bw.height);
-            gtk_widget_set_size_request ( WINDATA(data)->scroll, bw.width, bw.height );
+            //gtk_window_resize((GtkWindow*)WINDATA(data)->window, bw.width, bw.height);
+            //gtk_widget_set_size_request ( WINDATA(data)->scroll, bw.width, bw.height );
             //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET);
             //gtk_widget_queue_draw ( WINDATA(data)->window );
-            gtk_widget_show_all(WINDATA(data)->window);
+            //gtk_widget_show_all(WINDATA(data)->window);
 
         }
     }
@@ -771,7 +778,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
     printf("\033[0;33m\n显示谷歌翻译结果:\033[0m\n\n");
 
     /* 调整窗口大小*/
-    adjustWinSize ( button, data, 0 );
+    adjustWinSize ( button, data, GOOGLE );
 
     if ( WINDATA(data)->volume != NULL ) {
         printf("\033[0;31m隐藏音频按钮 \033[0m\n");
@@ -1030,7 +1037,7 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
 
-    adjustWinSize ( button, data, 1 );
+    adjustWinSize ( button, data, BAIDU );
 
     WINDATA(data)->who = BAIDU;
 
@@ -1759,6 +1766,8 @@ void setWinSizeForNormalWin ( int maxlen, int lines, char *addr, int type) {
         width = maxlen * 15.6 + 42;
         height = lines * 24 + 50;
 
+        printf("\033[0;36mbw.width=%f bw.height=%f <In setWinSizeForNormalWin 1>\033[0m\n", width, height);
+
         /*别让窗口过小*/
         if ( width < 400 ) {
             width = 400;
@@ -1767,12 +1776,11 @@ void setWinSizeForNormalWin ( int maxlen, int lines, char *addr, int type) {
         if ( height < 200 )
             height = 200;
 
-        /*Update the window size only when the new size is ldataer than older's*/
-        if ( width > bw.width && height > bw.height ) {
-
+        /*Update the window size only when the new size is larger than older's*/
+        if ( width > bw.width  )
             bw.width = width;
+        if ( height > bw.height )
             bw.height = height;
-        }
 
         if ( bw.width > 1000 )
             bw.width = 1000;
@@ -1780,7 +1788,7 @@ void setWinSizeForNormalWin ( int maxlen, int lines, char *addr, int type) {
         if ( bw.height > 900 )
             bw.height = 900;
 
-        printf("\033[0;36mbw.width=%f bw.height=%f \033[0m\n", width, height);
+        printf("\033[0;36mbw.width=%f bw.height=%f <In setWinSizeForNormalWin 2>\033[0m\n", width, height);
 
         return;
     } 
