@@ -124,7 +124,7 @@
 
 * 
         #终端操作命令导入数据库
-        mysqldump -u $USER -p dict < dict.sql  #终端命令导入数据库
+        mysql -h127.0.0.1 -u$USER -p dict < dict.sql #终端命令导入数据库
 
 * 
          #设置Mariadb自启动
