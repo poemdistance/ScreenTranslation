@@ -68,10 +68,10 @@ echo 'Preparing to install submodules'
 echo
 
 cd ../baidu-translate
-pip3 install -r requirements.txt
+sudo pip3 install -r requirements.txt
 sudo ./setup.py install
 
 cd ../google-translate
-pip3 install -r requirements.txt
+sudo pip3 install -r requirements.txt
 sudo ./setup.py install
 sudo pip3 install  mysql-connector-python
