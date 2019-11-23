@@ -103,14 +103,31 @@
    
 3. 创建数据库并导入dict.sql (请在普通用户模式下执行) 
 
+
+* 
+        #启动数据库
         sudo mysql -u root -p  #在普通用户模式下执行，然后一路回车设置空密码
 
-        # 出现如 MariaDB [(none)]> 画面时输入下面的命令：
-        create database dict;  #创建好后Ctrl-c退出
+<br> 
 
-        sudo mysqldump -u root -p dict < dict.sql  #终端命令导入数据库
+ *      # 出现如 MariaDB [(none)]> 画面时依次输入下面的命令(注意替换YOUR_SYSTEM_USER为自己的用户名： 
+  
+        CREATE USER 'YOUR_SYSTEM_USER'@'localhost' IDENTIFIED BY '';
+        GRANT ALL PRIVILEGES ON *.* TO 'YOUR_SYSTEM_USER'@'localhost';
+        FLUSH PRIVILEGES;
+        create database dict;
+        exit;
 
-4. 设置Mariadb自启动
+        #注意如此操作后以后都必须用用户名连接数据库，想要使用其他方法适应项目的可以自己探索。
+
+<br> 
+
+* 
+        #终端操作命令导入数据库
+        mysqldump -u $USER -p dict < dict.sql  #终端命令导入数据库
+
+* 
+         #设置Mariadb自启动
 
          systemctl enable mariadb
          systemctl start mariadb
