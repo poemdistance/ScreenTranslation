@@ -187,6 +187,7 @@ void *DetectMouse(void *arg) {
                 strcpy ( text,  &shmaddr_searchWin[SUBMIT_TEXT] );
                 writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[0] );
                 writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
+                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[2] );
                 CanNewWin = 1;
             }
 
