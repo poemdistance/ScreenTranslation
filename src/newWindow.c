@@ -7,6 +7,9 @@
 #define RIGHT_BORDER_OFFSET ( 50 )
 #define INDICATE_OFFSET ( 80 )
 
+#define shmaddr(who)  ( ( who ) == BAIDU ? (shmaddr_baidu) : ( shmaddr_mysql ) )
+#define type(who)     ( ( who ) == BAIDU ? ( ONLINE ) : ( OFFLINE ))
+
 extern char *text;
 
 extern char *shmaddr_google;
@@ -610,7 +613,7 @@ void initMemoryGoogle() {
 }
 
 /* 重新从共享内存获取百度翻译结果并设置窗口大小*/
-void reGetBaiduTransAndSetWin (gpointer *data, int which ) { 
+void reGetBaiduTransAndSetWin (gpointer *data, int who ) { 
 
     printf("\033[0;36mIn reGetBaiduTrans \033[0m\n");
     printf("\033[0;36m重新从共享内存获取百度翻译数据 \033[0m\n");
@@ -619,22 +622,22 @@ void reGetBaiduTransAndSetWin (gpointer *data, int which ) {
 
     //printDebugInfo();
 
-    getIndex(index, shmaddr_baidu );
+    getIndex(index, shmaddr(who) );
 
-    separateDataForBaidu(index, 28, ONLINE );
+    separateDataForBaidu(index, 28, type(who) );
 
-    int maxlen= getMaxLenOfBaiduTrans(ONLINE);
-    int lines= getLinesOfBaiduTrans(ONLINE);
+    int maxlen= getMaxLenOfBaiduTrans(type(who));
+    int lines= getLinesOfBaiduTrans(type(who));
 
-    setWinSizeForNormalWin ( maxlen, lines, shmaddr_baidu, ONLINE);
+    setWinSizeForNormalWin ( maxlen, lines, shmaddr(who), type(who));
 
     printf("\033[0;36m(reGetBaiduTrans)maxlen=%d lines_baidu=%d bw.width=%f bw.height=%f\033[0m\n", maxlen, lines, bw.width, bw.height);
 
 }
 
-void adjustWinSize(GtkWidget *button, gpointer *data, int which ) {
+void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
 
-    if ( !which ) 
+    if ( who == GOOGLE ) 
     {
         int index[2] = { 0 };
 
@@ -690,7 +693,7 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int which ) {
         if ( strlen ( ZhTrans(ONLINE) ) == 0) {
 
             printf("\033[0;36m百度翻译结果长度为0\033[0m\n");
-            reGetBaiduTransAndSetWin ( data, which );
+            reGetBaiduTransAndSetWin ( data, who );
         }
 
         /*如果新窗口的宽高都小于上一个的，不调整窗口大小*/
@@ -709,7 +712,7 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int which ) {
             bw.width = 400;
 
         if ( bw.height <= 0 )
-            bw.height = bw.width * 0.618 + 80;
+            bw.height = bw.width * 0.618;
 
         if ( bw.width > 1000 )
             bw.width = 1000;
@@ -925,7 +928,7 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
     WINDATA(data)->iter = iter ;
     syncImageSize ( WINDATA(data)->window, data) ;
 
-    if ( ! WINDATA(data)->getOfflineTranslation )
+    if ( ! WINDATA(data)->getOfflineTranslation && strlen ( ZhTrans(OFFLINE) ) == 0 )
         gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n  NOT FOUND ANYTHING",\
                 -1, "yellow-font",  "heavy-font", \
                 "font-size-11", "letter-spacing", NULL);
@@ -1045,7 +1048,7 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
         printf("\033[0;36mZhTrans(ONLINE) & EnTrans(ONLINE)长度皆为0 \033[0m\n");
 
-        reGetBaiduTransAndSetWin ( data, -1 );
+        reGetBaiduTransAndSetWin ( data, BAIDU );
     }
 
     if ( strcmp ( &shmaddr_baidu[ACTUALSTART], baidu_result[0] ) != 0) {
@@ -1053,7 +1056,7 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
         printf("\033[0;31m字符串不相等，接收到新的百度翻译，重新获取 \033[0m\n");
         printf("\033[0;35m>%s< \033[0m\n",&shmaddr_baidu[ACTUALSTART]);
         printf("\033[0;35m>%s< \033[0m\n",baidu_result[0]);
-        reGetBaiduTransAndSetWin ( data, -1 );
+        reGetBaiduTransAndSetWin ( data, BAIDU );
     }
 
     GtkTextIter start, end, *iter;
@@ -1753,8 +1756,8 @@ void setWinSizeForNormalWin ( int maxlen, int lines, char *addr, int type) {
         /*来个黄金比例的矩形*/
         double width, height;
 
-        width = maxlen * 15.6 + 40;
-        height = lines * 24 + 45;
+        width = maxlen * 15.6 + 42;
+        height = lines * 24 + 50;
 
         /*别让窗口过小*/
         if ( width < 400 ) {
