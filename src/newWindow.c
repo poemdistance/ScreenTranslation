@@ -647,8 +647,8 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int which ) {
         if ( gw.width <= bw.width && gw.height <= bw.height) {
 
             /* 原谷歌scrolled window小于百度的，窗口没变，但scrolled window要随之扩大*/
-            gtk_window_resize ( (GtkWindow*)WINDATA(data)->window, bw.width, bw.height );
-            gtk_widget_set_size_request ( WINDATA(data)->scroll, bw.width, bw.height );
+            gtk_window_resize ( (GtkWindow*)WINDATA(data)->window, WINDATA(data)->width, WINDATA(data)->height );
+            gtk_widget_set_size_request ( WINDATA(data)->scroll, WINDATA(data)->width, WINDATA(data)->height );
             //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET);
             //gtk_widget_queue_draw ( WINDATA(data)->window );
             gtk_widget_show_all(WINDATA(data)->window);
@@ -667,16 +667,19 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int which ) {
         if ( gw.height > 900 )
             gw.height = 900;
 
-        WINDATA(data)->width = gw.width;
-        WINDATA(data)->height = gw.height;
+        if ( gw.width > WINDATA(data)->width && gw.height > WINDATA(data)->height) {
 
-        /* 以下代码段会触发configure-event事件而调用对应回调函数: syncNormalWinForConfiEvent*/
-        gtk_window_resize((GtkWindow*)WINDATA(data)->window, gw.width, gw.height);
-        gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
-        //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, gw.width-RIGHT_BORDER_OFFSET, gw.height-BOTTOM_OFFSET);
-        //gtk_widget_queue_draw ( WINDATA(data)->window );
-        gtk_widget_show_all(WINDATA(data)->window);
-        printf("\033[0;31m\n谷歌翻译重设窗口大小:gw width=%f gw.height=%f\033[0m\n", gw.width, gw.height);
+            WINDATA(data)->width = gw.width;
+            WINDATA(data)->height = gw.height;
+
+            /* 以下代码段会触发configure-event事件而调用对应回调函数: syncNormalWinForConfiEvent*/
+            gtk_window_resize((GtkWindow*)WINDATA(data)->window, gw.width, gw.height);
+            gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
+            //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, gw.width-RIGHT_BORDER_OFFSET, gw.height-BOTTOM_OFFSET);
+            //gtk_widget_queue_draw ( WINDATA(data)->window );
+            gtk_widget_show_all(WINDATA(data)->window);
+            printf("\033[0;31m\n谷歌翻译重设窗口大小:gw width=%f gw.height=%f\033[0m\n", gw.width, gw.height);
+        }
     } 
 
     else 
@@ -712,16 +715,19 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int which ) {
         if ( bw.height > 900 )
             bw.height = 900;
 
-        WINDATA(data)->width = bw.width;
-        WINDATA(data)->height = bw.height;
+        if ( bw.width > WINDATA(data)->width && bw.height > WINDATA(data)->height) {
+            WINDATA(data)->width = bw.width;
+            WINDATA(data)->height = bw.height;
 
-        printf("\033[0;35mbw width=%f %f\033[0m\n", bw.width, bw.height);
-        printf("\033[0;35m百度翻译重设窗口大小 \033[0m\n");
-        gtk_window_resize((GtkWindow*)WINDATA(data)->window, bw.width, bw.height);
-        gtk_widget_set_size_request ( WINDATA(data)->scroll, bw.width, bw.height );
-        //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET);
-        //gtk_widget_queue_draw ( WINDATA(data)->window );
-        gtk_widget_show_all(WINDATA(data)->window);
+            printf("\033[0;35mbw width=%f %f\033[0m\n", bw.width, bw.height);
+            printf("\033[0;35m百度翻译重设窗口大小 \033[0m\n");
+            gtk_window_resize((GtkWindow*)WINDATA(data)->window, bw.width, bw.height);
+            gtk_widget_set_size_request ( WINDATA(data)->scroll, bw.width, bw.height );
+            //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET);
+            //gtk_widget_queue_draw ( WINDATA(data)->window );
+            gtk_widget_show_all(WINDATA(data)->window);
+
+        }
     }
 }
 
@@ -1226,11 +1232,12 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
 
     gtk_window_get_size ( (GtkWindow*)window, &width, &height );
 
-    if ( (WINDATA(data))->width > width ||  (WINDATA(data))->height > height ) {
+    /* ?*/
+    //if ( (WINDATA(data))->width > width ||  (WINDATA(data))->height > height ) {
 
-        width  = (WINDATA(data))->width ;
-        height  = (WINDATA(data))->height ;
-    }
+    //    width  = (WINDATA(data))->width ;
+    //    height  = (WINDATA(data))->height ;
+    //}
 
     //printf("\033[0;35m当前窗口大小 width=%d height=%d \033[0m\n", width, height);
     //printf("\033[0;35m上一次窗口大小 width=%d height=%d \033[0m\n", lastwidth, lastheight);
@@ -1261,7 +1268,10 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
             (WINDATA(data))->offlineButton, width-RIGHT_BORDER_OFFSET*3, height-BOTTOM_OFFSET );
 
     gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
-            (WINDATA(data))->indicateButton, width-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who), height-INDICATE_OFFSET );
+            (WINDATA(data))->indicateButton, width-(200-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who)), height-INDICATE_OFFSET );
+
+    WINDATA(data)->width = width;
+    WINDATA(data)->height = height;
 
     /* mark*/
     syncImageSize ( (WINDATA(data))->window, data );
