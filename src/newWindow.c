@@ -688,7 +688,7 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
             gtk_widget_set_size_request ( WINDATA(data)->scroll, gw.width, gw.height );
             //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, gw.width-RIGHT_BORDER_OFFSET, gw.height-BOTTOM_OFFSET);
             //gtk_widget_queue_draw ( WINDATA(data)->window );
-            //gtk_widget_show_all(WINDATA(data)->window);
+            gtk_widget_show_all(WINDATA(data)->window);
             printf("\033[0;31m\n谷歌翻译重设窗口大小:gw width=%f gw.height=%f\033[0m\n", gw.width, gw.height);
         }
     } 
@@ -733,11 +733,13 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
 
             printf("\033[0;35mbw width=%f %f\033[0m\n", bw.width, bw.height);
             printf("\033[0;35m百度翻译重设窗口大小 \033[0m\n");
+
+            /* 这个的意义在于让触发窗口同步函数，重绘窗口*/
             gtk_window_resize((GtkWindow*)WINDATA(data)->window, bw.width, bw.height);
             gtk_widget_set_size_request ( WINDATA(data)->scroll, bw.width, bw.height );
             //gtk_layout_move((GtkLayout*)WINDATA(data)->layout, button, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET);
             //gtk_widget_queue_draw ( WINDATA(data)->window );
-            //gtk_widget_show_all(WINDATA(data)->window);
+            gtk_widget_show_all(WINDATA(data)->window);
 
         }
     }
