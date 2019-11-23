@@ -908,6 +908,9 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
     gtk_text_buffer_delete(buf, &start, &end);
     gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
 
+    if ( strlen(ZhTrans(OFFLINE)) == 0 && strlen(EnTrans(OFFLINE)) == 0 )
+        reGetBaiduTransAndSetWin ( (data), OFFLINE );
+
     /* 含音标，添加播放按钮*/
     if ( strlen ( Phonetic(OFFLINE) ) != 0) {
 
