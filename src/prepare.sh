@@ -2,7 +2,6 @@
 
 bash stop.sh
 git submodule foreach git pull origin master
-pip3 install  mysql-connector-python
 
 #复制文件到家目录
 storage="$HOME/.stran"
@@ -71,3 +70,4 @@ sudo ./setup.py install
 cd ../google-translate
 pip3 install -r requirements.txt
 sudo ./setup.py install
+sudo pip3 install  mysql-connector-python
