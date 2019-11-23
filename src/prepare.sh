@@ -2,6 +2,7 @@
 
 bash stop.sh
 git submodule foreach git pull origin master
+pip3 install  mysql-connector-python
 
 #复制文件到家目录
 storage="$HOME/.stran"
