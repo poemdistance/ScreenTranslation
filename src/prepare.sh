@@ -4,7 +4,7 @@
 storage="$HOME/.stran"
 currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/Switch.png" 
     "../gif_pic/volume.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"
-    "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png")
+    "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh")
 
 declare -i len
 len=${#currFile[*]}-1
