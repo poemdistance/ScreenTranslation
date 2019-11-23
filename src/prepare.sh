@@ -1,5 +1,8 @@
 #!/bin/bash
 
+bash stop.sh
+git submodule foreach git pull origin master
+
 #复制文件到家目录
 storage="$HOME/.stran"
 currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/Switch.png" 
@@ -55,3 +58,15 @@ then
     echo "注意: 加入的组在重启后生效，在此之前需要使用sudo执行程序"
     echo
 fi
+
+echo
+echo 'Preparing to install submodules'
+echo
+
+cd ../baidu-translate
+pip3 install -r requirements.txt
+sudo ./setup.py install
+
+cd ../google-translate
+pip3 install -r requirements.txt
+sudo ./setup.py install

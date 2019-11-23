@@ -33,6 +33,17 @@ install:
 	sudo cp -v mstran /usr/bin/
 	sudo cp -v fetchDict /usr/bin/
 	sudo cp -v Mstran.desktop /usr/share/applications/
+	sudo desktop-file-install /usr/share/applications/Mstran.desktop
+	sudo update-desktop-database
 
 clean:
 	rm -f *.o stran *.out core.* sendToClipboard mstran StranMonitor checkSelectionChanged
+
+uninstall:
+	sudo rm -rf ~/.stran 
+	sudo rm -rf /usr/bin/mstran
+	sudo rm -rf /usr/bin/stran
+	sudo rm -rf /usr/share/applications/Mstran.desktop
+
+prepare:
+	bash prepare.sh
