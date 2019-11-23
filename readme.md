@@ -1,4 +1,5 @@
-## 测试发现Deeping问题稍多，Ubuntu和Arch目前没有发现明显问题，待修正Deeping方面的问题
+## 测试发现Deeping问题稍多，Ubuntu和Arch目前没有发现明显问题
+## Deeping 离线功能若要正常使用，请将Python更新到3.8及以上
 
 # 一. 程序功能
 ## (一). 目前功能
