@@ -13,8 +13,10 @@
 
   #### Arch Linux 测试通过:
 
-   ![img](./gif_pic/iconEntry.png)<br><br>
    ![img](./gif_pic/GUI.png) 
+
+ #### Deeping Linux 测试通过
+ ![img](./gif_pic/deeping.png)
 
 
 
