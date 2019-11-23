@@ -186,6 +186,7 @@ struct Arg {
 #define audio_en(type)  ( type == ONLINE ? ( audioOnline_en ) : ( audioOffline_en ))
 #define audio_uk(type)  ( type == ONLINE ? ( audioOnline_uk ) : ( audioOffline_uk ))
 
+#define shmaddr_type(type) ( type == ONLINE ? ( shmaddr_baidu ) : ( shmaddr_mysql ))
 #define PhoneticFlag(type) ( type == ONLINE ? ( shmaddr_baidu[1] - '0' ) : ( shmaddr_mysql[1] - '0' ))
 #define NumZhTranFlag(type) ( type == ONLINE ? ( shmaddr_baidu[2] - '0' ) : ( shmaddr_mysql[2] - '0' ))
 #define NumEnTranFlag(type) ( type == ONLINE ? ( shmaddr_baidu[3] - '0' ) : ( shmaddr_mysql[3] - '0' ))
