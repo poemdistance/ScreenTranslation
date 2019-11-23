@@ -19,13 +19,6 @@
 * 切换谷歌百度翻译
 
 
-## (二). 后期预计完成功能
-1. 单词收藏
-2. 离线翻译
- 
- <br> 
-
-
 # 二. 运行效果图示 
 * [x] 终端演示<br><br>
 ![gif](./gif_pic/1.gif) <br><br>
@@ -79,8 +72,52 @@
 
 
 5. 请务必阅读下面的使用注意事项
+<br><br>
 
-# 五. 使用过程中的问题
+# 五. 离线库下载与安装
+
+* 百度云速度太慢，不考虑作为上传地址，github有上传大小限制，也放弃了，选择了一个国外的云盘Mega，速度很不错，限流不限速，需要使用离线功能的童鞋可能需要先注册一个Mega账号，下载好后再往下操作。
+ 
+  * 下载链接:https://mega.nz/#F!BuJQmSZA!aRwJ65QBHwnq55qy2S4_Bw
+ 
+ <br>
+
+1. 解压下载文件 <br> 
+
+* 将`WordMp3`放置于家目录，`dict.sql`请随意. <br>
+  解压命令:
+
+         tar xfv offlineTranslationResources.tar.gz 
+
+
+
+2. 安装数据库 
+ 
+ * For Arch <br>
+                
+         sudo pacman -s mariadb
+   
+  * For Debian serias
+        
+         sudo apt install  mariadb-server 
+   
+3. 创建数据库并导入dict.sql (请在普通用户模式下执行) 
+
+        sudo mysql -u root -p  #在普通用户模式下执行，然后一路回车设置空密码
+
+        # 出现如 MariaDB [(none)]> 画面时输入下面的命令：
+        create database dict;  #创建好后Ctrl-c退出
+
+        sudo mysqldump -u root -p dict < dict.sql  #终端命令导入数据库
+
+4. 设置Mariadb自启动
+
+         systemctl enable mariadb
+         systemctl start mariadb
+
+<br>
+
+# 六. 使用过程中的问题
  
 1. 运行后长时间未使用软件，在第一次双击后可能会不弹出图标，或者翻译结果呈现上一次未知的复制，是因为复制操作有延时，程序获取成了上一次的复制结果
  
@@ -95,7 +132,7 @@
 6. 软件是有桌面图标的，安装成功并重启后按Super键，搜索Mstran即可找到，点击图标会打开或者重启翻译软件。
 
 
-# 六. 更新上游项目并安装
+# 七. 更新上游项目并安装
 
 ## 1. 项目更新 
 
@@ -126,7 +163,7 @@
 
 <br> 
 
-# 七. 程序运行与停止
+# 八. 程序运行与停止
 
   * **NOTE**: **电脑如果安装了wayland，需要禁用**，不然终端中无法正常使用xdotool,方法如下：<br>
      *  打开/etc/gdm/custom.conf
@@ -174,7 +211,7 @@
 <br> 
 
 
-# 八. 程序运行异常问题
+# 九. 程序运行异常问题
 
    
 1. 如果**运行报错failed to open mice的问题**，这个是因为没有权限打开文件进行读写导致的，可以有如下解决办法：    
@@ -201,5 +238,5 @@
 
 <br>
 
-# 九. 程序内部逻辑流程图
+# 十. 程序内部逻辑流程图
 ![img](gif_pic/FlowChart.png)
