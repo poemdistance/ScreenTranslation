@@ -407,8 +407,10 @@ void clearMemory () {
     memset(shmaddr_baidu, '\0', SHMSIZE-10);
     memset(shmaddr_mysql, '\0', SHMSIZE-10);
 
-    memset ( audioOnline_uk, '\0', 512 );
-    memset ( audioOnline_en, '\0', 512 );
+    memset ( audio_en(ONLINE), '\0', 512 );
+    memset ( audio_uk(ONLINE), '\0', 512 );
+    memset ( audio_en(OFFLINE), '\0', 512 );
+    memset ( audio_uk(OFFLINE), '\0', 512 );
 
     for ( int i=0; i<BAIDUSIZE; i++ )
         if ( baidu_result[i] != NULL)
@@ -707,7 +709,7 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int which ) {
             bw.width = 400;
 
         if ( bw.height <= 0 )
-            bw.height = bw.width * 0.618;
+            bw.height = bw.width * 0.618 + 80;
 
         if ( bw.width > 1000 )
             bw.width = 1000;
