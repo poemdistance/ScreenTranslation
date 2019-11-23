@@ -159,7 +159,7 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd,
 {
     GtkWidget *button = newVolumeBtn();
 
-    int charNum = countCharNums ( Phonetic(ONLINE) );
+    int charNum = countCharNums ( Phonetic(type) );
     //int charNum = countCharNums ( SourceInput );
     printf("\033[0;35mPhonetic charNum = %d \033[0m\n", charNum);
 
@@ -196,35 +196,35 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd,
     }
 #endif
 
-    if ( bw.width <= gw.width && bw.height <= gw.height ){
+    //    if ( bw.width <= gw.width && bw.height <= gw.height ){
+    //
+    //        printf("\033[0;35m百度窗口小于谷歌,不需要重设窗口 \033[0m\n");
+    //
+    //        /* 注释代码先不要删除，后面可能还需要*/
+    //
+    //        /* 超出窗口了*/
+    //        //if ( x + 30 > gw.width )
+    //        //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
+    //        gtk_layout_put ( (GtkLayout*)layout, button, posx, 40 );
+    //        //else {
+    //
+    //        //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
+    //        //}
+    //    }
+    //    else
+    //    {
+    //printf("\033[0;35m百度窗口大于谷歌，需要调整 \033[0m\n");
+    //printf("\033[0;35m百度:%f %f 谷歌: %f %f \033[0m\n", bw.width, bw.height, gw.width, gw.height);
+    //printf("\033[0;31m播放按钮坐标:%d \033[0m\n", posx);
 
-        printf("\033[0;35m百度窗口小于谷歌,不需要重设窗口 \033[0m\n");
-
-        /* 注释代码先不要删除，后面可能还需要*/
-
-        /* 超出窗口了*/
-        //if ( x + 30 > gw.width )
-        //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
-        gtk_layout_put ( (GtkLayout*)layout, button, posx, 40 );
-        //else {
-
-        //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
-        //}
-    }
-    else
-    {
-        printf("\033[0;35m百度窗口大于谷歌，需要调整 \033[0m\n");
-        printf("\033[0;35m百度:%f %f 谷歌: %f %f \033[0m\n", bw.width, bw.height, gw.width, gw.height);
-        printf("\033[0;31m播放按钮坐标:%d \033[0m\n", posx);
-
-        /* 超出窗口了*/
-        //if ( x + 30 > bw.width )
-        //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
-        //else 
-        //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
-        gtk_layout_put ( (GtkLayout*)layout, button, posx,  40 );
-        gtk_window_resize ( (GtkWindow*)window, bw.width, bw.height );
-    }
+    /* 超出窗口了*/
+    //if ( x + 30 > bw.width )
+    //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
+    //else 
+    //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
+    gtk_layout_put ( (GtkLayout*)layout, button, posx,  40 );
+    //gtk_window_resize ( (GtkWindow*)window, bw.width, bw.height );
+    //}
 
     gtk_widget_queue_draw( window );
 
