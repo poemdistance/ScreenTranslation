@@ -891,7 +891,10 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 /* 离线翻译结果展示窗口, 跟displayBaiduTrans重复较多*/
 void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 
+
     WINDATA(data)->who = OFFLINE;
+
+    adjustWinSize ( button, data, OFFLINE );
 
     gtk_layout_move ( (GtkLayout*)WINDATA(data)->layout,\
             WINDATA(data)->indicateButton, WINDATA(data)->width-RIGHT_BORDER_OFFSET*3, WINDATA(data)->height-INDICATE_OFFSET );
