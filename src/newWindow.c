@@ -898,6 +898,29 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
     gtk_text_buffer_delete(buf, &start, &end);
     gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
 
+    /* 含音标，添加播放按钮*/
+    if ( strlen ( Phonetic(OFFLINE) ) != 0) {
+
+        GtkWidget *volume =  ((WinData*)data)->volume;
+
+        if ( volume == NULL ) {
+
+            printf("\033[0;34m插入音频播放按钮 \033[0m\n");
+            bw.audio_online[0] = audio_en(ONLINE);
+            bw.audio_online[1] = audio_uk(ONLINE);
+
+            bw.audio_offline[0] = audio_en(OFFLINE);
+            bw.audio_offline[1] = audio_uk(OFFLINE);
+
+            ((WinData*)data)->volume = insertVolumeIcon(((WinData*)data)->window, ((WinData*)data)->layout, ((WinData*)data), OFFLINE);
+        }
+        else {
+
+            printf("\033[0;34m显示音频播放按钮\033[0m\n");
+            gtk_widget_show ( volume );
+        }
+
+    }
     /* ? TODO*/
     WINDATA(data)->iter = iter ;
     syncImageSize ( WINDATA(data)->window, data) ;
