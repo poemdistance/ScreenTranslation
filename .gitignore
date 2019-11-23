@@ -1,0 +1,14 @@
+test/
+quickSearch/
+src/*.o
+src/mstran
+src/stran
+src/.vscode
+src/newWindow.c.bak
+src/separateData.c.bak
+google-translate/Google_translate.egg-info
+google-translate/build
+google-translate/translate/package/Translator.py
+google-translate/translate/package/getTK.py
+google-translate/translate/package/tranen.py
+google-translate/translate/package/tranpic.py
