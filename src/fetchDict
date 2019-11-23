@@ -32,7 +32,7 @@ def isPartOfSpeech(key):
 def fetchWord(word, attributes):
 
     cnx = connector.connect(
-            user='root',
+            user='rease',
             password='',
             host='127.0.0.1',
             database='dict',
