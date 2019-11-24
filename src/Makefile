@@ -8,7 +8,8 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  countLines.o countCharNums.o adjustStrForScrolledWin.o\
 		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
 		  keyPressEvent.o quickSearch.o findKeyboardDevice.o\
-		  captureShortcutEvent.o  searchWindow.o tranSelect.o isEmpty.o
+		  captureShortcutEvent.o  searchWindow.o tranSelect.o isEmpty.o \
+		  tranPicActionDetect.o
 
 MONNITOR = StranMonitor.o
 
@@ -33,6 +34,7 @@ install:
 	sudo cp -v mstran /usr/bin/
 	sudo cp -v fetchDict /usr/bin/
 	sudo cp -v Mstran.desktop /usr/share/applications/
+	sudo cp -v extractPic /usr/bin
 	sudo desktop-file-install /usr/share/applications/Mstran.desktop
 	sudo update-desktop-database
 
