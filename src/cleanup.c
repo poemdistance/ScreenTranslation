@@ -6,6 +6,7 @@ extern char *shmaddr_selection;
 extern char *shmaddr_searchWin;
 extern char *shmaddr_keyboard;
 extern char *shmaddr_mysql;
+extern char *shmaddr_pic;
 
 extern int shmid_google;
 extern int shmid_baidu;
@@ -13,6 +14,7 @@ extern int shmid_selection;
 extern int shmid_searchWin;
 extern int shmid_keyboard;
 extern int shmid_mysql;
+extern int shmid_pic;
 
 extern char *baidu_result[BAIDUSIZE];
 extern char *google_result[GOOGLESIZE];
@@ -28,6 +30,7 @@ extern pid_t google_translate_pid;
 extern pid_t check_selectionEvent_pid;
 extern pid_t quickSearchProcess_pid;
 extern pid_t fetch_data_from_mysql_pid;
+extern pid_t detect_tran_pic_action_pid;
 
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
@@ -114,6 +117,16 @@ void quit() {
     else
         printf("\033[0;32mremove shared memory identifier successful (mysql)\033[0m\n");
 
+
+    /* 清除共享内存: for pic*/
+    if ( shmdt(shmaddr_pic) < 0)
+        err_exit("shmdt error <pic>");
+
+    if (shmctl(shmid_pic, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error <pic>");
+    else
+        printf("\033[0;32mremove shared memory identifier successful (pic)\033[0m\n");
+
     /* 释放翻译结果存储空间 <Baidu>*/
     if ( baidu_result[0] != NULL)
         for (int i=0; i<BAIDUSIZE; i++)
@@ -138,6 +151,7 @@ void quit() {
     kill ( check_selectionEvent_pid, SIGKILL );
     kill ( quickSearchProcess_pid, SIGTERM );
     kill ( fetch_data_from_mysql_pid, SIGTERM );
+    kill ( detect_tran_pic_action_pid, SIGTERM );
 
     /* 进程所在文件也进行了清理，判断一下防止多次释放,
      * (释放后display会被置为空)*/
