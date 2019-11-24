@@ -6,6 +6,7 @@
 ### 1. 屏幕取词翻译 -- 中英互译 （全局）
 ### 2. 快速搜索功能 -- 快捷键调出搜索框，输入后回车获取翻译（全局）
 ### 3. 添加了离线支持 -- 仅支持单词（总词数约38万）
+### 4. 截图翻译    --  屏幕上短时间内点击不同的3个点触发，形成的三角形不能过小 <br><br>
 
   #### Ubuntu 19.04 测试通过:
 
@@ -64,10 +65,16 @@
           $ sudo apt-get install build-essential gnome-devel libx11-dev libxtst-dev
           $ sudo apt-get install python3-pip
           $ sudo apt-get install xdotool
+          $ sudo apt install  tesseract-ocr libtesseract-dev
+          $ sudo pip3 install pytesseract tesseract pillow
 
    * For Arch Linux 
 
           $  sudo pacman -S gtk3  libxtst libx11  xdotool  python-pip  
+          $  sudo pacman -S tesseract
+          $  sudo pip3 install pytesseract tesseract pillow
+
+          #图像识别相关依赖作者安装太久了，不知道有没有漏掉什么...
 
   
 4. 终端执行命令完成项目安装
@@ -138,6 +145,7 @@
          systemctl start mariadb
 
 <br>
+
 
 # 六. 使用过程中的问题
  
