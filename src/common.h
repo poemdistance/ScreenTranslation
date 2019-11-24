@@ -133,6 +133,7 @@ int shared_memory_for_google_translate(char **addr);
 int shared_memory_for_baidu_translate(char **addr);
 int shared_memory_for_selection(char **addr);
 int shared_memory_for_mysql(char **addr);
+int shared_memory_for_pic(char **addr);
 void *newNormalWindow();
 void adjustStr(char *p[3], int len, char *storage[3]);
 int adjustStrForScrolledWin(int len, char *source);
@@ -177,6 +178,7 @@ struct Arg {
 #define GETEKYDIR ("/tmp")
 #define PROJECTID  (2333)
 #define PROJECTID2  (2334)
+#define PIC_PROJECT  (2339)
 #define SHMSIZE (1024*1024)
 
 
@@ -236,5 +238,11 @@ void tranSelect();
 void checkSelectionChanged() ;
 
 int isEmpty( char *buf );
+
+/* For tranPicActionDetect*/
+
+int detectTranPicAction ();
+
+/* End of tranPicActionDetect*/
 
 #endif
