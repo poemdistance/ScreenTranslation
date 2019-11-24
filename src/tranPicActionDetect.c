@@ -154,7 +154,7 @@ int detectTranPicAction () {
 
                 count = 0;
                 canShot = 0;
-                system("gnome-screenshot -a -B -f /home/$USER/Pictures/1.png");
+                system("gnome-screenshot -a -B -f /home/$USER/.stran/1.png");
             }
 
             /* 休眠, 防止一直占用CPU*/

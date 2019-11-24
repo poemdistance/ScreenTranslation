@@ -85,7 +85,7 @@ def main():
         try:
             #基目录为家目录,pic2char参数为home下的文件夹
             print('Waiting...')
-            data = pu.pic2char("Pictures/")
+            data = pu.pic2char(".stran/")
         except Exception as e:
             print('Exception: ', e)
             continue
