@@ -26,6 +26,7 @@ extern char *text;
 extern int fd_key;
 
 extern pid_t baidu_translate_pid;
+extern pid_t tranSelect_pid;
 extern pid_t google_translate_pid;
 extern pid_t check_selectionEvent_pid;
 extern pid_t quickSearchProcess_pid;

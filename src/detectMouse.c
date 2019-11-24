@@ -128,7 +128,8 @@ void *DetectMouse(void *arg) {
         }
         else if ( retpid > 0) {
             /* 用于后期退出时清理进程*/
-            check_selectionEvent_pid = retpid;
+
+            fetch_data_from_mysql_pid = retpid;
         }
     }
 
@@ -171,11 +172,11 @@ void *DetectMouse(void *arg) {
         shmaddr_searchWin[10] =  *itoa(fd_python[1]);
         shmaddr_searchWin[10 + strlen(itoa(fd_python[1]))] =  '\0';
 
-        sa.sa_handler = handler;
+        sa.sa_handler = quit;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_RESTART;
-        if ( sigaction(SIGCHLD, &sa, NULL) == -1) {
-            printf("\033[0;31msigaction exec failed (DetectMouse.c -> SIGCHLD) \033[0m\n");
+        if ( sigaction(SIGTERM, &sa, NULL) == -1) {
+            printf("\033[0;31msigaction exec failed (DetectMouse.c -> SIGTERM) \033[0m\n");
             perror("sigaction");
             quit();
         }
@@ -346,7 +347,6 @@ void *DetectMouse(void *arg) {
                     continue;
                 }
 
-                printf("\033[0;35m有效双击事件 \033[0m\n");
                 /*更新最后一次有效双击事件的发生时间*/
                 lasttime = newtime;
 

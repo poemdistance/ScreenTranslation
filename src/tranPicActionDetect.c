@@ -14,7 +14,7 @@ pid_t tranPicActionDetect_pid = 0;
 pid_t child_pid;
 Display *display = NULL;
 
-void suicide() {
+void suicide_tranpic() {
 
     /* 小心kill掉0进程*/
     for ( int i=5; i>0 && tranPicActionDetect_pid != 0; i-- ) {
@@ -55,7 +55,7 @@ int detectTranPicAction () {
     display = XOpenDisplay(NULL);
 
     struct sigaction sa;
-    sa.sa_handler = suicide;
+    sa.sa_handler = suicide_tranpic;
     sigemptyset ( &sa.sa_mask );
     if ( sigaction ( SIGTERM, &sa, NULL ) != 0 )
         err_exit("Sigaction for SIGTERM failed <tranPicActionDetect.c>");

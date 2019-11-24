@@ -13,13 +13,19 @@ Display *display;
  * 但sigkill无法捕捉*/
 void clean() {
 
-    printf("close display\n");
-    if ( display )
-        XCloseDisplay ( display );
+    /*Important: 不能关闭掉Display，否则进程相当于出了问题，再KILL就会失败*/
 
-    /* 手动置空，双重保险*/
-    display = NULL;
+    //printf("close display\n");
+    //if ( display )
+    //    XCloseDisplay ( display );
 
+    ///* 手动置空，双重保险*/
+    //display = NULL;
+
+    kill ( getpid(), SIGKILL );
+    kill ( getpid(), SIGKILL );
+    kill ( getpid(), SIGKILL );
+    kill ( getpid(), SIGKILL );
     exit(0);
 }
 
@@ -39,6 +45,8 @@ void checkSelectionChanged(int writefd, int readfd)
         quit();
     }
 
+    sa.sa_handler =  clean;
+    sigemptyset ( &sa.sa_mask );
     if ( sigaction(SIGINT, &sa, NULL) == -1) {
         printf("\033[0;31msigaction err(checkSelectionChanged -> SIGTERM)\033[0m\n");
         perror("sigaction");

@@ -22,6 +22,8 @@ int shmid_keyboard;
 int shmid_mysql;
 int shmid_pic;
 
+pthread_t t1 = 0, t2 = 0, t3 = 0;
+
 void *newNormalWindowThread() {
 
     pthread_t t3;
@@ -43,7 +45,6 @@ void *newNormalWindowThread() {
 
 void tranSelect() {
 
-    pthread_t t1, t2, t3;
     struct Arg arg;
 
     char *addr_google;
@@ -76,20 +77,6 @@ void tranSelect() {
     pthread_create( &t3, NULL, newNormalWindowThread, NULL );
 
     void *thread_ret;
-
-
-    /* 捕获终止(Terminate)程序信号，并调用退出函数清理相关资源,
-     * 如释放内存，终止翻译端程序*/
-    struct sigaction sa;
-    sa.sa_handler = quit;
-    sigemptyset ( &sa.sa_mask );
-    if ( sigaction ( SIGTERM, &sa, NULL ) == -1) {
-        printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n");
-        perror("sigaction");
-        exit(1);
-    }
-
-    signal(SIGINT, quit);
 
     while (1) {
 
