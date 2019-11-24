@@ -75,3 +75,6 @@ cd ../google-translate
 sudo pip3 install -r requirements.txt
 sudo ./setup.py install
 sudo pip3 install  mysql-connector-python
+
+cd ../gnome-screenshot
+sudo bash install.sh
