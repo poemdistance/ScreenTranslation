@@ -19,16 +19,11 @@ void suicide_tranpic() {
     /* 小心kill掉0进程*/
     for ( int i=5; i>0 && tranPicActionDetect_pid != 0; i-- ) {
 
-        display != NULL ? XCloseDisplay(display) : 1;
         kill ( child_pid, SIGKILL );
         while ( waitpid ( child_pid, NULL, WNOHANG ) > 0 );
         usleep(200000);
         kill ( tranPicActionDetect_pid, SIGKILL );
     }
-
-    /* Do we need it?*/
-    exit(0);
-
 }
 
 void readChild() {
@@ -45,6 +40,8 @@ int detectTranPicAction () {
     int lock = 1;
     int history_x = 0;
     int history_y = 0;
+    int check_x = 0;
+    int check_y = 0;
     unsigned int mask; 
     int root_x = -1, root_y = -1; 
     Window root_window; 
@@ -86,7 +83,7 @@ int detectTranPicAction () {
 
             gettimeofday ( &now, NULL );
             time1 = ( now.tv_usec + now.tv_sec*1000000 ) / 1000; /*  Unit:ms*/
-            if ( abs ( time1 - lastTime ) > TIMEOUT )  {
+            if ( (abs ( time1 - lastTime ) > TIMEOUT) )  {
                 count = 0;
                 lastTime = 0;
                 history_x = -100;
@@ -108,8 +105,29 @@ int detectTranPicAction () {
                         /* lastTime==0时, 此次点击作第一次点击看待,去else执行, 否则进if*/
                         if ( (int)lastTime != 0 )
                         {
-                            if ( abs ( time1 - lastTime ) > TIMEOUT \
-                                    || (abs(root_x-history_x) < 100 && abs ( root_y-history_y ) < 100) ) {
+                            if ( check_x && abs(root_x-history_x) < 33  && history_x > 0) {
+
+                                printf("\033[0;31mx坐标间隔连续小于33 \033[0m\n");
+                                
+                                count = 0;
+                                check_x  =0;
+                            }
+
+                            if ( check_y && abs(root_y-history_y) < 33  && history_y > 0) {
+
+                                printf("\033[0;31my坐标间隔连续小于33 \033[0m\n");
+
+                                count = 0;
+                                check_y  =0;
+                            }
+
+                            if ( abs(root_x-history_x) < 33 )
+                                check_x = 1;
+
+                            if ( abs(root_y-history_y) < 33 )
+                                check_y = 1;
+
+                            if ( abs ( time1 - lastTime ) > TIMEOUT ) {
 
                                 count = 0;
                                 lastTime = 0;
@@ -154,6 +172,8 @@ int detectTranPicAction () {
 
                 count = 0;
                 canShot = 0;
+                check_y  =0;
+                check_x  =0;
                 system("gnome-screenshot -a -B -f /home/$USER/.stran/1.png");
             }
 
