@@ -22,8 +22,14 @@ do
     pid=`ps -aux | grep ${process[n-1]} | head -n 1 |awk '{print $2}'|xargs`
     if [ $pid -ne $$ ]; then
         if [ $pid -ne $startup ]; then
+            echo "清理进程pid:"$pid
             kill -15 $pid #>/dev/null 2>&1
+            clear="Yes"
         fi
     fi
 done
+
+if [[ $clear -ne "Yes" ]]; then
+    echo "未发现翻译进程"
+fi
 
