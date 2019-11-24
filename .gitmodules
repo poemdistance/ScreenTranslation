@@ -8,4 +8,4 @@
 	branch = master
 [submodule "gnome-screenshot"]
 	path = gnome-screenshot
-	url = git@github.com:poemdistance/gnome-screenshot.git
+	url = https://github.com/poemdistance/gnome-screenshot.git
