@@ -6,6 +6,3 @@
 	url = https://github.com/poemdistance/baidu-translate
 [submodule "bar1"]
 	branch = master
-[submodule "gnome-screenshot"]
-	path = gnome-screenshot
-	url = https://github.com/poemdistance/gnome-screenshot.git
