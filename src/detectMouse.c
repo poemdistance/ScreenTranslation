@@ -22,17 +22,22 @@ extern int InNewWin;
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
 extern int CanNewWin;
+extern int CanNewEntrance;
 
 extern char *shmaddr_searchWin;
+extern char *shmaddr_pic;
 extern int shmid_searchWin ;
 
-extern char *text;
+/* 来自notify.c text是从剪贴板直接复制过来的字符串*/
+extern char *text; 
+
 extern int quickSearchFlag;
 
 pid_t baidu_translate_pid;
 pid_t google_translate_pid;
 pid_t check_selectionEvent_pid;
 pid_t fetch_data_from_mysql_pid;
+pid_t detect_tran_pic_action_pid;
 
 int mousefd;
 extern int action;
@@ -67,7 +72,7 @@ void *DetectMouse(void *arg) {
         fprintf(stderr, "create pipe fail (baidu)\n");
         exit(1);
     }
-    
+
     if ( (status = pipe(fd_mysql)) != 0 ) {
         fprintf(stderr, "create pipe fail (mysql)\n");
         exit(1);
@@ -124,6 +129,27 @@ void *DetectMouse(void *arg) {
         else if ( retpid > 0) {
             /* 用于后期退出时清理进程*/
             check_selectionEvent_pid = retpid;
+        }
+    }
+
+    /* 来来来，加个检测截图识别的进程*/
+    if ( pid_google > 0 ) {
+
+        if ( ( retpid = fork() ) == -1) 
+            err_exit ("Fork detectTranPicAction() failed");
+
+        /* In child process*/
+        if ( retpid == 0 ) {
+
+            pid_google = -1;
+            detect_tran_pic_action_pid = 0;
+
+            /* 启动截图识别检测进程*/
+            detectTranPicAction();
+        }
+        else if ( retpid > 0) {
+            /* 用于后期退出时清理进程*/
+            detect_tran_pic_action_pid = retpid;
         }
     }
 
@@ -189,6 +215,20 @@ void *DetectMouse(void *arg) {
                 writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
                 writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[2] );
                 CanNewWin = 1;
+            }
+
+            if ( shmaddr_pic[0] == FINFLAG ) {
+
+                if ( text == NULL )
+                    if (( text = calloc(TEXTSIZE, 1)) == NULL)
+                        err_exit("malloc failed in notify.c");
+
+                shmaddr_pic[0] = CLEAR;
+                strcpy ( text,  &shmaddr_pic[ACTUALSTART] );
+                writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[0] );
+                writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[1] );
+                writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[2] );
+                CanNewEntrance = 1;
             }
 
             /*超时*/
@@ -281,7 +321,7 @@ void *DetectMouse(void *arg) {
                         thirdClick = 0;
                         action = SINGLECLICK;
 
-                        printf("\033[0;35m单击事件 \033[0m\n");
+                        //printf("\033[0;35m单击事件 \033[0m\n");
                     }
                     releaseButton = 0;
 
