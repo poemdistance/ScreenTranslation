@@ -12,7 +12,7 @@ void sendTerminate() {
     kill( quickSearchProcess_pid, SIGTERM );
 
     /* 等待子进程退出*/
-    while ( waitpid ( quickSearchProcess_pid, NULL, 0 ) < 0);
+    //while ( waitpid ( quickSearchProcess_pid, NULL, WNOHANG ) < 0);
 
     pthread_kill ( t1, SIGTERM );
     pthread_kill ( t2, SIGTERM );
@@ -41,6 +41,14 @@ int main(int argc, char **argv)
     sigemptyset ( &sa.sa_mask );
     if ( sigaction ( SIGTERM, &sa, NULL ) == -1) {
         printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n");
+        perror("sigaction");
+        exit(1);
+    }
+
+    sa.sa_handler = sendTerminate;
+    sigemptyset ( &sa.sa_mask );
+    if ( sigaction ( SIGINT, &sa, NULL ) == -1) {
+        printf("\033[0;31msigaction exec failed (Main.c -> SIGINT) \033[0m\n");
         perror("sigaction");
         exit(1);
     }
