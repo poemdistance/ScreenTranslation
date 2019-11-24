@@ -92,6 +92,8 @@ def formatData(word, attributes):
 
                 if 'entran' not in attributes:
                     output += '|'
+                    if 'wordform' not in attributes:
+                        output += '|'
                 continue
 
             if value == 'word':
