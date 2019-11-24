@@ -1,5 +1,6 @@
 test/
 quickSearch/
+src (copy)/
 src/*.o
 src/mstran
 src/stran
