@@ -26,7 +26,7 @@ void clean() {
     kill ( getpid(), SIGKILL );
     kill ( getpid(), SIGKILL );
     kill ( getpid(), SIGKILL );
-    exit(0);
+    //exit(0);
 }
 
 void checkSelectionChanged(int writefd, int readfd)
