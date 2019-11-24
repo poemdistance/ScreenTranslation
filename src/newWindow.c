@@ -16,6 +16,7 @@ extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 extern char *shmaddr_keyboard;
 extern char *shmaddr_mysql;
+extern char *shmaddr_pic;
 
 char *baidu_result[BAIDUSIZE] = { NULL };
 char *google_result[GOOGLESIZE] = { NULL };
@@ -411,10 +412,12 @@ void clearMemory () {
     /* 标志位空间用字符0填充*/
     memset(shmaddr_baidu, '0', 10);
     memset(shmaddr_mysql, '0', 10);
+    memset(shmaddr_pic, '0', 10);
 
     memset(shmaddr_google, '\0', SHMSIZE);
     memset(shmaddr_baidu, '\0', SHMSIZE-10);
     memset(shmaddr_mysql, '\0', SHMSIZE-10);
+    memset(shmaddr_pic, '\0', SHMSIZE-10);
 
     memset ( audio_en(ONLINE), '\0', 512 );
     memset ( audio_uk(ONLINE), '\0', 512 );
