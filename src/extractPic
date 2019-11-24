@@ -1,0 +1,107 @@
+#!/usr/bin/python3
+#-*-Coding:utf-8-*-
+
+import os
+import warnings
+import sysv_ipc as ipc 
+import sys
+import time
+import readline
+import pytesseract
+from termcolor import colored, cprint
+from PIL import Image, PILLOW_VERSION
+
+class PicUtils(object):
+
+    def __init__(self):
+        pass
+
+
+    def ScanNewFile(self, dirname):
+        inTime = time.time()
+        home = os.path.expanduser('~/')
+        dirname = dirname
+        absDir = home + dirname
+        num = 0
+        print('Wait...', end='')
+        try:
+            while True:
+                time.sleep(0.2);
+                with os.scandir(absDir) as entries:
+                    for entry in entries :
+                        if entry.is_file():
+                            attrs = entry.stat()
+                            if attrs.st_mtime > inTime:
+                                print('\nFound new file, ', end='')
+                                return absDir+entry.name
+
+        except FileNotFoundError as err:
+            print(str(err))
+            ScanNewFile()
+        except KeyboardInterrupt as e:
+            print(e)
+            sys.exit()
+
+    def ExtractText(self, fileName):
+        print('Open image.');
+        try:
+            image = Image.open(fileName)
+            text = pytesseract.image_to_string(image)
+        except Exception:
+            return ""
+
+        return text
+
+    def WaitForFileSavedSuccessfully(self):
+        time.sleep(0.5)
+
+    def pic2char(self, dirname):
+
+        while True:
+            name = self.ScanNewFile(dirname)
+            self.WaitForFileSavedSuccessfully()
+            data = self.ExtractText(name);
+            #os.system("rm -rf "+name)
+            return data
+
+def connectShm():
+
+    warnings.simplefilter("ignore")
+    path = "/tmp"
+    projectID = 2339
+    key = ipc.ftok(path, projectID)
+    shm = ipc.SharedMemory(key, 0, 0)
+    shm.attach(0,0)
+
+    return shm 
+
+def main():
+
+    pu = PicUtils()
+    actualStart = 10
+    shm = connectShm()
+
+    while True:
+        try:
+            #基目录为家目录,pic2char参数为home下的文件夹
+            print('Waiting...')
+            data = pu.pic2char("Pictures/")
+        except Exception as e:
+            print('Exception: ', e)
+            continue
+
+
+        data = data.replace('\n', ' ')
+        if not data.isspace() and not len(data)==0:
+            pass
+            cprint(data, 'yellow')
+        else:
+            print('No string found')
+            print('Wait for another...')
+            continue
+
+        shm.write(data+'\n', actualStart)
+        shm.write('1', 0)
+
+if __name__ == '__main__':
+    main()
