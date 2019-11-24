@@ -67,6 +67,9 @@ int detectTranPicAction () {
             err_exit("execv extractPic error");
     }
 
+    char *shmaddr_pic = NULL;
+    shared_memory_for_pic ( & shmaddr_pic );
+
     if ( retpid > 0 ) {
 
         sa.sa_handler = readChild;
@@ -168,12 +171,13 @@ int detectTranPicAction () {
                 lock = 1;
 
             /* canShot==1, 进行截图操作*/
-            if ( mask == 0 && canShot) {
+            if ( (mask == 0 && canShot ) || shmaddr_pic[1] == SCREEN_SHOT ) {
 
                 count = 0;
                 canShot = 0;
                 check_y  =0;
                 check_x  =0;
+                shmaddr_pic[1] = CLEAR;
                 system("gnome-screenshot -a -B -f /home/$USER/.stran/1.png");
             }
 

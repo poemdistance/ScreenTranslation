@@ -1,4 +1,5 @@
 #include "quickSearch.h"
+#include "common.h"
 #include <signal.h>
 
 #define KEYBOARD_NUM ( 10 )
@@ -51,6 +52,9 @@ void captureShortcutEvent(int socket) {
     /* Just connect to the shared memory already exist */
     char *shmaddr;
     shared_memory_for_keyboard_event(&shmaddr);
+
+    char *shmaddr_pic = NULL;
+    shared_memory_for_pic ( &shmaddr_pic );
 
     int maxfd = 0;
 
@@ -109,6 +113,12 @@ void captureShortcutEvent(int socket) {
 
                 /* quick search 快捷键标志位*/
                 shmaddr[0] = '1';
+            }
+
+            if ( ev.code == KEY_D ) {
+
+                fprintf(stdout, "Captured pressing event <Alt-J>\n");
+                shmaddr_pic[1] = SCREEN_SHOT;
             }
 
             AltPress = 0;
