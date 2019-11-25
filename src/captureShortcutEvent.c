@@ -51,6 +51,13 @@ void captureShortcutEvent(int socket) {
 
     /* Just connect to the shared memory already exist */
     char *shmaddr;
+
+    /* Byte 0: quick search 快捷键标志位(alt-j) <for newWindow.c>
+     * Byte 1: 退出窗口快捷键标志位(ctrl-c) <for newWindow.c, 目前被屏蔽了>
+     * Byte 2: 翻译窗口打开标志位
+     * Byte 3: Alt-J 搜索窗口快捷键标志位(好像跟第0字节重复了，太久，啊啦也忘了)
+     * Byte 4: 搜索窗口存在标志位
+     * */
     shared_memory_for_keyboard_event(&shmaddr);
 
     char *shmaddr_pic = NULL;
@@ -104,12 +111,14 @@ void captureShortcutEvent(int socket) {
         if ( ev.code == 4 || ev.code == KEY_RESERVED )
             continue;
 
-        if ( AltPress ) {
+        /* Alt被按下，且搜索窗口和翻译结果展示窗口都未被打开*/
+        if ( AltPress && shmaddr[4] != '1'  && shmaddr[2] != '1' ) {
 
             if ( ev.code == KEY_J ) {
 
                 fprintf(stdout, "Captured pressing event <Alt-J>\n");
-                write ( socket, "1", 1 );
+                //write ( socket, "1", 1 );
+                shmaddr[3] = '1';
 
                 /* quick search 快捷键标志位*/
                 shmaddr[0] = '1';
@@ -117,7 +126,7 @@ void captureShortcutEvent(int socket) {
 
             if ( ev.code == KEY_D ) {
 
-                fprintf(stdout, "Captured pressing event <Alt-J>\n");
+                fprintf(stdout, "Captured pressing event <Alt-D>\n");
                 shmaddr_pic[1] = SCREEN_SHOT;
             }
 

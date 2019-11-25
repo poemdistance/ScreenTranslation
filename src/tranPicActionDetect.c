@@ -14,6 +14,8 @@ pid_t tranPicActionDetect_pid = 0;
 pid_t child_pid;
 Display *display = NULL;
 
+extern char *shmaddr_keyboard;
+
 void suicide_tranpic() {
 
     /* 小心kill掉0进程*/
@@ -96,8 +98,12 @@ int detectTranPicAction () {
 
 
             /* mask>0保证有按键按下才进入执行逻辑
-             * lock保证按键按下后此处逻辑不会被反复执行，直到按键释放lock=1*/
-            if ( mask > 0 && lock && mask ==  Button1MotionMask ) {
+             * lock保证按键按下后此处逻辑不会被反复执行，直到按键释放lock=1
+             * shmaddr_keyboard 保证在窗口打开的情况下不执行if内部逻辑*/
+            if ( mask > 0 && lock && mask ==  Button1MotionMask \
+                    && shmaddr_keyboard[4] != '1' \
+                    && shmaddr_keyboard[2] != '1')
+            {
 
 
                 if ( (history_x != root_x || history_y != root_y) ) {

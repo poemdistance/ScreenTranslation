@@ -10,6 +10,14 @@ char buf[2] = { '\0' };
 int InSearchWin = 0;
 int childExitFlag = 0;
 
+/* Byte 0: quick search 快捷键标志位(alt-j) <for newWindow.c>
+ * Byte 1: 退出窗口快捷键标志位(ctrl-c) <for newWindow.c, 目前被屏蔽了>
+ * Byte 2: 翻译窗口打开标志位
+ * Byte 3: Alt-J 搜索窗口快捷键标志位(好像跟第0字节重复了，太久，啊啦也忘了)
+ * Byte 4: 搜索窗口存在标志位
+ * */
+char *shmaddr_keyboard = NULL;
+
 pid_t searchWindow_pid;
 pid_t searchWindowMonitor_pid;
 pid_t captureShortcutEvent_pid;
@@ -36,16 +44,24 @@ void readChildProcessInfo(int signo) {
 
 void *readSocket() {
 
-    while (1) {
+    //while (1) {
 
-        if ( read ( fd[1], buf, 1 ) < 0 )
-            err_exit_qs ( "read error in quickSearch" );
+    //while ( 1 ) {
+    //if ( shmaddr_keyboard[3] == '1' ) 
+    //break;
 
-        if ( InSearchWin )
-            buf[0] = '0';
+    //usleep(2000);
+    //}
+    //if ( read ( fd[1], buf, 1 ) < 0 )
+    //    err_exit_qs ( "read error in quickSearch" );
 
-        usleep(1000);
-    }
+    //if ( InSearchWin )
+    //buf[0] = '0';
+
+    //usleep(1000);
+    //}
+    //
+    return NULL;
 }
 
 void quickSearch()
@@ -66,6 +82,8 @@ void quickSearch()
     /* 父进程*/
     if ( pid > 0 ) {
 
+        shared_memory_for_keyboard_event(&shmaddr_keyboard);
+
         captureShortcutEvent_pid = pid;
         searchWindowMonitor_pid = getpid();
 
@@ -79,14 +97,16 @@ void quickSearch()
         close ( fd[0] );
 
         /* 将键盘监听后写回socket的结果一一读取，防止未读取数据影响程序逻辑*/
-        pthread_t t1;
-        pthread_create ( &t1, NULL, readSocket, NULL );
+        //pthread_t t1;
+        //pthread_create ( &t1, NULL, readSocket, NULL );
 
         while ( 1 ) {
 
-            if ( buf[0] == '1') {
+            if ( shmaddr_keyboard[3] == '1') {
 
-                InSearchWin = 1;
+                //InSearchWin = 1;
+                shmaddr_keyboard[4] = '1';
+                shmaddr_keyboard[3] = '0';
 
 
                 /* 莫得办法，不每次都fork一个进程，窗口除第一次外都无法聚焦*/
@@ -100,14 +120,15 @@ void quickSearch()
 
                     /* 父进程等待子进程退出*/
                     while ( ! childExitFlag )
-                        usleep(1000);
+                        usleep(10000);
 
                     childExitFlag = 0;
+                    shmaddr_keyboard[4] = '0';
                 }
 
-                InSearchWin = 0;
-                write ( fd[1], "0", 1 );
-                buf[0] = '0';
+                //InSearchWin = 0;
+                //write ( fd[1], "0", 1 );
+                //buf[0] = '0';
             }
 
             usleep(1000);
@@ -119,7 +140,7 @@ void quickSearch()
 
         /* 这又是子进程里的，获取到的变量父进程是用不到的!!!!!!!*/
         //captureShortcutEvent_pid = getpid();
-        
+
         captureShortcutEvent(fd[0]);
     }
 }
