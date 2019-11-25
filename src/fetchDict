@@ -92,22 +92,22 @@ def formatData(word, attributes):
 
                 if 'entran' not in attributes:
                     output += '|'
-                    if 'wordform' not in attributes:
-                        output += '|'
-                continue
 
-            if value == 'word':
+                elif 'wordform' not in attributes:
+                    output += '|'
+
+            elif value == 'word':
                 output += str(data[value]) + ' |'
                 continue
 
-            if value == 'phon_en':
+            elif value == 'phon_en':
                 if 'phon_am' in attributes:
                     output += '   ' + str(data[value])
                     continue
                 else:
                     output += '   ' + str(data[value]) + '|'
 
-            if value == 'phon_am':
+            elif value == 'phon_am':
                 output += '   ' + str(data[value]) + '|'
 
             else:
