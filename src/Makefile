@@ -30,6 +30,7 @@ $(MONNITOR) : %.o : %.c
 	$(CC) -c  $< -o $@  -Wall
 
 install:
+	bash ./stop.sh
 	sudo cp -v stran /usr/bin/
 	#sudo cp -v mstran /usr/bin/
 	sudo cp -v fetchDict /usr/bin/
