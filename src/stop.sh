@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #process=("mstran" "./stran" "stran" "tranen" "bdtran" "fetchDict" "extractPic")
-process=("stran")
+process=("stran" "fetchDict" "extractPic")
 
 declare -i len
 len=${#process[*]}
@@ -17,16 +17,18 @@ fi
 
 echo "startup:"$startup
 
-for n in $(seq $len)
+for i in $(seq 10)
 do
-    pid=`ps -aux | grep ${process[n-1]} | head -n 1 |awk '{print $2}'|xargs`
-    if [ $pid -ne $$ ]; then
-        if [ $pid -ne $startup ]; then
-            echo "清理进程pid:"$pid
-            kill -15 $pid #>/dev/null 2>&1
-            clear="Yes"
+    for n in $(seq $len)
+    do
+        pid=`ps -aux | grep ${process[n-1]} | head -n 1 |awk '{print $2}'|xargs`
+        if [ $pid -ne $$ ]; then
+            if [ $pid -ne $startup ]; then
+                kill -15 $pid >/dev/null 2>&1
+                clear="Yes"
+            fi
         fi
-    fi
+    done
 done
 
 if [[ $clear -ne "Yes" ]]; then
