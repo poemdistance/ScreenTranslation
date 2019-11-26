@@ -35,6 +35,8 @@ void readChild() {
 
 int detectTranPicAction () {
 
+    printf("In detectTranPicAction\n");
+
     int count = 0;
     int canShot = 0;
     int lock = 1;
@@ -180,6 +182,7 @@ int detectTranPicAction () {
                 check_y = 0;
                 canShot = 0;
                 shmaddr_pic[1] = CLEAR;
+                printf("启动区域截图\n");
                 system("gnome-screenshot -a -B -f /home/$USER/.stran/1.png");
             }
 

@@ -114,8 +114,15 @@ void captureShortcutEvent(int socket) {
         if ( ev.code == 4 || ev.code == KEY_RESERVED )
             continue;
 
+        if ( 0 && AltPress && shmaddr[4] == '1' ) {
+
+            printf("\033[0;31m发生死锁, AltPress=1, shmaddr[4]='1', 采取强制清空标志操作 \033[0m\n");
+            shmaddr[4] = '0';
+            AltPress = 0;
+        }
+
         /* Alt被按下，且搜索窗口和翻译结果展示窗口都未被打开*/
-        if ( AltPress && shmaddr[4] != '1'  && shmaddr[2] != '1' ) {
+        if ( AltPress && shmaddr[SEARCH_WINDOW_OPENED_FLAG] != '1'  && shmaddr[WINDOW_OPENED_FLAG] != '1' ) {
 
             printf("Some other key pressed\n");
 
@@ -134,10 +141,10 @@ void captureShortcutEvent(int socket) {
 
                 fprintf(stdout, "Captured pressing event <Alt-J>\n");
                 //write ( socket, "1", 1 );
-                shmaddr[3] = '1';
+                shmaddr[QuickSearchShortcutPressed_FLAG_2 ] = '1';
 
                 /* quick search 快捷键标志位*/
-                shmaddr[0] = '1';
+                shmaddr[QuickSearchShortcutPressed_FLAG] = '1';
             }
 
             if ( ev.code == KEY_D ) {
@@ -154,10 +161,10 @@ void captureShortcutEvent(int socket) {
 
             if ( ev.code == KEY_C ) {
 
-                fprintf(stdout, "Captured pressing event <Ctrl-C>\n");
-                if ( shmaddr[2] == '1')
+                fprintf(stdout, "Captured pressing event <Ctrl-C>, AltPress=%d shmaddr[4]=%c shmaddr[2]=%c\n", AltPress, shmaddr[4],shmaddr[2] );
+                if ( shmaddr[WINDOW_OPENED_FLAG] == '1')
                     /* 退出快捷键标志位*/
-                    shmaddr[1] = '1';
+                    shmaddr[CTRL_C_PRESSED_FLAG] = '1';
             }
 
             CtrlPress = 0;

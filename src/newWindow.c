@@ -54,6 +54,9 @@ void focusOurWindow( WinData *wd ) {
     /* Get window's attributes*/
     XWindowAttributes wattr;
     Display *dpy = XOpenDisplay (NULL);
+    if ( !dpy ) 
+        return;
+    
     XGetWindowAttributes(dpy, wid, &wattr);
 
     XEvent xev;
@@ -90,7 +93,7 @@ int detect_ctrl_c(void *data) {
      * 使本翻译界面关闭，请注释掉下面代码中的: < 0 & >*/
 
     /* Ctrl_C事件标志位, 赋值位置 captureShortcutEvent.c <变量shmaddr>*/
-    if ( 0 & (shmaddr_keyboard[1] == '1') ) {
+    if ( 0 & (shmaddr_keyboard[CTRL_C_PRESSED_FLAG ] == '1') ) {
 
         printf("\033[0;32m窗口检测到Control-C\033[0m\n");
 
@@ -201,7 +204,7 @@ void *newNormalWindow() {
     printf("\n准备判断是否新建一般窗口\n\n");
 
     /* 窗口打开标志位 changed in captureShortcutEvent.c <变量shmaddr>*/
-    shmaddr_keyboard[2] = '1';
+    shmaddr_keyboard[WINDOW_OPENED_FLAG] = '1';
 
     wd.getOfflineTranslation = 0;
 
@@ -220,8 +223,8 @@ void *newNormalWindow() {
     gtk_widget_set_can_focus(newWin, TRUE);
 
     /* quickSearch快捷键标志位, changed in captureShortcutEvent.c <变量shmaddr>*/
-    if ( shmaddr_keyboard[0] == '1') {
-        shmaddr_keyboard[0] = '0';
+    if ( shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] == '1') {
+        shmaddr_keyboard[QuickSearchShortcutPressed_FLAG ] = '0';
 
         /* 快捷键调出的窗口放置于中央*/
         gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_CENTER);
@@ -413,6 +416,7 @@ void clearMemory () {
     memset(shmaddr_baidu, '0', 10);
     memset(shmaddr_mysql, '0', 10);
     memset(shmaddr_pic, '0', 10);
+    memset(shmaddr_keyboard, '0', 10);
 
     memset(shmaddr_google, '\0', SHMSIZE);
     memset(shmaddr_baidu, '\0', SHMSIZE-10);
@@ -444,8 +448,8 @@ int destroyNormalWin(GtkWidget *window, WinData *wd) {
     g_source_remove ( timeout_id );
 
     /* 窗口关闭标志位*/
-    shmaddr_keyboard[2] = '0';
-    shmaddr_keyboard[1] = '0';
+    shmaddr_keyboard[WINDOW_OPENED_FLAG] = '0';
+    shmaddr_keyboard[CTRL_C_PRESSED_FLAG] = '0';
 
     //gtk_widget_destroy ( wd->image );
 
@@ -1693,7 +1697,7 @@ int  newScrolledWin() {
     pthread_exit(NULL);
 
     /* 窗口关闭标志位*/
-    shmaddr_keyboard [2] = '0';
+    shmaddr_keyboard [WINDOW_OPENED_FLAG] = '0';
 
     return 1;
 }

@@ -49,6 +49,7 @@
 #define MYSQLSIZE (BAIDUSIZE)
 #define LINELEN (28)
 
+
 typedef struct Google {
     double width;
     double height;
@@ -233,6 +234,11 @@ gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data );
 
 /* End For newWindow.c*/
 
+#define QuickSearchShortcutPressed_FLAG (0)
+#define CTRL_C_PRESSED_FLAG (1)
+#define WINDOW_OPENED_FLAG (2)
+#define QuickSearchShortcutPressed_FLAG_2 (3)  
+#define SEARCH_WINDOW_OPENED_FLAG (4)
 
 void quickSearch();
 void tranSelect();

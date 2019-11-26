@@ -102,11 +102,11 @@ void quickSearch()
 
         while ( 1 ) {
 
-            if ( shmaddr_keyboard[3] == '1') {
+            if ( shmaddr_keyboard[QuickSearchShortcutPressed_FLAG_2] == '1') {
 
                 //InSearchWin = 1;
-                shmaddr_keyboard[4] = '1';
-                shmaddr_keyboard[3] = '0';
+                shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '1';
+                shmaddr_keyboard[QuickSearchShortcutPressed_FLAG_2] = '0';
 
 
                 /* 莫得办法，不每次都fork一个进程，窗口除第一次外都无法聚焦*/
@@ -118,12 +118,16 @@ void quickSearch()
 
                     searchWindow_pid = pid;
 
+                    printf("等待搜索窗口退出\n");
+
                     /* 父进程等待子进程退出*/
                     while ( ! childExitFlag )
                         usleep(10000);
 
+
+                    printf("搜索窗口已退出\n");
                     childExitFlag = 0;
-                    shmaddr_keyboard[4] = '0';
+                    shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '0';
                 }
 
                 //InSearchWin = 0;
