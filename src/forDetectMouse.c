@@ -104,15 +104,12 @@ void writePipe(char *text, int fd) {
 /*获取子进程状态，防止僵尸进程*/
 void handler(int signo) {
 
-    pid_t pid;
-    while( (pid=waitpid(-1, NULL, WNOHANG)) > 0) {
+    while( waitpid(baidu_translate_pid, NULL, WNOHANG) > 0)
+        BAIDU_TRANS_EXIT_FALG = 1;
 
-        if ( pid == baidu_translate_pid )
-            BAIDU_TRANS_EXIT_FALG = 1;
-        else if ( pid == google_translate_pid )
-            GOOGLE_TRANS_EXIT_FLAG = 1;
-    }
+    while( waitpid(-1, NULL, WNOHANG) > 0)
 
+        GOOGLE_TRANS_EXIT_FLAG = 1;
 }
 
 /*判断当前聚焦窗口是否为终端*/

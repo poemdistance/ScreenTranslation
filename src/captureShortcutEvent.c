@@ -114,7 +114,7 @@ void captureShortcutEvent(int socket) {
         if ( ev.code == 4 || ev.code == KEY_RESERVED )
             continue;
 
-        if ( 0 && AltPress && shmaddr[4] == '1' ) {
+        if ( 0 && AltPress && shmaddr[SEARCH_WINDOW_OPENED_FLAG] == '1' ) {
 
             printf("\033[0;31m发生死锁, AltPress=1, shmaddr[4]='1', 采取强制清空标志操作 \033[0m\n");
             shmaddr[4] = '0';

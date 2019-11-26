@@ -26,10 +26,10 @@ void stop_search (  GtkSearchEntry *entry, gpointer *data  ) {
     shared_memory_for_keyboard_event(&shmaddr);
 
     /* 退出快捷键标志位清零*/
-    shmaddr[1] = '0';
+    shmaddr[CTRL_C_PRESSED_FLAG] = '0';
 
     /* quick search 快捷键标志位清零*/
-    shmaddr[0] = '0';
+    shmaddr[QuickSearchShortcutPressed_FLAG] = '0';
 
     gtk_widget_destroy ( (GtkWidget*)data );
     gtk_widget_destroy ( (GtkWidget*)entry );

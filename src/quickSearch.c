@@ -125,9 +125,9 @@ void quickSearch()
                         usleep(10000);
 
 
-                    printf("搜索窗口已退出\n");
                     childExitFlag = 0;
                     shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '0';
+                    printf("搜索窗口已退出 shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG=]%c\n", shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG]);
                 }
 
                 //InSearchWin = 0;
@@ -135,7 +135,7 @@ void quickSearch()
                 //buf[0] = '0';
             }
 
-            usleep(1000);
+            usleep(10000);
         }
     } 
     else {
