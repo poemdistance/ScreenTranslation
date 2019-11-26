@@ -33,6 +33,9 @@ void captureShortcutEvent(int socket) {
     char device[KEYBOARD_NUM][100] = { '\0' };
     myopen( (char (*)[100])getKeyboardDevice(device) );
     int fd = 0;
+    double lasttime = 0;
+
+    struct timeval time;
 
     struct sigaction sa;
     sa.sa_handler = closeDevice;
@@ -114,6 +117,19 @@ void captureShortcutEvent(int socket) {
         /* Alt被按下，且搜索窗口和翻译结果展示窗口都未被打开*/
         if ( AltPress && shmaddr[4] != '1'  && shmaddr[2] != '1' ) {
 
+            printf("Some other key pressed\n");
+
+            gettimeofday ( &time, NULL );
+
+            /* Alt , j,k按下间隔过长，抛弃此次结果，重置lasttime,AltPress, 监听下一次事件到来*/
+            if (abs ( (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3 - lasttime ) > 300 && (int)lasttime != 0) {
+
+                printf("%f\n",  (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3 - lasttime ) ;
+                lasttime = 0;
+                AltPress = 0;
+                continue;
+            }
+
             if ( ev.code == KEY_J ) {
 
                 fprintf(stdout, "Captured pressing event <Alt-J>\n");
@@ -131,6 +147,7 @@ void captureShortcutEvent(int socket) {
             }
 
             AltPress = 0;
+            lasttime = 0;
         }
 
         if ( CtrlPress ) {
@@ -146,8 +163,13 @@ void captureShortcutEvent(int socket) {
             CtrlPress = 0;
         }
 
-        if ( ! AltPress && ( ev.code == KEY_RIGHTALT || ev.code == KEY_LEFTALT ))
+        if ( ! AltPress && ( ev.code == KEY_RIGHTALT || ev.code == KEY_LEFTALT )) {
+
+            gettimeofday ( &time, NULL );
+            lasttime = (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3;
             AltPress = 1;
+            printf("AltPress\n");
+        }
 
         if ( !CtrlPress && ( ev.code == KEY_LEFTCTRL || ev.code == KEY_RIGHTCTRL) )
             CtrlPress = 1;
