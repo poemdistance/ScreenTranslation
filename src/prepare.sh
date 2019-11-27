@@ -10,16 +10,16 @@ currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/Switch.p
     "../gif_pic/volume.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"
     "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh")
 
-declare -i len
-len=${#currFile[*]}-1
+    declare -i len
+    len=${#currFile[*]}-1
 
-echo
-mkdir $storage
-echo
-for i in $(seq 0 $len)
-do
-    cp ${currFile[i]} $storage -v
-done
+    echo
+    mkdir $storage
+    echo
+    for i in $(seq 0 $len)
+    do
+        cp ${currFile[i]} $storage -v
+    done
 
 #修改资源文件路径以适应当前用户
 needChangFile=("background.c" "GuiEntrance.c" "audioPlayer.c" "Mstran.desktop" "switchButton.c" "debug.c")
@@ -31,7 +31,7 @@ echo
 
 for i in $(seq 0 $len)
 do
-    
+
     sed -i "s~${src}~${dst}~g" ${needChangFile[i]}
     echo "Changing ${needChangFile[i]} to adapt the current user successful"
 
@@ -76,5 +76,10 @@ sudo pip3 install -r requirements.txt
 sudo ./setup.py install
 sudo pip3 install  mysql-connector-python
 
-cd ../gnome-screenshot
-sudo bash install.sh
+system=`uname -a`
+if [[ $string =~ .*"deepin".* ]]; then
+    sudo apt install gnome-screenshot
+else
+    cd ../gnome-screenshot
+    sudo bash install.sh
+fi

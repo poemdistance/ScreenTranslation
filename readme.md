@@ -1,5 +1,5 @@
-## 测试发现Deeping问题稍多，Ubuntu和Arch目前没有发现明显问题
-## Deeping 离线功能若要正常使用，请将Python更新到3.8及以上
+## 测试发现Deepin问题稍多，Ubuntu和Arch目前没有发现明显问题
+## Deepin 离线功能若要正常使用，请将Python更新到3.8及以上
 
 # 一. 程序功能
 ## (一). 目前功能
@@ -20,7 +20,7 @@
 
    ![img](./gif_pic/GUI.png) 
 
- #### Deeping Linux 测试通过
+ #### Deepin Linux 测试通过
  ![img](./gif_pic/deeping.png)
 
 
@@ -67,16 +67,18 @@
    * For system base on Debian  (Ubuntu, Kali etc.)
 
           $ sudo apt-get install build-essential gnome-devel libx11-dev libxtst-dev
-          $ sudo apt-get install python3-pip
+          $ sudo apt-get install python3-pip liblzma-dev
           $ sudo apt-get install xdotool
-          $ sudo apt install  tesseract-ocr libtesseract-dev
-          $ sudo pip3 install pytesseract tesseract pillow
+          $ sudo apt install  tesseract-ocr libtesseract-dev meson
+          $ sudo pip3 install pytesseract tesseract pillow meson
+          $ sudo apt install libcanberra-gtk3-0  libcanberra-gtk3-dev  libcanberra-gtk3-module
+
 
    * For Arch Linux 
 
           $  sudo pacman -S gtk3  libxtst libx11  xdotool  python-pip  
-          $  sudo pacman -S tesseract
-          $  sudo pip3 install pytesseract tesseract pillow
+          $  sudo pacman -S tesseract meson
+          $  sudo pip3 install pytesseract tesseract pillow meson
 
           #图像识别相关依赖作者安装太久了，不知道有没有漏掉什么...
 
