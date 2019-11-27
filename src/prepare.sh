@@ -77,7 +77,7 @@ sudo ./setup.py install
 sudo pip3 install  mysql-connector-python
 
 system=`uname -a`
-if [[ $string =~ .*"deepin".* ]]; then
+if [[ $system =~ .*"deepin".* ]]; then
     sudo apt install gnome-screenshot
 else
     cd ../gnome-screenshot
