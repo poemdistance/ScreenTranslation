@@ -13,13 +13,13 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 
 MONNITOR = StranMonitor.o
 
-all : stran #mstran
+all : stran mstran
 
 stran : $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDLIBS) $(CFLAGS) -o $@
 
-#mstran : $(MONNITOR)
-#	$(CC) StranMonitor.c -o mstran
+mstran : $(MONNITOR)
+	$(CC) StranMonitor.c -o mstran
 
 
 #$@为目标集合，@<为依赖集合
@@ -32,7 +32,21 @@ $(MONNITOR) : %.o : %.c
 install:
 	bash ./stop.sh
 	sudo cp -v stran /usr/bin/
-	#sudo cp -v mstran /usr/bin/
+	sudo cp -v stop.sh /usr/bin/stoptran
+	sudo cp -v mstran /usr/bin/
+	sudo cp -v fetchDict /usr/bin/
+	sudo cp -v Mstran.desktop /usr/share/applications/
+	sudo cp -v extractPic /usr/bin
+	sudo desktop-file-install /usr/share/applications/Mstran.desktop
+	sudo update-desktop-database
+
+qinstall:
+	cp -v stop.sh ~/.stran/
+	cp -v startup.sh ~/.stran/
+	bash ./stop.sh
+	sudo cp -v stop.sh /usr/bin/stoptran
+	sudo cp -v stran /usr/bin/
+	sudo cp -v mstran /usr/bin/
 	sudo cp -v fetchDict /usr/bin/
 	sudo cp -v Mstran.desktop /usr/share/applications/
 	sudo cp -v extractPic /usr/bin
@@ -44,7 +58,7 @@ clean:
 
 uninstall:
 	sudo rm -rf ~/.stran 
-	#sudo rm -rf /usr/bin/mstran
+	sudo rm -rf /usr/bin/mstran
 	sudo rm -rf /usr/bin/stran
 	sudo rm -rf /usr/share/applications/Mstran.desktop
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #process=("mstran" "./stran" "stran" "tranen" "bdtran" "fetchDict" "extractPic")
-process=("stran" "fetchDict" "extractPic")
+process=("mstran" "fetchDict" "extractPic" "stran")
 
 declare -i len
 len=${#process[*]}

@@ -60,7 +60,6 @@ main(int argc, char **argv)
 {
     struct sigaction sa;
     pid_t pid = 0;
-    static int count = 0;
 
     printf("\033[0;35mMonitor Process %d \033[0m\n", getpid());
 
@@ -98,13 +97,6 @@ main(int argc, char **argv)
             usleep ( 1000000 );
             if ( PROCESS_EXIT_FLAG == 1 && CTRL_C_FLAG != 1 && SIG_KILL_FLAG != 1) {
                 printf("\033[0;31mstran 子进程已退出, 准备重新启动... \033[0m\n");
-
-                if ( count++ == 3 ) {
-
-                    printf("\033[0;31m失败尝试次数过多, 请检测网络是否正常再重新运行监控程序 \033[0m\n");
-                    system ( "bash ~/.stran/errNotification.sh" );
-                    sigkill();
-                }
 
                 PROCESS_EXIT_FLAG = 0;
                 pid = fork();
