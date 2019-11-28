@@ -88,8 +88,6 @@
         make prepare && make && make install
 
 
-
-5. 请务必阅读下面的使用注意事项
 <br><br>
 
 # 五. 离线库下载与安装
@@ -229,19 +227,19 @@
 
       **将需要忽略的应用名称添加进数组保存，重新编译项目并安装。**
 
-1. 直接运行编译后生成的可执行文件stran (**软件有应用图标，名为Mstran，点击图标亦可运行**)
+1. 直接运行编译后生成的可执行文件mstran (**软件有应用图标，名为Mstran，点击图标亦可运行**)
  
-        $  stran  #原来是执行mstran，请暂时替换为stran
+        $  mstran 
     
       这种情况会有很多输出信息，一般是拿来作为调试信息的<br><br>
 
-        $  stran > /dev/null &
+        $  mstran > /dev/null &
   
      放置在后台执行，重定向输出到/dev/null <br> <br>
 
      停止运行:   
 
-        $ bash ~/.stran/stop.sh
+        $ bash ~/.stran/stop.sh (或终端直接执行stoptran)
 
 
 <br> 
