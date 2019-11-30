@@ -61,6 +61,8 @@ uninstall:
 	sudo rm -rf /usr/bin/mstran
 	sudo rm -rf /usr/bin/stran
 	sudo rm -rf /usr/share/applications/Mstran.desktop
+	sudo rm -rf /usr/bin/fetchDict
+	sudo rm -rf /usr/bin/extractPic
 
 prepare:
 	bash prepare.sh
