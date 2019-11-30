@@ -1,6 +1,8 @@
 ## 测试发现Deepin问题稍多，Ubuntu和Arch目前没有发现明显问题
 ## Deepin 离线功能若要正常使用，请将Python更新到3.8及以上
 
+# 注意安装后将 `/etc/gdm/custom.conf` 里的 `#WaylandEnable=false` 前面的 `#`号注释掉，使用Xorg服务，否则xdotool无法工作
+
 # 一. 程序功能
 ## (一). 目前功能
 ### 1. 屏幕取词翻译 -- 中英互译 （全局）
