@@ -175,7 +175,8 @@ int detectTranPicAction () {
                 lock = 1;
 
             /* canShot==1, 进行截图操作*/
-            if ( (mask == 0 && canShot ) || shmaddr_pic[1] == SCREEN_SHOT ) {
+            //if ( (mask == 0 && canShot ) || shmaddr_pic[1] == SCREEN_SHOT ) {
+            if ( shmaddr_pic[1] == SCREEN_SHOT ) {
 
                 count = 0;
                 check_x = 0;
