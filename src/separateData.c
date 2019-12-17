@@ -117,23 +117,10 @@ void separateDataForBaidu(int *index, int len, int type) {
 
         else if ( n == 3 || n == 4)
             adjustStrForBaidu(len, result[n], 0, 1);
-
-        /* 这条语句貌似是统计行数用的 */
-        //else if ( n == 1 )
-            //adjustStrForBaidu(len, result[n], 0, 0);
     }
-
-    /*打印提取结果*/
-    //for ( int i=0; i<BAIDUSIZE; i++ )
-    //printf("\033[0;35mbaidu_result[%d]=%s\033[0m\n", i, baidu_result[i]);
-
-    printf("\033[0;35maudioOnline_en= %s \033[0m\n", audio_en(type));
-    printf("\033[0;35maudioOnline_uk= %s \033[0m\n", audio_uk(type));
 }
 
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
-
-    pbgreen("Before adjust:%s<", source);
 
     int nowlen = 0;
     int asciich = 0;
@@ -290,8 +277,6 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
     if ( copy )
         strcpy(source, storage);
-
-    pbgreen("After: %s< \n", source);
 }
 
 int getLinesOfGoogleTrans ( int *index ) {
