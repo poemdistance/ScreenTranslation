@@ -80,38 +80,37 @@ def formatData(word, attributes):
     if data is None:
         return data
 
-    for i, value in enumerate(data):
-        if value != 'synonym' and value != 'example':
+    # source | phonetic | zhtran | entran | wordform | audio
+    keys = [ 'word', 'phon_en', 'phon_am', 'zhtran', 'entran', 'wordform' ]
 
-            if  isPartOfSpeech(str(value)):
-                if str(value) == 'other':
-                    output += str(value) + '.' + str(data[value]) + '|'
+    global flags
+    i = -1
+    for key in keys:
+
+        i = i + 1
+
+        if key != 'zhtran':
+            try:
+                if key == 'phon_en' and keys[i+1] != 'phon_am':
+                    output += '   ' + data[key] + '|' ;
+                elif key == 'phon_en':
+                    output += '   ' + data[key];
+                elif key == 'phon_am':
+                    output += '   ' + data[key] + '|';
                 else:
-                    output += str(value) + str(data[value]) + '|'
-                pos += 1
+                    output += data[key] + '|' ;
 
-                if 'entran' not in attributes:
-                    output += '|'
-
-                elif 'wordform' not in attributes:
-                    output += '|'
-
-            elif value == 'word':
-                output += str(data[value]) + ' |'
-                continue
-
-            elif value == 'phon_en':
-                if 'phon_am' in attributes:
-                    output += '   ' + str(data[value])
-                    continue
+            except Exception as e:
+                output += '|';
+        else:
+            while isPartOfSpeech(attributes[i]):
+                if attributes[i] == 'other':
+                    output += attributes[i] + '.' + data[attributes[i]] + '|';
                 else:
-                    output += '   ' + str(data[value]) + '|'
-
-            elif value == 'phon_am':
-                output += '   ' + str(data[value]) + '|'
-
-            else:
-                output += str(data[value]) + '|'
+                    output += attributes[i] + data[attributes[i]] + '|';
+                
+                pos = pos + 1
+                i= i + 1
 
 
     path1 = os.path.expanduser('~')+'/'+'WordMp3/'+str(data['word'])[0]+'/'+str(data['word'])+'_en.mp3'
@@ -209,4 +208,5 @@ def main():
 
 #Global Value
 pos = 0
+flags=""
 main()
