@@ -107,8 +107,7 @@ void handler(int signo) {
     while( waitpid(baidu_translate_pid, NULL, WNOHANG) > 0)
         BAIDU_TRANS_EXIT_FALG = 1;
 
-    while( waitpid(-1, NULL, WNOHANG) > 0)
-
+    while( waitpid(google_translate_pid, NULL, WNOHANG) > 0)
         GOOGLE_TRANS_EXIT_FLAG = 1;
 }
 
