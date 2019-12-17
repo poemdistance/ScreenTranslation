@@ -2,12 +2,12 @@
 
 int countCharNums (char *source) {
 
-    //printf("\033[0;32mIn countCharNums \033[0m\n");
-
     char *p = source;
     
     int asciinum = 0;
     int nums = 0;
+
+    pbgreen("source phonetci:%s<", source);
 
     while ( *p ) {
 
@@ -27,12 +27,8 @@ int countCharNums (char *source) {
             asciinum = 0;
         }
 
-        //printf("\033[0;35m (countCharNums)nums=%d \033[0m\n", nums);
-
         p++;
     }
-
-    //printf("\033[0;32mout\033[0m\n");
 
     return nums;
 }

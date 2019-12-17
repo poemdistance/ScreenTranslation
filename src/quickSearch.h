@@ -12,6 +12,8 @@
 #include <linux/input.h>
 #include <sys/ipc.h>
 
+#include "sharedMemory.h"
+
 #define TEXT_SUBMIT_BYTE ( 20 )
 #define SUBMIT_TEXT ( 21 )
 
@@ -19,10 +21,8 @@ char **getKeyboardDevice(char (*buf)[100]);
 void captureShortcutEvent(int socket);
 void err_exit_qs(const char *buf);
 void searchWindow();
+void quickSearch();
 
 char *itoa ( int num );
-
-int shared_memory_for_quickSearch(char **addr);
-int shared_memory_for_keyboard_event(char **addr);
 
 #endif

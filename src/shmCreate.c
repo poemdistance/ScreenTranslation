@@ -1,5 +1,6 @@
 #include "common.h"
 #include "quickSearch.h"
+#include "cleanup.h"
 
 int shared_memory_for_google_translate(char **addr) {
 

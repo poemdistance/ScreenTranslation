@@ -31,6 +31,9 @@ void stop_search (  GtkSearchEntry *entry, gpointer *data  ) {
     /* quick search 快捷键标志位清零*/
     shmaddr[QuickSearchShortcutPressed_FLAG] = '0';
 
+    /* 清空搜索窗口打开标志位*/
+    shmaddr[SEARCH_WINDOW_OPENED_FLAG] = '0';
+
     gtk_widget_destroy ( (GtkWidget*)data );
     gtk_widget_destroy ( (GtkWidget*)entry );
     gtk_main_quit();

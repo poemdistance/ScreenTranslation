@@ -3,13 +3,13 @@ CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g #-fsanitize=address
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
-		  notify.o detectMouse.o shmCreate.o newWindow.o\
-		  separateData.o cleanup.o adjustStr.o Main.o\
+		  notify.o detectMouse.o shmCreate.o newNormalWin.o\
+		  separateData.o cleanup.o adjustStr.o Main.o newScrollWin.o\
 		  countLines.o countCharNums.o adjustStrForScrolledWin.o\
 		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
 		  keyPressEvent.o quickSearch.o findKeyboardDevice.o\
 		  captureShortcutEvent.o  searchWindow.o tranSelect.o isEmpty.o \
-		  tranPicActionDetect.o
+		  tranPicActionDetect.o memoryControl.o
 
 MONNITOR = StranMonitor.o
 

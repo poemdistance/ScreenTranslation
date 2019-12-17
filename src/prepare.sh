@@ -1,25 +1,26 @@
 #!/bin/bash
 
 bash stop.sh
-git submodule foreach git pull origin master
-sudo pip3 install  mysql-connector-python
 
 #复制文件到家目录
 storage="$HOME/.stran"
-currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/Switch.png" 
-    "../gif_pic/volume.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"
-    "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh")
+currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.png"\ 
+    "../gif_pic/volume.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"\
+    "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh");
 
-    declare -i len
-    len=${#currFile[*]}-1
+declare -i len
+len=${#currFile[*]}-1
 
-    echo
-    mkdir $storage
-    echo
-    for i in $(seq 0 $len)
-    do
-        cp ${currFile[i]} $storage -v
-    done
+echo 'Copying resources...'
+mkdir $storage
+echo
+for i in $(seq 0 $len)
+do
+    cp ${currFile[i]} $storage -v
+done
+
+git submodule foreach git pull origin master
+sudo pip3 install  mysql-connector-python
 
 #修改资源文件路径以适应当前用户
 needChangFile=("background.c" "GuiEntrance.c" "audioPlayer.c" "Mstran.desktop" "switchButton.c" "debug.c")
@@ -43,7 +44,7 @@ sed -i "s/rease/$USER/g" ./fetchDict
 #复制启动图标，创建日志文件,修改读写权限
 sudo cp Mstran.desktop /usr/share/applications/ -v
 sudo touch /var/log/mstran.log
-sudo chmod -c 750 /var/log/mstran.log
+sudo chmod -c 770 /var/log/mstran.log
 sudo chown -c $USER /var/log/mstran.log
 
 #加入设备文件用户组

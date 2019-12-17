@@ -1,4 +1,5 @@
 #include "common.h" 
+#include "cleanup.h"
 
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;

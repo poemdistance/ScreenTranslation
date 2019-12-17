@@ -1,5 +1,7 @@
 #include "common.h"
 #include "quickSearch.h"
+#include "newWindow.h"
+#include "detectMouse.h"
 
 char *shmaddr_google;
 char *shmaddr_baidu;
@@ -24,6 +26,13 @@ int shmid_pic;
 
 pthread_t t1 = 0, t2 = 0, t3 = 0;
 
+struct Arg {
+    int argc;
+    char **argv;
+    char *addr_google;
+    char *addr_baidu;
+};
+
 void *newNormalWindowThread() {
 
     pthread_t t3;
@@ -41,7 +50,6 @@ void *newNormalWindowThread() {
     }
 
 }
-
 
 void tranSelect() {
 

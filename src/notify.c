@@ -11,6 +11,8 @@
  */
 
 #include "common.h"
+#include "detectMouse.h"
+#include "cleanup.h"
 
 int fd_key = -1;
 FILE *fp = NULL;

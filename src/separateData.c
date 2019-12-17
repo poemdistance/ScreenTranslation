@@ -1,4 +1,6 @@
 #include "common.h"
+#include "newWindow.h"
+#include "cleanup.h"
 
 extern char *shmaddr_baidu;
 extern char *shmaddr_google;
@@ -62,7 +64,7 @@ void separateDataForBaidu(int *index, int len, int type) {
         if ( strcmp ( tmp, SourceInput(type) ) != 0 ) {
 
             strcat ( SourceInput(type), tmp );
-            //strcat ( SourceInput(type), "\n" );
+            pbgreen("SourceText:%s<", text);
             adjustStrForBaidu(len, SourceInput(type), 0, 0);
         }
     }
@@ -131,9 +133,7 @@ void separateDataForBaidu(int *index, int len, int type) {
 
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
-    //printf("In adjustStrForBaidu\n");
-
-    printf("\033[0;34mAdjust String: %s \033[0m\n", source);
+    pbgreen("Before adjust:%s<", source);
 
     int nowlen = 0;
     int asciich = 0;
@@ -146,16 +146,13 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
 
     long int srclen = 0;
     srclen = strlen(source);
-    //fprintf(stdout, "\033[0;31m srclen=%ld\033[0m\n",  srclen );
 
     if ( srclen > 1024 * 1024 ) {
 
-        fprintf(stderr, "\033[0;31m\n源数据过长，临时数组无法容纳，"\
-                "待处理此类情况..., 准备退出...\033[0m\n\n");
-        quit();
+        pbred("源数据过长，临时数组无法容纳");
+        return;
     }
 
-    /*Be careful here which might be cause stack overflow*/
     char storage[1024*1024] = { '\0' };
 
     for ( int j=0, k=0; True ; j++, k++ ) 
@@ -168,7 +165,6 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         /* 空格为可分割字符，记录下该下标*/
         if ( source[j] == ' ')
             cansplit = k;
-
 
         if ( source[j] == '\n') {
 
@@ -295,7 +291,7 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
     if ( copy )
         strcpy(source, storage);
 
-    printf("\033[0;34mAfter: %s \033[0m\n", source);
+    pbgreen("After: %s< \n", source);
 }
 
 int getLinesOfGoogleTrans ( int *index ) {

@@ -1,6 +1,7 @@
 #include "common.h"
 #include <assert.h>
 #include <X11/extensions/Xfixes.h>
+#include "cleanup.h"
 
 extern char *shmaddr_selection;
 extern int action;

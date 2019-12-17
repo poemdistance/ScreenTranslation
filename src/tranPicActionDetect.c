@@ -7,6 +7,7 @@
 #include <signal.h>
 
 #include "common.h"
+#include "cleanup.h"
 
 #define TIMEOUT ( 700 )
 
@@ -185,6 +186,10 @@ int detectTranPicAction () {
                 shmaddr_pic[1] = CLEAR;
                 printf("启动区域截图\n");
                 system("gnome-screenshot -a -B -f /home/$USER/.stran/1.png");
+            }
+
+            if ( canShot ) {
+
             }
 
             /* 休眠, 防止一直占用CPU*/

@@ -1,4 +1,6 @@
 #include "common.h"
+#include "newWindow.h"
+#include "cleanup.h"
 
 int adjustStrForScrolledWin(int len, char *source) {
 

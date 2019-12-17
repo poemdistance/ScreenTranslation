@@ -140,8 +140,6 @@ void captureShortcutEvent(int socket) {
             if ( ev.code == KEY_J ) {
 
                 fprintf(stdout, "Captured pressing event <Alt-J>\n");
-                //write ( socket, "1", 1 );
-                shmaddr[QuickSearchShortcutPressed_FLAG_2 ] = '1';
 
                 /* quick search 快捷键标志位*/
                 shmaddr[QuickSearchShortcutPressed_FLAG] = '1';

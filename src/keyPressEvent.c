@@ -1,6 +1,8 @@
 #include "common.h"
 #include <glib-object.h>
 #include <gobject/gvaluecollector.h>
+#include "audio.h"
+#include "newWindow.h"
 
 /* 键值掩码在gdk/gdkkeysyms.h*/
 

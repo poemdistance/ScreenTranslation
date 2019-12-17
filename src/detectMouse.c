@@ -15,6 +15,8 @@
 
 #include "common.h"
 #include "quickSearch.h"
+#include "detectMouse.h"
+#include "cleanup.h"
 
 extern char *shmaddr;
 extern char *shmaddr_selection;

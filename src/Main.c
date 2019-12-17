@@ -1,4 +1,6 @@
 #include "common.h"
+#include "cleanup.h"
+#include "quickSearch.h"
 
 pid_t quickSearchProcess_pid = 0;
 pid_t tranSelect_pid = 0;

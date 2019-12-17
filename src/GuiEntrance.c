@@ -31,6 +31,11 @@ void setNewWinFlag(GtkWidget *button, GtkWidget *window);
 void leave_event();
 void enter_event();
 
+struct clickDate {
+    GtkWidget *window;
+    GtkWidget *button;
+};
+
 void *GuiEntrance(void *arg) {
 
     aboveWindow = 0;
