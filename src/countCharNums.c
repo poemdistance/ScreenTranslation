@@ -7,8 +7,6 @@ int countCharNums (char *source) {
     int asciinum = 0;
     int nums = 0;
 
-    pbgreen("source phonetci:%s<", source);
-
     while ( *p ) {
 
         if ( *p == '|' )

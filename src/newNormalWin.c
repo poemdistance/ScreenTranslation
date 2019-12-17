@@ -466,18 +466,11 @@ void reGetBaiduTransAndSetWin (gpointer *data, int who ) {
 
     int index[13] = { 0 };
 
-    //printDebugInfo();
-
     getIndex(index, SHMADDR(who) );
-
     separateDataForBaidu(index, 28, TYPE(who) );
-
     setWinSizeForNormalWin (WINDATA(data), SHMADDR(who), TYPE(who));
 
     pgreen("(reGetBaiduTrans) width=%f height=%f", WIDTH(who), HEIGHT(who));
-
-    //WINDATA(data)->width = WIDTH(who);
-    //WINDATA(data)->height = HEIGHT(who);
 }
 
 void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
@@ -623,10 +616,9 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
             adjustStr(p, 28, google_result);
         }
 
-    } else {
-        pgreen("字符串依然相等");
-
-        /*若字符串依旧相等，直接拿来用就行*/
+    }
+    else {
+        pgreen("字符串依然相等, 不必调整");
     }
 
     pred("Call syncImageSize in disGoogle \n");
@@ -1036,27 +1028,23 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
 
     gtk_window_get_size ( (GtkWindow*)window, &width, &height );
 
-    pyellow("当前窗口大小 width=%d height=%d", width, height);
-    pyellow("上一次窗口大小 width=%d height=%d", lastwidth, lastheight);
-    pbred("(syncNormalWinForConfigEvent) current indicate size: %d %d", WINDATA(data)->width,WINDATA(data)->height );
+    pbred("current indicate size: %d %d (syncNormalWinForConfigEvent) ",\
+            WINDATA(data)->width,WINDATA(data)->height );
 
     if (WINDATA(data)->width <= width &&  WINDATA(data)->height <= height)
         WINDATA(data)->specific = 0;
 
     /* 窗口大小未改变不用重新调整布局,直接返回*/
     if ( lastwidth == width && lastheight == height && !WINDATA(data)->specific){
-        printf("Not change, return \n");
+        printf("Not change\n");
         return;
     }
 
-    printf("Change\n");
-
-    pred("计算应设窗口大小: %d %d", WINDATA(data)->width,WINDATA(data)->height);
-    pred("specific=%d<", WINDATA(data)->specific);
+    pred("changed");
 
     /* 指定窗口大小时*/
     if ( WINDATA(data)->specific ) {
-        pred("指定窗口大小");
+        pbred("specific");
         width = WINDATA(data)->width;
         height = WINDATA(data)->height;
 
@@ -1110,7 +1098,7 @@ void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
         maxlen = getMaxLenOfBaiduTrans ( type );
         lines = getLinesOfBaiduTrans ( type );
 
-        pmag("maxlen=%d lines=%d \n", maxlen, lines);
+        pred("maxlen=%d lines=%d \n", maxlen, lines);
 
         double width, height;
 
