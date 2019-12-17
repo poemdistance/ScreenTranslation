@@ -17,13 +17,13 @@ import re
 def isPartOfSpeech(key):
 
     attributes = [  'n.，adj.', 'adv./n.', 'adv./conj.', 'pron./det.', 'vi.&vt.', 'prep./adv.', 'v./ adj.', 'n.&adv.', \
-            'pref./abbr.', 'phr.', 'adv.&adj.', 'inf.', 'v.& n.', 'adj./det.', 'abbr.& n.', 'aux./ v.', 'num./det.', 'a\
-            dj.& pron.', 'vt.&vi.', 'conj./adv.', 'v./n.', 'n.& adv.', 'ns.', 'suf.', 'n.&vt.', 'n./int.', 'det./ord.',\
-            'det./adj.', 'adv./pron.', 'conj./prep.', 'vt.& vi.', 'n./det.', 'adj./adv.', 'adj.& adv.', 'symb.', 'n.& i\
-            nt.', 'vi.& n.', 'pref.', 'prep./conj.', 'v．', 'adj./n.', 'modal', 'comb.', 'color', 'short', 'ord.', 'num\
-            .', 'adj./int.', 'v./aux.', 'adj.& n.', 'det./pron.', 'n./adv.', 'det.', 'n./v.', 'conv.', 'prep.& adv.', '\
-            adv./prep./conj.', 'vi.', 'vt.', 'prep.', 'adv./prep.', 'n./adj.', 'abbr.', 'art.', 'aux.', 'conj.', 'int./\
-            n.', 'int.', 'adv.', 'adj.', 'pron.', 'adj./pron.', 'v.', 'n.', 'other']
+            'pref./abbr.', 'phr.', 'adv.&adj.', 'inf.', 'v.& n.', 'adj./det.', 'abbr.& n.', 'aux./ v.', 'num./det.', \
+            'adj.& pron.', 'vt.&vi.', 'conj./adv.', 'v./n.', 'n.& adv.', 'ns.', 'suf.', 'n.&vt.', 'n./int.', 'det./ord.',\
+            'det./adj.', 'adv./pron.', 'conj./prep.', 'vt.& vi.', 'n./det.', 'adj./adv.', 'adj.& adv.', 'symb.', 'n.& int.',\
+            'vi.& n.', 'pref.', 'prep./conj.', 'v．', 'adj./n.', 'modal', 'comb.', 'color', 'short', 'ord.', 'num.',\
+            'adj./int.', 'v./aux.', 'adj.& n.', 'det./pron.', 'n./adv.', 'det.', 'n./v.', 'conv.', 'prep.& adv.', \
+            'adv./prep./conj.', 'vi.', 'vt.', 'prep.', 'adv./prep.', 'n./adj.', 'abbr.', 'art.', 'aux.', 'conj.', \
+            'int./n.', 'int.', 'adv.', 'adj.', 'pron.', 'adj./pron.', 'v.', 'n.', 'other']
 
     return key in attributes
 
