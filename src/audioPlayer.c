@@ -1,6 +1,8 @@
 #include "common.h"
 #include <gst/gst.h>
 #include <glib.h>
+#include "newWindow.h"
+#include "audio.h"
 
 #define status(who) ( ( who ) == BAIDU ? ( ONLINE ) : ( OFFLINE ) )
 #define audio(type)  ( ( type ) == ONLINE ? ( url_online ) : ( url_offline ) )
@@ -10,6 +12,12 @@ int audioShow = -1;
 
 extern char *baidu_result[BAIDUSIZE]; /* For Phonetic*/
 extern char *mysql_result[BAIDUSIZE]; /* For Phonetic*/
+
+extern char audioOnline_en[512];
+extern char audioOnline_uk[512];
+
+extern char audioOffline_en[512];
+extern char audioOffline_uk[512];
 
     static gboolean
 bus_call (GstBus     *bus,
@@ -160,81 +168,60 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd,
     GtkWidget *button = newVolumeBtn();
 
     int charNum = countCharNums ( Phonetic(type) );
-    //int charNum = countCharNums ( SourceInput );
-    printf("\033[0;35mPhonetic charNum = %d \033[0m\n", charNum);
+    pbgreen("Phonetic charNum = %d \n", charNum);
 
 
     int posx = 0;
     int x = charNum;
 
     /* 三次函数拟合字符长度和按钮位置之间的关系*/
-    posx = (int)(-0.0111945 * x*x*x  + 0.667037 * x*x -0.0414765*x + 70.975);
-    //if ( charNum <= 12 )
-    //    x = charNum * 14;
-    //else
-    //    x = charNum * 12;
+    posx = (int)(-9.33984e-06 * x*x*x  + 0.0567975 * x*x + 9.23914 *x + 40.5852 );
+
+    pbgreen("pos.x=%d", posx);
+
+    if ( charNum == 0 ) {
+        pbred("charNum == 0, set posx to (wd->width)-rightBorderOffset");
+        posx = wd->width - RIGHT_BORDER_OFFSET;
+    }
 
     g_signal_connect ( button, "clicked", G_CALLBACK(mp3play), &wd->who );
 
-    printf("\033[0;34m重绘窗口 \033[0m\n");
-
-#if 0
-
-    /* 必须要注意，窗口实现后调用realized函数才能返回非空值
-     * 不在这个前提下获取GdkWindow是不可能的, 一般在gtk widget
-     * show all 后才算实例化(猜测)*/
-
-    if ( ! gtk_widget_get_realized ( wd->window ) ) {
-
-        gtk_widget_set_realized ( wd->window , TRUE );
-    }
-
-    if ( ! wd->gdkwin ) {
-        //wd->gdkwin = gtk_widget_get_window ( wd->scroll );
-        wd->gdkwin = gtk_text_view_get_window ( GTK_TEXT_VIEW(wd->view), GTK_TEXT_WINDOW_WIDGET );
-
-    }
-#endif
-
-    //    if ( bw.width <= gw.width && bw.height <= gw.height ){
-    //
-    //        printf("\033[0;35m百度窗口小于谷歌,不需要重设窗口 \033[0m\n");
-    //
-    //        /* 注释代码先不要删除，后面可能还需要*/
-    //
-    //        /* 超出窗口了*/
-    //        //if ( x + 30 > gw.width )
-    //        //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
-    //        gtk_layout_put ( (GtkLayout*)layout, button, posx, 40 );
-    //        //else {
-    //
-    //        //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
-    //        //}
-    //    }
-    //    else
-    //    {
-    //printf("\033[0;35m百度窗口大于谷歌，需要调整 \033[0m\n");
-    //printf("\033[0;35m百度:%f %f 谷歌: %f %f \033[0m\n", bw.width, bw.height, gw.width, gw.height);
-    //printf("\033[0;31m播放按钮坐标:%d \033[0m\n", posx);
-
-    /* 超出窗口了*/
-    //if ( x + 30 > bw.width )
-    //gtk_layout_put ( (GtkLayout*)layout, button, posx, 218 - wd->lineHeight * 10 );
-    //else 
-    //gtk_layout_put ( (GtkLayout*)layout, button, posx,  218 - wd->lineHeight * 10);
     gtk_layout_put ( (GtkLayout*)layout, button, posx,  40 );
-    //gtk_window_resize ( (GtkWindow*)window, bw.width, bw.height );
-    //}
-
-    gtk_widget_queue_draw( window );
-
-    printf("\033[0;34m重绘窗口完成 \033[0m\n");
-
-    /* 设置透明度*/
     gtk_widget_set_opacity ( button, 0.7 );
 
     /* 一定要用这句, 不然新建的播放按钮不显示*/
     gtk_widget_show_all ( window );
 
     return button;
+}
+
+void syncVolumeBtn ( WinData *wd, int type ) {
+
+    /* 含音标，添加播放按钮*/
+    if ( strlen ( Phonetic(type) ) != 0) {
+
+        GtkWidget *volume =  ((WinData*)wd)->volume;
+
+        if ( volume == NULL ) {
+
+            bw.audio_online[0] = audio_en(ONLINE);
+            bw.audio_online[1] = audio_uk(ONLINE);
+
+            bw.audio_offline[0] = audio_en(OFFLINE);
+            bw.audio_offline[1] = audio_uk(OFFLINE);
+
+            ((WinData*)wd)->volume = insertVolumeIcon(((WinData*)wd)->window, ((WinData*)wd)->layout, ((WinData*)wd), type);
+        }
+        else {
+
+            gtk_widget_show ( volume );
+        }
+
+    } 
+    else {
+
+        if ( WINDATA(wd)->volume )
+            gtk_widget_hide ( WINDATA(wd)->volume   );
+    }
+
 }
