@@ -10,7 +10,6 @@ extern char audioOnline_en[512];
 extern char audioOnline_uk[512];
 extern char audioOffline_en[512];
 extern char audioOffline_uk[512];
-extern int show;
 
 gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data ) {
 
@@ -28,10 +27,12 @@ gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data ) {
     }
 
     if ( event->keyval == GDK_KEY_space ) {
-        g_print ("Press Space\n");
+        g_print ("Press Space (keyPress.c)\n");
 
-        if ( (strlen(audioOnline_en)==0 && strlen(audioOnline_uk)==0)  || !show ) {
-            g_print ("No audio\n");
+        if ( (strlen(audioOnline_en)==0 && strlen(audioOnline_uk)==0) \
+                && (strlen(audioOffline_en)==0 && strlen(audioOffline_uk)==0) ) {
+
+            g_print ("No audio (keyPress.c)\n");
             return TRUE;
         }
 
