@@ -37,9 +37,6 @@ char *mysql_result[MYSQLSIZE] = { NULL };
  * 不再检测鼠标动作*/
 int InNewWin = 0;
 
-/* 用于切换百度和谷歌翻译结果的显示, -1和0互为取反运算*/
-int show = -1;
-
 /* 鼠标动作标志位*/
 extern int action;
 
@@ -152,7 +149,6 @@ void *newNormalWindow() {
     gw.height = 300;
 
     focustimes = 1;
-    show = -1;
     InNewWin = 1;
 
     printf("\n准备判断是否新建一般窗口\n\n");
