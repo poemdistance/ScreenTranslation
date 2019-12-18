@@ -103,14 +103,17 @@ def formatData(word, attributes):
             except Exception as e:
                 output += '|';
         else:
-            while isPartOfSpeech(attributes[i]):
-                if attributes[i] == 'other':
-                    output += attributes[i] + '.' + data[attributes[i]] + '|';
-                else:
-                    output += attributes[i] + data[attributes[i]] + '|';
-                
-                pos = pos + 1
-                i= i + 1
+            try:
+                while isPartOfSpeech(attributes[i]):
+                    if attributes[i] == 'other':
+                        output += attributes[i] + '.' + data[attributes[i]] + '|';
+                    else:
+                        output += attributes[i] + data[attributes[i]] + '|';
+                    
+                    pos = pos + 1
+                    i= i + 1
+            except IndexError as e:
+                pass
 
 
     path1 = os.path.expanduser('~')+'/'+'WordMp3/'+str(data['word'])[0]+'/'+str(data['word'])+'_en.mp3'
