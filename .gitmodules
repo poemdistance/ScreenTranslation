@@ -9,6 +9,3 @@
 [submodule "gnome-screenshot"]
 	path = gnome-screenshot
 	url = https://github.com/poemdistance/gnome-screenshot.git
-[submodule "src/BingTran"]
-	path = src/BingTran
-	url = https://github.com/poemdistance/BingTran.git
