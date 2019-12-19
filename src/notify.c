@@ -122,15 +122,9 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
      * 总结: 只要入口图标已经创建就不应该弹出，反之反之, HadDestroied就是入口图标
      *       是否为销毁状态的标志位, 只要是销毁状态，应该弹出
      */
-    if ( HadDestroied ) {
 
+    if ( HadDestroied )
         CanNewEntrance = 1;
-        printf("\033[0;35mCanNewEntrance flag set to 1 \033[0m\n");
-    }
-    else {
-
-        printf("\033[0;35mCanNewEntrance flag is 0 \033[0m\n");
-    }
 
     /*清除鼠标记录*/
     memset(*history, 0, sizeof(*history));

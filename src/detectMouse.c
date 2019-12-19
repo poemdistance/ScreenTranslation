@@ -403,8 +403,8 @@ void *DetectMouse(void *arg) {
         }
 
         printf("\033[0;34m执行百度翻译程序 \033[0m\n");
-        char * const cmd[3] = {"bdtran","-s", (char*)0};
-        if ( execv( "/usr/bin/bdtran", cmd ) < 0) {
+        char * const cmd[3] = {"bing","-s", (char*)0};
+        if ( execv( "/usr/bin/bing", cmd ) < 0) {
             fprintf(stderr, "Execv error (baidu)\n");
             perror("Execv error(baidu):");
             exit(1);

@@ -36,8 +36,6 @@ void readChild() {
 
 int detectTranPicAction () {
 
-    printf("In detectTranPicAction\n");
-
     int count = 0;
     int canShot = 0;
     int lock = 1;
@@ -119,7 +117,7 @@ int detectTranPicAction () {
                     {
                         if ( check_x && abs(root_x-history_x) < 21 ) {
 
-                            printf("第3次点击x距离依旧过小，抛弃\n");
+                            //printf("第3次点击x距离依旧过小，抛弃\n");
                             drop = 1;
                             check_x = 0;
                             continue;
@@ -127,26 +125,26 @@ int detectTranPicAction () {
 
                         if ( check_y && abs(root_y-history_y) < 21 ) {
 
-                            printf("第3次点击y距离依旧过小，抛弃\n");
+                            //printf("第3次点击y距离依旧过小，抛弃\n");
                             drop = 1;
                             check_y = 0;
                             continue;
                         }
 
                         if ( abs(root_x-history_x) < 21 && count == 1 ) {
-                            printf("x距离过小-1\n");
+                            //printf("x距离过小-1\n");
                             check_x = 1;
                         }
 
                         if ( abs(root_y-history_y) < 21 && count == 1 ) {
 
-                            printf("y距离过小-1\n");
+                            //printf("y距离过小-1\n");
                             check_y = 1;
                         }
 
 
                         if ( abs ( time1 - lastTime ) > TIMEOUT ) {
-                            printf("超时抛弃\n");
+                            //printf("超时抛弃\n");
                             drop = 1;
                             continue;
                         }

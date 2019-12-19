@@ -64,7 +64,6 @@ void separateDataForBaidu(int *index, int len, int type) {
         if ( strcmp ( tmp, SourceInput(type) ) != 0 ) {
 
             strcat ( SourceInput(type), tmp );
-            pbgreen("SourceText:%s<", text);
             adjustStrForBaidu(len, SourceInput(type), 0, 0);
         }
     }
@@ -90,7 +89,6 @@ void separateDataForBaidu(int *index, int len, int type) {
         count = 0;
         while ( count <  shmaddr[n] - '0') 
         {
-
             strcat ( result[n],  &shmaddr[index[i++]]);
             strcat ( result[n], "\n");
 
@@ -317,14 +315,12 @@ int getLinesOfGoogleTrans ( int *index ) {
 void separateGoogleDataSetWinSize ( int *index ) {
 
     if ( index[0] == 0 ) {
-        printf("\033[0;31m索引首值为0，无数据(Google in separateGoogleDataSetWinSize) \033[0m\n");
+        printf("\033[0;31m索引首值为0，无数据(separateGoogleDataSetWinSize) \033[0m\n");
         return;
     }
 
     int lines = 0;
     int maxlen = 0;
-
-    printf("\n\033[0;35m原始数据>>%s \033[0m\n", &shmaddr_google[ACTUALSTART]);
 
     /*主要完成步骤:加入回车符使单行句子不至于太长*/
     if ( shmaddr_google[0]  != ERRCHAR ) {
@@ -348,17 +344,15 @@ void separateGoogleDataSetWinSize ( int *index ) {
         if ( maxlen > 28 )
             maxlen = 28;
 
-        printf("\033[0;33m(谷歌数据分离窗口调整) maxlen=%d lines=%d\033[0m\n\n", maxlen,lines);
+        pbyellow("(谷歌数据分离窗口调整) maxlen=%d lines=%d\n", maxlen,lines);
 
         /*存于全局变量*/
         gw.width = 15 * maxlen + 40;
         gw.height = lines * 28 + 45;
-
-        printf("\033[0;33m(separadata.c)gw.width=%f, gw.height=%f \033[0m\n", gw.width, gw.height);
     }
     else  {
         shmaddr_google[0] = CLEAR;
-        strcpy(google_result[0], "翻译超时或出现其他错误|");
+        strcpy(google_result[0], "翻译超时或出现其他错误");
         lines = 2;
 
         gw.width = 250;

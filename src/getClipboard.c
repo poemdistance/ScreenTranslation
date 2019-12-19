@@ -35,13 +35,10 @@ void show_utf8_prop(Display *dpy, Window w, Atom p, char *text)
     XGetWindowProperty(dpy, w, p, 0, size, False, AnyPropertyType,
             &da, &di, &dul, &dul, &prop_ret);
 
-    fprintf(stdout, "\n正在复制剪贴板内容\n");
-
     /*TODO:如果是截图的时候发送了Ctrl-C到了这里会崩溃掉
      * 应该在判断聚焦窗口的时候排除掉截图软件*/
     strcpy(text, (char*)prop_ret);
 
-    fprintf(stdout, "复制完成\n\n");
     XFree(prop_ret);
 
     /* Signal the selection owner that we have successfully read the

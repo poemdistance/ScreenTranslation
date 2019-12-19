@@ -24,10 +24,10 @@
 
 #define PRINT_WHO(who) \
     if(who==BAIDU){\
-        printf("  BAIDU\n");\
+        pbblue("--- BAIDU\n");\
     }\
     else {\
-        printf(" OFFLINE\n");}
+        pbblue("--- OFFLINE\n");}
 
 char *baidu_result[BAIDUSIZE] = { NULL };
 char *google_result[GOOGLESIZE] = { NULL };
@@ -150,8 +150,6 @@ void *newNormalWindow() {
 
     focustimes = 1;
     InNewWin = 1;
-
-    printf("\n准备判断是否新建一般窗口\n\n");
 
     /* 窗口打开标志位 changed in captureShortcutEvent.c <变量shmaddr>*/
     shmaddr_keyboard[WINDOW_OPENED_FLAG] = '1';
@@ -365,9 +363,10 @@ void getIndex(int *index, char *addr) {
         if ( *p == '|' ) 
         {
             *p = '\0';
-            if ( addr == shmaddr_google && charNum >= 2 ) /*截取到第三个分隔符*/ {
+
+            /*截取到第三个分隔符*/
+            if ( addr == shmaddr_google && charNum >= 2 )
                 break;
-            }
 
             index[charNum++] = i + 1; /*记录字符串下标*/
         }
@@ -460,10 +459,6 @@ int waitForContinue(WinData *wd) {
 /* 重新从共享内存获取百度翻译结果并设置窗口大小*/
 void reGetBaiduTransAndSetWin (gpointer *data, int who ) { 
 
-    pred("重新从共享内存获取百度翻译数据");
-
-    PRINT_WHO(who);
-
     int index[13] = { 0 };
 
     getIndex(index, SHMADDR(who) );
@@ -479,7 +474,6 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     {
         int index[2] = { 0 };
 
-        pred("谷歌翻译重新索引 index:");
         getIndex(index, shmaddr_google);
 
         /* 找到分割符，数据分离提取才有意义*/
@@ -508,23 +502,16 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     {
         /*还未获取到结果，应重新获取并设置窗口大小*/
         if ( strlen ( ZhTrans(TYPE(who)) ) == 0) {
-
-            pred("百度翻译结果长度为0 (adjustWinSize)\n");
             reGetBaiduTransAndSetWin ( data, who );
         }
 
         /*如果新窗口的宽高都小于上一个的，不调整窗口大小*/
         if (  WIDTH(who) <= WINDATA(data)->width && HEIGHT(who) <= WINDATA(data)->height ) {
-
-            pgreen("应设窗口小于当前，不必调整\n");
             return;
         }
-
-        pcyan("WIDTH(who)=%f %f\n", WIDTH(who), HEIGHT(who));
     }
 
     WINDATA(data)->specific = 1;
-    pbred("Call sync window funciton");
     syncNormalWinForConfigEvent( WINDATA(data)->window, NULL, data );
 }
 
@@ -553,6 +540,8 @@ void changeDisplay(GtkWidget *button, gpointer *data) {
 
 void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 
+    pyellow("\n显示谷歌翻译结果:\n\n");
+
     WINDATA(data)->who = GOOGLE;
     WINDATA(data)->specific = 1;
 
@@ -569,8 +558,6 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
     pbyellow("current indicate size %d %d",width, height );
     gtk_window_get_size((GtkWindow*)WINDATA(data)->window, &width, &height);
     pbyellow("current window size: %d %d", width, height);
-
-    pyellow("\n显示谷歌翻译结果:\n\n");
 
     if ( WINDATA(data)->volume != NULL )
         gtk_widget_hide ( WINDATA(data)->volume  );
@@ -621,8 +608,6 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
         pgreen("字符串依然相等, 不必调整");
     }
 
-    pred("Call syncImageSize in disGoogle \n");
-
     /* mark*/
     syncImageSize ( WINDATA(data)->window, WINDATA(data)->width,WINDATA(data)->height,  data) ;
 
@@ -638,7 +623,6 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
         //gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
     }
 
-    pyellow("displayGoogleTrans: \n");
     /*插入翻译结果*/
     for ( int i=0; i<3; i++ ) {
 
@@ -998,8 +982,6 @@ void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter) {
 
 void printDebugInfo() {
 
-    pcyan("(In printDebugInfo) \n");
-
     pcyan("Finish标志位: %c", shmaddr_baidu[0]);
     pcyan("Phonetic(ONLINE)标志位: %c", shmaddr_baidu[1]);
     pcyan("Numbers of zhTrans标志位: %c", shmaddr_baidu[2]);
@@ -1017,7 +999,6 @@ void printDebugInfo() {
     pcyan("离线翻译结果: %s\n", &shmaddr_mysql[ACTUALSTART]);
     pcyan("百度翻译结果: %s\n", &shmaddr_baidu[ACTUALSTART]);
     pcyan("谷歌翻译结果: %s\n", &shmaddr_google[ACTUALSTART]);
-    pcyan("(out printDebugInfo) ");
 }
 
 /*当窗口大小被鼠标改变时进行窗口重绘以及自动调整switch button位置*/
@@ -1028,23 +1009,16 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
 
     gtk_window_get_size ( (GtkWindow*)window, &width, &height );
 
-    pbred("current indicate size: %d %d (syncNormalWinForConfigEvent) ",\
-            WINDATA(data)->width,WINDATA(data)->height );
-
     if (WINDATA(data)->width <= width &&  WINDATA(data)->height <= height)
         WINDATA(data)->specific = 0;
 
     /* 窗口大小未改变不用重新调整布局,直接返回*/
     if ( lastwidth == width && lastheight == height && !WINDATA(data)->specific){
-        printf("Not change\n");
         return;
     }
 
-    pred("changed");
-
     /* 指定窗口大小时*/
     if ( WINDATA(data)->specific ) {
-        pbred("specific");
         width = WINDATA(data)->width;
         height = WINDATA(data)->height;
 
@@ -1091,21 +1065,17 @@ void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
     int maxlen = 0;
     int lines = 0;
 
-    pmag("In setWinSizeForNormalWin");
-
     if ( addr == shmaddr_baidu || addr == shmaddr_mysql) {
 
         maxlen = getMaxLenOfBaiduTrans ( type );
         lines = getLinesOfBaiduTrans ( type );
 
-        pred("maxlen=%d lines=%d \n", maxlen, lines);
+        pbred("maxlen=%d lines=%d \n", maxlen, lines);
 
         double width, height;
 
         width = maxlen * 15.6 + 42;
         height = lines * 24 + 50;
-
-        pmag("width=%f height=%f <In setWinSizeForNormalWin 1>", width, height);
 
         /*别让窗口过小*/
         if ( width < 400 ) {
@@ -1114,9 +1084,6 @@ void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
 
         if ( height < 300 )
             height = 300;
-
-        pmag("width=%f height=%f <In setWinSizeForNormalWin 1.1>", width, height);
-
 
         if ( WIDTH(WHO(addr)) > 1000 )
             width = 1000;
@@ -1139,11 +1106,6 @@ void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
             WINDATA(window)->specific = 1;
 
         return;
-    } 
-
-    /* mark1*/
-    else if ( addr == shmaddr_google ) 
-    {
     }
 }
 
