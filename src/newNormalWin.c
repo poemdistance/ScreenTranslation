@@ -459,7 +459,7 @@ int waitForContinue(WinData *wd) {
 /* 重新从共享内存获取百度翻译结果并设置窗口大小*/
 void reGetBaiduTransAndSetWin (gpointer *data, int who ) { 
 
-    int index[13] = { 0 };
+    int index[INDEX_SIZE] = { 0 };
 
     getIndex(index, SHMADDR(who) );
     separateDataForBaidu(index, 28, TYPE(who) );

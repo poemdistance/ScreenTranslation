@@ -3,6 +3,8 @@
 
 #include "windowData.h"
 
+#define INDEX_SIZE (30)
+
 GtkWidget *syncImageSize ( GtkWidget *window, gint width, gint height, gpointer *data ) ;
 
 GtkWidget *newBaiduButton ( WinData *win );
