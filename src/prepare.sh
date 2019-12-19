@@ -77,6 +77,10 @@ sudo pip3 install -r requirements.txt
 sudo ./setup.py install
 sudo pip3 install  mysql-connector-python
 
+cd ../BingTran
+sudo pip3 install -r requirements.txt
+sudo ./setup.py install
+
 system=`uname -a`
 if [[ $system =~ .*"deepin".* ]]; then
     sudo apt install gnome-screenshot
