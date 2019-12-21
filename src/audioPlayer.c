@@ -3,9 +3,9 @@
 #include <glib.h>
 #include "newWindow.h"
 #include "audio.h"
-
-#define status(who) ( ( who ) == BAIDU ? ( ONLINE ) : ( OFFLINE ) )
-#define audio(type)  ( ( type ) == ONLINE ? ( url_online ) : ( url_offline ) )
+#include "calibration.h"
+#include "fitting.h"
+#include "expanduser.h"
 
 /* 用于切换英音和美音*/
 int audioShow = -1;
@@ -54,7 +54,7 @@ bus_call (GstBus     *bus,
     return TRUE;
 }
 
-int mp3play (GtkWidget *button, gpointer *data)
+gboolean mp3play (GtkWidget *button, gpointer *data)
 {
 
     int type = *(int *)data;
@@ -94,7 +94,7 @@ int mp3play (GtkWidget *button, gpointer *data)
     else if ( type == OFFLINE )
         source   = gst_element_factory_make ("filesrc",       "file-source");
     else
-        return -1;
+        return FALSE;
 
     parser  = gst_element_factory_make ("mpegaudioparse", "mp3-parser");
     decoder  = gst_element_factory_make ("mpg123audiodec", "mp3-decoder");
@@ -105,11 +105,11 @@ int mp3play (GtkWidget *button, gpointer *data)
 
     if (!pipeline || !source || !parser || !decoder || !conv || !sink ) {
         g_printerr ("One element could not be created. Exiting.\n");
-        return -1;
+        return FALSE;
     }
 
     /*This work well with souphttpsrc, we set the input url to the source element */
-    g_object_set (G_OBJECT (source), "location", audio(status(((WinData*)data)->who)), NULL);
+    g_object_set (G_OBJECT (source), "location", AUDIO(TYPE(((WinData*)data)->who)), NULL);
 
     /* we add a message handler */
     bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
@@ -144,13 +144,13 @@ int mp3play (GtkWidget *button, gpointer *data)
     g_source_remove (bus_watch_id);
     g_main_loop_unref (loop);
 
-    return 0;
+    return TRUE;
 }
 
-GtkWidget* newVolumeBtn () 
+GtkWidget* newAudioButton () 
 {
     GtkWidget *button = gtk_button_new ( );
-    GdkPixbuf *src = gdk_pixbuf_new_from_file ( "/home/rease/.stran/volume.png" , NULL);
+    GdkPixbuf *src = gdk_pixbuf_new_from_file ( expanduser("/home/$USER/.stran/audio.png") , NULL);
     GdkPixbuf *dst = gdk_pixbuf_scale_simple ( src, 20, 20, GDK_INTERP_BILINEAR );
 
     GtkWidget *image = gtk_image_new_from_pixbuf ( dst );
@@ -163,20 +163,64 @@ GtkWidget* newVolumeBtn ()
     return button;
 }
 
-GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd, int type ) 
+int getAudioButtonPositionX ( int x ) {
+
+    char *file = expanduser("/home/$USER/.stran/"AUDIO_BASE_NAME".func");
+    double a, b, c, d;
+
+    genFitFunc ( AUDIO_BASE_NAME );
+    if ( notExist ( file ) ) {
+        pbred ( "Fitting function file not found (audioPlayer)" );
+        return 350;
+    }
+    getFitFunc ( file, &a, &b, &c, &d);
+    return (int)(a * x*x*x  + b * x*x + c *x + d );
+}
+
+int getAudioButtonPositionY ( ) {
+
+    char *file = expanduser("/home/$USER/.stran/"AUDIO_BASE_NAME".data");
+
+    char awkCmd[] = "awk '{sum+=$3} END {print sum/NR}'";
+    char cmd[1024] = { '\0' };
+    char buf[10] = { '\0' };
+
+    strcat ( cmd, "cat " );
+    strcat ( cmd, file );
+    strcat ( cmd, "|" );
+    strcat ( cmd, awkCmd );
+
+    FILE *fp = popen ( cmd , "r");
+    if ( ! fp ) {
+        pbred ( "Pipe open failed (getAudioButtonPositionY)" );
+        return 40;
+    }
+
+    if ( fread ( buf, sizeof( buf ), sizeof(char), fp ) < 0 ) {
+        pbred ( "fread error (getAudioButtonPositionY)" );
+        return 40;
+    }
+
+    int yPostion = 0;
+    sscanf(buf, "%d", &yPostion);
+
+    pclose ( fp );
+
+    return yPostion == 0 ? 40 : yPostion;
+}
+
+GtkWidget * insertAudioIcon( GtkWidget *window, GtkWidget *layout, WinData *wd, int type ) 
 {
-    GtkWidget *button = newVolumeBtn();
+    GtkWidget *button = newAudioButton();
 
     int charNum = countCharNums ( Phonetic(type) );
-    pbgreen("Phonetic charNum = %d \n", charNum);
+    pbgreen("Phonetic charNum = %d", charNum);
 
 
     int posx = 0;
-    int x = charNum;
 
     /* 三次函数拟合字符长度和按钮位置之间的关系*/
-    posx = (int)(-9.33984e-06 * x*x*x  + 0.0567975 * x*x + 9.23914 *x + 40.5852 );
-
+    posx = getAudioButtonPositionX(charNum);
     pbgreen("pos.x=%d", posx);
 
     if ( charNum == 0 ) {
@@ -184,9 +228,9 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd,
         posx = wd->width - RIGHT_BORDER_OFFSET;
     }
 
-    g_signal_connect ( button, "clicked", G_CALLBACK(mp3play), &wd->who );
+    listenRelativeEvent ( button, wd );
 
-    gtk_layout_put ( (GtkLayout*)layout, button, posx,  40 );
+    gtk_layout_put ( (GtkLayout*)layout, button, posx,  getAudioButtonPositionY() );
     gtk_widget_set_opacity ( button, 0.7 );
 
     /* 一定要用这句, 不然新建的播放按钮不显示*/
@@ -195,14 +239,14 @@ GtkWidget * insertVolumeIcon( GtkWidget *window, GtkWidget *layout, WinData *wd,
     return button;
 }
 
-void syncVolumeBtn ( WinData *wd, int type ) {
+void syncAudioBtn ( WinData *wd, int type ) {
 
     /* 含音标，添加播放按钮*/
     if ( strlen ( Phonetic(type) ) != 0) {
 
-        GtkWidget *volume =  ((WinData*)wd)->volume;
+        GtkWidget *audio =  ((WinData*)wd)->audio;
 
-        if ( volume == NULL ) {
+        if ( audio == NULL ) {
 
             bw.audio_online[0] = audio_en(ONLINE);
             bw.audio_online[1] = audio_uk(ONLINE);
@@ -210,18 +254,25 @@ void syncVolumeBtn ( WinData *wd, int type ) {
             bw.audio_offline[0] = audio_en(OFFLINE);
             bw.audio_offline[1] = audio_uk(OFFLINE);
 
-            ((WinData*)wd)->volume = insertVolumeIcon(((WinData*)wd)->window, ((WinData*)wd)->layout, ((WinData*)wd), type);
+            ((WinData*)wd)->audio = insertAudioIcon(((WinData*)wd)->window, ((WinData*)wd)->layout, ((WinData*)wd), type);
+
+            wd->ox = getAudioButtonPositionX( countCharNums ( Phonetic(type) ) );
+            wd->oy = getAudioButtonPositionY() ;
         }
         else {
 
-            gtk_widget_show ( volume );
+            gtk_layout_move ( GTK_LAYOUT (wd->layout), wd->audio,\
+                    getAudioButtonPositionX( countCharNums ( Phonetic(type) ) ), \
+                    getAudioButtonPositionY() );
+
+            gtk_widget_show ( audio );
         }
 
     } 
     else {
 
-        if ( WINDATA(wd)->volume )
-            gtk_widget_hide ( WINDATA(wd)->volume   );
+        if ( WINDATA(wd)->audio )
+            gtk_widget_hide ( WINDATA(wd)->audio   );
     }
 
 }
