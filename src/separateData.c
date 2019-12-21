@@ -359,5 +359,8 @@ void separateGoogleDataSetWinSize ( int *index ) {
         gw.height = gw.width * 0.618 + 45;
         maxlen = 12;
     }
+
+    gw.lines = lines;
+    gw.maxlen = maxlen;
 }
 
