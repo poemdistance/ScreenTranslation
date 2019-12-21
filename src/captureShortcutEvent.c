@@ -173,7 +173,6 @@ void captureShortcutEvent(int socket) {
             gettimeofday ( &time, NULL );
             lasttime = (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3;
             AltPress = 1;
-            printf("AltPress\n");
         }
 
         if ( !CtrlPress && ( ev.code == KEY_LEFTCTRL || ev.code == KEY_RIGHTCTRL) )
