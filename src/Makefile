@@ -9,7 +9,8 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
 		  keyPressEvent.o quickSearch.o findKeyboardDevice.o\
 		  captureShortcutEvent.o  searchWindow.o tranSelect.o isEmpty.o \
-		  tranPicActionDetect.o memoryControl.o
+		  tranPicActionDetect.o memoryControl.o calibration.o fitting.o \
+		  expanduser.o
 
 MONNITOR = StranMonitor.o
 
