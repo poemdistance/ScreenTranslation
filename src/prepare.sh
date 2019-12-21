@@ -5,14 +5,16 @@ bash stop.sh
 #复制文件到家目录
 storage="$HOME/.stran"
 currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.png"\ 
-    "../gif_pic/volume.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"\
-    "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh");
+    "../gif_pic/audio.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"\
+    "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh"\
+    "../gif_pic/calibration.jpg" "../data/audioButtonPosition.data" "buttonPositionDataCtl.sh");
 
 declare -i len
 len=${#currFile[*]}-1
 
 echo 'Copying resources...'
 mkdir $storage
+mkdir $storage/pic
 echo
 for i in $(seq 0 $len)
 do
@@ -22,24 +24,7 @@ done
 git submodule foreach git pull origin master
 sudo pip3 install  mysql-connector-python
 
-#修改资源文件路径以适应当前用户
-needChangFile=("background.c" "GuiEntrance.c" "audioPlayer.c" "Mstran.desktop" "switchButton.c" "debug.c")
-len=${#needChangFile[@]}-1
-src="/home/rease"
-dst=$HOME
-
-echo
-
-for i in $(seq 0 $len)
-do
-
-    sed -i "s~${src}~${dst}~g" ${needChangFile[i]}
-    echo "Changing ${needChangFile[i]} to adapt the current user successful"
-
-done
-
-echo 'Modify the connect user of mariadb'
-sed -i "s/rease/$USER/g" ./fetchDict
+sed -i "s/\$USER/$USER/g" Mstran.desktop
 
 #复制启动图标，创建日志文件,修改读写权限
 sudo cp Mstran.desktop /usr/share/applications/ -v
