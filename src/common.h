@@ -64,6 +64,7 @@
 
 #define BAIDU (3)
 #define GOOGLE (2)
+#define MYSQL (1)
 
 #define OFFLINE (1)
 #define ONLINE (2)

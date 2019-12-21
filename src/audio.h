@@ -3,13 +3,17 @@
 
 #include "windowData.h"
 
+#define AUDIO_BASE_NAME "audioButtonPosition"
+#define WIN_SIZE_BASE_NAME "winSizeInfo"
+
 int mp3play (GtkWidget *button, gpointer *data);
 
-GtkWidget* newVolumeBtn () ;
+GtkWidget* newAudioBtn () ;
 
-GtkWidget* insertVolumeIcon\
+GtkWidget* insertAudioIcon\
         ( GtkWidget *window, GtkWidget *layout, WinData *wd, int type ) ;
 
-void syncVolumeBtn ( WinData *wd, int type );
+void syncAudioBtn ( WinData *wd, int type );
+int getButtonPosition ( int x );
 
 #endif

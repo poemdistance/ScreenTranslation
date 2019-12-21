@@ -13,6 +13,9 @@ GtkWidget *newOfflineButton ( WinData *win );
 GtkWidget *newIndicateButton ( WinData *win );
 GtkWidget *newGoogleButton ( WinData *win );
 
+void insertCalibrationButton( WinData *win );
+
+
 extern char *text;
 
 
@@ -77,5 +80,6 @@ void separateGoogleDataSetWinSize ( int *index_google );
 int countLines ( int len, char *source );
 int countCharNums ( char *source );
 int adjustStrForScrolledWin(int len, char *source);
+
 
 #endif
