@@ -4,6 +4,7 @@ from mysql import connector
 from mysql.connector import errorcode
 from termcolor import cprint
 import sysv_ipc as ipc
+import getpass
 import readline
 import warnings
 import os
@@ -32,7 +33,7 @@ def isPartOfSpeech(key):
 def fetchWord(word, attributes):
 
     cnx = connector.connect(
-            user='rease',
+            user=getpass.getuser(),
             password='',
             host='127.0.0.1',
             database='dict',
