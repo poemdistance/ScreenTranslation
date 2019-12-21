@@ -1,12 +1,13 @@
 #include "common.h"
 #include "windowData.h"
+#include "expanduser.h"
 
 GtkWidget * getBackground( gint width, gint height, WinData *wd  ) 
 {
     /* 类似于这样的图片比较大，可以提前加载完成，不过意义不大，
      * 因为翻译结果的获取才是最慢的那个*/
     if ( wd->srcBackgroundImage == NULL )
-        wd->srcBackgroundImage = gdk_pixbuf_new_from_file ( "/home/rease/.stran/background.jpg" , NULL);
+        wd->srcBackgroundImage = gdk_pixbuf_new_from_file ( expanduser("/home/$USER/.stran/background.jpg") , NULL);
 
     GdkPixbuf *dst = gdk_pixbuf_scale_simple ( wd->srcBackgroundImage, width, height, GDK_INTERP_BILINEAR  );
 

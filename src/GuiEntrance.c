@@ -3,6 +3,7 @@
  *  创建翻译入口图标*/
 
 #include "common.h"
+#include "expanduser.h"
 
 extern char *shmaddr_google;
 extern char *shmaddr_searchWin;
@@ -94,7 +95,7 @@ void *GuiEntrance(void *arg) {
     /*TODO:添加文件存在性检测*/
     /*添加图标*/
 
-    GdkPixbuf *src = gdk_pixbuf_new_from_file("/home/rease/.stran/tran.png", NULL);
+    GdkPixbuf *src = gdk_pixbuf_new_from_file(expanduser("/home/$USER/.stran/tran.png"), NULL);
     GdkPixbuf *dst = gdk_pixbuf_scale_simple(src, 30, 30, GDK_INTERP_BILINEAR);
     GtkWidget *image = gtk_image_new_from_pixbuf(dst);
 
