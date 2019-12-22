@@ -5,30 +5,52 @@
 #include <unistd.h>
 #include "expanduser.h"
 
+#define SET_DEAULT_PARAS( forWhich, a, b, c, d ) \
+    \
+    if ( forWhich == FOR_AUDIO_BUTTON ) {\
+        *(double*)a=0.00049532,\
+        *(double*)b=0.0315346,\
+        *(double*)c=9.60549,\
+        *(double*)d=39.2648;\
+    } \
+    else if ( forWhich == FOR_WIN_WIDTH ){\
+        *(double*)a=0,\
+        *(double*)b=0,\
+        *(double*)c=15.6,\
+        *(double*)d=42;\
+    }\
+    else if ( forWhich == FOR_WIN_HEIGHT ) {\
+        *(double*)a=0,\
+        *(double*)b=0,\
+        *(double*)c=24,\
+        *(double*)d=50;\
+    }
+
 int notExist ( char *path ) {
 
     return access ( path, F_OK ) != 0;
 }
 
 /* Get the fitting function parameters stored in 'path'*/
-int getFitFunc(char *path, double *a, double *b, double *c, double *d) {
+int getFitFunc(char *path, int forWhich, double *a, double *b, double *c, double *d) {
 
     FILE *fp = fopen ( path, "r" );
     if ( ! fp ) {
         printf("Open file failed (getFitFunc)\n");
 
         /* 未获取到参数值，使用默认值*/
-        *a=0.00049532, *b=0.0315346, *c=9.60549, *d=39.2648;
+        SET_DEAULT_PARAS ( forWhich, a,b,c,d );
         return 1;
     }
 
     fscanf(fp, "a=%lf\nb=%lf\nc=%lf\nd=%lf", a, b, c, d);
+    pbgreen ( "%s", path );
     pbyellow ( "%lf %lf %lf %lf", *a, *b, *c, *d );
 
     /* 数据获取为空时，使用默认值*/
     if ( *a <= 0.000001 && *b <= 0.000001 && *c <= 0.000001 && *d<= 0.000001 ) {
         pbred ( "拟合函数参数读取错误(全为0)" );
-        *a=0.00049532, *b=0.0315346, *c=9.60549, *d=39.2648;
+        SET_DEAULT_PARAS ( forWhich, a,b,c,d );
     }
 
     if ( fp )
@@ -53,9 +75,7 @@ void genFitFunc ( char *name ) {
     };
 
     char cmd[1024]  = { '\0' };
-    strcat ( path, base );
-    strcat ( path, name );
-    strcat ( path, ".data" );
+    strcat ( strcat ( strcat ( path, base ), name), ".data");
 
     if ( notExist ( path )) {
         pbred ( "%s not exist", path );

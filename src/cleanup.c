@@ -1,13 +1,10 @@
 #include "common.h" 
 #include "cleanup.h"
+#include "newWindow.h"
+#include "memoryControl.h"
 
-extern char *shmaddr_google;
-extern char *shmaddr_baidu;
 extern char *shmaddr_selection;
 extern char *shmaddr_searchWin;
-extern char *shmaddr_keyboard;
-extern char *shmaddr_mysql;
-extern char *shmaddr_pic;
 
 extern int shmid_google;
 extern int shmid_baidu;
@@ -16,10 +13,6 @@ extern int shmid_searchWin;
 extern int shmid_keyboard;
 extern int shmid_mysql;
 extern int shmid_pic;
-
-extern char *baidu_result[BAIDUSIZE];
-extern char *google_result[GOOGLESIZE];
-extern char *mysql_result[GOOGLESIZE];
 
 extern int mousefd;
 
@@ -45,6 +38,17 @@ int hadCleanUp = 0;
  * 之后python翻译程序退出，又接收到SIGCHLD，再被调用一次，最后StranMonitor程序
  * 发送SIGTERM，接收到后又调用一次, 不过影响不大*/
 
+void releaseSharedMemory( char *addr, int shmid, char *comment ) {
+
+    if ( shmdt(addr) < 0)
+        err_exit("shmdt error");
+
+    if (shmctl(shmid, IPC_RMID, NULL) == -1)
+        err_exit("shmctl error");
+    else
+        pbgreen("remove shared memory identifier successful (%s)", comment);
+}
+
 void quit() {
 
     if ( hadCleanUp )
@@ -62,87 +66,18 @@ void quit() {
 
 
     /* TODO:有时候共享内存会清理不成功*/
-
-    /* 清除与谷歌翻译的共享内存*/
-    if ( shmdt(shmaddr_google) < 0)
-        err_exit("shmdt error");
-
-    if (shmctl(shmid_google, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error");
-    else
-        printf("\033[0;32mremove shared memory identifier successful (google)\033[0m\n");
+    releaseSharedMemory(shmaddr_google, shmid_google, "google");
+    releaseSharedMemory(shmaddr_baidu, shmid_baidu, "baidu");
+    releaseSharedMemory(shmaddr_selection, shmid_selection, "selection");
+    releaseSharedMemory(shmaddr_searchWin, shmid_searchWin, "searchWin");
+    releaseSharedMemory(shmaddr_keyboard, shmid_keyboard, "keyboard");
+    releaseSharedMemory(shmaddr_mysql, shmid_mysql, "mysql");
+    releaseSharedMemory(shmaddr_pic, shmid_pic, "pic");
 
 
-
-    /* 清除与百度翻译的共享内存*/
-    if ( shmdt(shmaddr_baidu) < 0)
-        err_exit("shmdt error");
-
-    if (shmctl(shmid_baidu, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error");
-    else
-        printf("\033[0;32mremove shared memory identifier successful (baidu)\033[0m\n");
-
-    /* 清除共享内存*/
-    if ( shmdt(shmaddr_selection) < 0)
-        err_exit("shmdt error");
-
-    if (shmctl(shmid_selection, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error");
-    else
-        printf("\033[0;32mremove shared memory identifier successful (selection)\033[0m\n");
-
-    /* 清除共享内存*/
-    if ( shmdt(shmaddr_searchWin) < 0)
-        err_exit("shmdt error");
-
-    if (shmctl(shmid_searchWin, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error");
-    else
-        printf("\033[0;32mremove shared memory identifier successful (search window)\033[0m\n");
-
-    /* 清除共享内存: keyboard event*/
-    if ( shmdt(shmaddr_keyboard) < 0)
-        err_exit("shmdt error");
-
-    if (shmctl(shmid_keyboard, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error");
-    else
-        printf("\033[0;32mremove shared memory identifier successful (keyboard event)\033[0m\n");
-    
-    /* 清除共享内存: for mysql*/
-    if ( shmdt(shmaddr_mysql) < 0)
-        err_exit("shmdt error <mysql>");
-
-    if (shmctl(shmid_mysql, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error <mysql>");
-    else
-        printf("\033[0;32mremove shared memory identifier successful (mysql)\033[0m\n");
-
-
-    /* 清除共享内存: for pic*/
-    if ( shmdt(shmaddr_pic) < 0)
-        err_exit("shmdt error <pic>");
-
-    if (shmctl(shmid_pic, IPC_RMID, NULL) == -1)
-        err_exit("shmctl error <pic>");
-    else
-        printf("\033[0;32mremove shared memory identifier successful (pic)\033[0m\n");
-
-    /* 释放翻译结果存储空间 <Baidu>*/
-    if ( baidu_result[0] != NULL)
-        for (int i=0; i<BAIDUSIZE; i++)
-            free(baidu_result[i]);
-
-    /* 释放翻译结果存储空间 <Google>*/
-    if ( google_result[0] != NULL)
-        for (int i=0; i<GOOGLESIZE; i++)
-            free(google_result[i]);
-
-    /* 释放翻译结果存储空间 <Mysql>*/
-    if ( mysql_result[0] != NULL)
-        for (int i=0; i<MYSQLSIZE; i++)
-            free(mysql_result[i]);
+    releaseMemoryGoogle();
+    releaseMemoryMysql();
+    releaseMemoryTmp();
 
 
     if ( BAIDU_TRANS_EXIT_FALG != 1 )

@@ -1,5 +1,7 @@
 #include "common.h"
+#include "newWindow.h"
 #include <ctype.h>
+#include "dataStatistics.h"
 
 /*字符串调整函数:
  * 向每超过一定长度的字符串中添加回车字符,避免单行过长
@@ -8,7 +10,7 @@
  * len 为单行所需截取长度
  * storage[] 指针数组，用来存储处理后的字符串
  */
-void adjustStr(char *p[], int len, char *storage[]) {
+void adjustStrForGoogle(char *p[], int len, char *storage[]) {
 
     int nowlen = 0;
     int asciich = 0;
@@ -87,4 +89,163 @@ void adjustStr(char *p[], int len, char *storage[]) {
             }
         }
     }
+}
+
+void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
+
+    int nowlen = 0;
+    int asciich = 0;
+    int prefixLen = 0;
+    int start = 0;
+    int validDot = 1;
+    int cansplit = 0;
+
+    char buf[1024] = { '\0' };
+
+    long int srclen = 0;
+    srclen = strlen(source);
+
+    if ( srclen > 1024 * 1024 ) {
+
+        pbred("源数据过长，临时数组无法容纳");
+        return;
+    }
+
+    char storage[1024*1024] = { '\0' };
+
+    for ( int j=0, k=0; True ; j++, k++ ) 
+    {
+        storage[k] = source[j];
+
+        if ( source[j] == '\0' )
+            break;
+
+        /* 空格为可分割字符，记录下该下标*/
+        if ( source[j] == ' ')
+            cansplit = k;
+
+        if ( source[j] == '\n') {
+
+            validDot = 1;
+            start = j;
+            nowlen = 0;
+            continue;
+        }
+
+        /*语句末有一个结束符号也是点，不是有效点，不能进这个if执行逻辑*/
+        if (addSpace && validDot && source[j] == '.' \
+                && source[j+1] != '\n' && source[j+1] != ' ' ) {
+
+            /* 新前面应该加的空格长度，应连个ascii作一个字符长，因乘2,
+             * start是上一个遇到的回车符的下标*/
+            prefixLen = (j+1-start)*2;
+
+            //printf("\033[0;34mj=%d start=%d prefixLen=%d\033[0m\n", j, start, prefixLen);
+            nowlen = (j-start)/2;
+            validDot = 0;
+
+            //printf("\033[0;32m j=%d start=%d nowlen=%d \033[0m\n\n",j, start, nowlen);
+        }
+
+        /* 单个汉字的最后一个字节*/
+        if ( (((source[j] & 0xff) >> 6) & 0x03) == 2  
+                && (((source[j+1] & 0xff) >> 6) & 0x03) != 2 ) {
+
+            nowlen++;
+
+            /* 汉字可分割，如果下标大于上一个可分割空格字符的，则替换之*/
+            if ( k > cansplit )
+                cansplit = k;
+        }
+
+        /* ascii字符范围*/
+        if ( (source[j]&0xff) < 128 && (source[j]&&0xff >= 0) )
+            asciich++;
+
+        /* 两个ascii码作一个字符长度*/
+        if ( asciich == 2 ) {
+            nowlen++;
+            asciich = 0;
+        }
+
+        if ( nowlen == len ) {
+
+            char nextchar = source[j+1];
+            int forward = 0;
+            int start = 0;
+            int end = 0;
+
+            /* 如果不是数字和字母，直接用回车符切割*/
+            if ( ! (\
+                        (nextchar >= '0' && nextchar <= '9' ) ||\
+                        (nextchar >= 'a' && nextchar <= 'z')  ||\
+                        (nextchar >= 'A' && nextchar <= 'Z')) ) {
+
+                storage[++k] = '\n';
+
+                nowlen = 0;
+            } 
+            else {
+
+                /* 离上一个可分割字符的距离*/
+                int count = k - cansplit;
+                int right = k+1;
+                int left = k;
+
+                /* 如果上一个可分割字符在起点或者离上一个可分割字符超过一行的长度，那么强制分割，并返回for循环*/
+                if ( count > len || cansplit == 0) {
+                    storage[++k] = '\n';
+                    nowlen = 0;
+                    continue;
+                }
+
+                /*分割点前移了，再加回车符使原本已复制好的数据后移，先备份*/
+                strncpy ( buf, &storage[cansplit+1], count );
+                strcat ( buf, "\0" );
+
+                /*后移的数据作为新行，同时其长度为当前新行长度*/
+                nowlen = countCharNums ( buf );
+
+                if ( addSpace ) {
+                    right = right + prefixLen;
+                    end = right; 
+                }
+
+                /*分割点后面原先数据整体后移一个字节*/
+                while ( count-- ) {
+                    storage[right] = storage[left];
+                    right--;
+                    left--;
+                }
+
+                storage[left+1] = '\n';
+
+                k++;
+                start = left + 2;
+                forward = 1;
+            }
+
+            /*pressing*/
+            if ( addSpace ) {
+
+                if ( forward == 1 )
+                    k = start-1;
+
+                int tmp = prefixLen;
+                while(tmp--) {
+                    storage[++k] = ' ';
+                    nowlen++;
+                }
+                //nowlen /= 2;
+                nowlen -= prefixLen/2;
+
+                if ( forward == 1 )
+                    k = end;
+            }
+            continue;
+        }
+    }
+
+    if ( copy )
+        strcpy(source, storage);
 }

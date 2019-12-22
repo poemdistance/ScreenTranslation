@@ -167,6 +167,7 @@ def writeFlags(shm, attributes):
         flagStr += '0'
 
     flagStr += '2'
+    flagStr += '0000'
 
     cprint('Offline Translation flags:'+flagStr, 'blue')
     shm.write ( flagStr, 1 )

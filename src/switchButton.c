@@ -40,7 +40,7 @@ GtkWidget *newOfflineButton ( WinData *win ) {
     g_object_unref ( src );
     g_object_unref ( dst );
 
-    win->offlineButton = button;
+    win->mysqlButton = button;
 
     return button;
 }

@@ -5,10 +5,18 @@
 #include "newWindow.h"
 #include "audio.h"
 #include "cleanup.h"
+#include "fitting.h"
+#include "expanduser.h"
+#include "dataStatistics.h"
+#include "memoryControl.h"
+#include "windowData.h"
+
+typedef void (*Display_func)(GtkWidget *, gpointer *);
 
 char *baidu_result[BAIDUSIZE] = { NULL };
 char *google_result[GOOGLESIZE] = { NULL };
 char *mysql_result[MYSQLSIZE] = { NULL };
+char *tmp;
 
 /* 用于和detectMouse通信，当已经新建翻译结果显示窗口时，
  * 不再检测鼠标动作*/
@@ -16,13 +24,37 @@ int InNewWin = 0;
 
 /* 鼠标动作标志位*/
 extern int action;
-
 extern int CanNewWin;
-
 static int focustimes = 0;
-
 int timeout_id = 0;
 
+static inline int previousWindow ( int who ) {
+    return who > 1 ? who -1 : 3;
+}
+
+void checkWindowSize ( gpointer *data ) {
+
+    inline Display_func choice_display( int who ) {
+
+        return ( who == BAIDU ? displayBaiduTrans : \
+                ( who == GOOGLE ? displayGoogleTrans :\
+                  displayOfflineTrans) );
+    }
+
+    gint cwidth = 0;
+    gint cheight = 0;
+    gint iwidth = WINDATA(data)->width;
+    gint iheight = WINDATA(data)->height;
+    gtk_window_get_size((GtkWindow*)WINDATA(data)->window, &cwidth, &cheight);
+
+    //pbred ( "Indicate window size ?= Current window size, %d - %d   %d - %d" , iwidth, iheight, cwidth, cheight);
+
+    if ( iwidth != cwidth || iheight != cheight ) {
+        pbred ( "Indicate window size != Current window size,\
+                %d - %d   %d - %d" , iwidth, iheight, cwidth, cheight);
+        choice_display(WINDATA(data)->who);
+    }
+}
 /* 本函数代码借鉴自xdotool部分源码*/
 void focusOurWindow( WinData *wd ) {
 
@@ -85,15 +117,16 @@ int detect_ctrl_c(void *data) {
         return FALSE;
     }
 
+    checkWindowSize ( data );
     return TRUE;
 }
 
 void dataInit(WinData *wd) {
 
     /*Important: Pay attention to clear the values the global variables*/
-    bw.width = 400; bw.height = 300; bw.lines = 0; bw.maxlen = 0;
-    mw.width = 400; mw.height = 300; mw.lines = 0; mw.maxlen = 0;
-    gw.width = 400; gw.height = 300; gw.lines = 0; gw.maxlen = 0;
+    bw.width = 400; bw.height = 100; bw.lines = 0; bw.maxlen = 0;
+    mw.width = 400; mw.height = 100; mw.lines = 0; mw.maxlen = 0;
+    gw.width = 400; gw.height = 100; gw.lines = 0; gw.maxlen = 0;
 
     wd->bw = &bw; wd->gw = &gw; wd->mw = &mw;
 
@@ -102,7 +135,7 @@ void dataInit(WinData *wd) {
     wd->srcBackgroundImage = NULL;
     wd->gdkwin = NULL;
     wd->width = 400;
-    wd->height = 300;
+    wd->height = 100;
     wd->hadRedirect = 0;
     wd->forceResize = 0;
     wd->calibrationButton = NULL;
@@ -221,6 +254,7 @@ void *newNormalWindow() {
     /*初始化百度以及离线翻译结果存储空间*/
     initMemoryBaidu();
     initMemoryMysql();
+    initMemoryTmp();
 
     gtk_window_set_default_size (GTK_WINDOW(newWin), bw.width, bw.height);
     gtk_widget_set_size_request ( layout, bw.width, bw.height );
@@ -240,9 +274,9 @@ void *newNormalWindow() {
     g_signal_connect ( googleButton, "clicked", G_CALLBACK(displayGoogleTrans), &wd );
 
     /* 离线翻译结果切换按钮*/
-    GtkWidget *offlineButton = newOfflineButton ( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), offlineButton, bw.width-RIGHT_BORDER_OFFSET*3, bw.height-BOTTOM_OFFSET );
-    g_signal_connect ( offlineButton, "clicked", G_CALLBACK(displayOfflineTrans), &wd );
+    GtkWidget *mysqlButton = newOfflineButton ( &wd );
+    gtk_layout_put ( GTK_LAYOUT(layout), mysqlButton, bw.width-RIGHT_BORDER_OFFSET*3, bw.height-BOTTOM_OFFSET );
+    g_signal_connect ( mysqlButton, "clicked", G_CALLBACK(displayOfflineTrans), &wd );
 
     /* 校准按钮*/
     insertCalibrationButton(&wd);
@@ -260,7 +294,7 @@ void *newNormalWindow() {
     g_signal_connect (newWin, "configure-event", G_CALLBACK(syncNormalWinForConfigEvent), &wd);
 
 
-    timeout_id = g_timeout_add(RIGHT_BORDER_OFFSET*2, detect_ctrl_c, &wd);
+    timeout_id = g_timeout_add(500, detect_ctrl_c, &wd);
 
     gtk_widget_show_all(newWin);
 
@@ -307,9 +341,11 @@ int destroyNormalWin(GtkWidget *window, WinData *wd) {
 }
 
 /*Get index of separate symbols*/
-void getIndex(int *index, char *addr) {
+void getIndex(int *index, char *src) {
 
-    char *p = &addr[ACTUALSTART];
+    strcpy ( tmp, src );
+    pbyellow ( "tmp=%s", tmp );
+    char *p = &tmp[ACTUALSTART];
     int i = ACTUALSTART;  /*同p一致指向同一个下标字符*/
     int charNum = 0;
 
@@ -320,17 +356,13 @@ void getIndex(int *index, char *addr) {
             *p = '\0';
 
             /*截取到第三个分隔符*/
-            if ( addr == shmaddr_google && charNum >= 2 )
+            if ( src == shmaddr_google && charNum >= 2 )
                 break;
 
             index[charNum++] = i + 1; /*记录字符串下标*/
         }
         p++; i++;
     }
-
-    /*Can somebody tell me why? 清除翻译结果写入完成标志*/
-    if ( addr[0] == '1')
-        addr[0] = '\0';
 }
 
 int waitForContinue(WinData *wd) {
@@ -412,13 +444,13 @@ int waitForContinue(WinData *wd) {
     return 0;
 }
 /* 重新从共享内存获取百度翻译结果并设置窗口大小*/
-void reGetBaiduTransAndSetWin (gpointer *data, int who ) { 
+void reGetBaiduTrans (gpointer *data, int who ) { 
 
     int index[INDEX_SIZE] = { 0 };
 
     getIndex(index, GET_SHMADDR(who) );
+
     separateDataForBaidu(index, 28, TYPE(who) );
-    setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who));
 }
 
 void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
@@ -426,57 +458,26 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     if ( who == GOOGLE ) 
     {
         int index[2] = { 0 };
-
         getIndex(index, shmaddr_google);
 
         /* 找到分割符，数据分离提取才有意义*/
         if ( index[0] != 0 )
-            separateGoogleDataSetWinSize ( index );
+            separateGoogleData ( index );
         else
             pred("未找到分隔符(adjustWinSize)");
-
-        STORE_DISPLAY_LINES_NUM ( data, who, gw.lines );
-        STORE_DISPLAY_MAX_LEN ( data, who, gw.maxlen )
-
-        if (gw.width < 400)
-            gw.width = 400;
-        else if ( gw.width > 1000 )
-            gw.width = 1000;
-
-        if ( gw.height < 230 )
-            gw.height = 230;
-        else if ( gw.height > 900 )
-            gw.height = 900;
-
-        /* 更新较大值*/
-        if ( gw.width > WINDATA(data)->width )
-            WINDATA(data)->width = gw.width;
-        if ( gw.height > WINDATA(data)->height )
-            WINDATA(data)->height = gw.height;
     }
     else if ( who == BAIDU || who == MYSQL)
     {
         /*还未获取到结果，应重新获取并设置窗口大小*/
-        if ( strlen ( ZhTrans(TYPE(who)) ) == 0) {
-            reGetBaiduTransAndSetWin ( data, who );
-        }
-
-        /*如果新窗口的宽高都小于上一个的，不调整窗口大小*/
-        if (  GET_DISPLAY_WITH(who) <= WINDATA(data)->width && GET_DISPLAY_HEIGHT(who) <= WINDATA(data)->height ) {
-            return;
-        }
+        if ( strlen ( ZhTrans(TYPE(who)) ) == 0)
+            reGetBaiduTrans ( data, who );
     }
 
-    WINDATA(data)->specific = 1;
-    syncNormalWinForConfigEvent( WINDATA(data)->window, NULL, data );
+    setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who));
 }
 
-int nextWindow ( int who ) {
-
-    if ( who < 3 )
-        return who+1;
-
-    return 1;
+static inline int nextWindow ( int who )  {
+    return who < 3 ? who + 1 : 1;
 }
 
 /* 切换各个翻译结果的显示*/
@@ -510,10 +511,6 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
     gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,(WINDATA(data))->indicateButton,\
             width-(200-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who)), height-INDICATE_OFFSET );
     gtk_widget_queue_draw( WINDATA(data)->window );
-
-    pbyellow("current indicate size %d %d",width, height );
-    gtk_window_get_size((GtkWindow*)WINDATA(data)->window, &width, &height);
-    pbyellow("current window size: %d %d", width, height);
 
     if ( WINDATA(data)->audio != NULL )
         gtk_widget_hide ( WINDATA(data)->audio  );
@@ -595,10 +592,6 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
     gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,(WINDATA(data))->indicateButton,\
             width-(200-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who)), height-INDICATE_OFFSET );
     gtk_widget_queue_draw( WINDATA(data)->window );
-
-    pbyellow("current indicate size %d %d",width, height );
-    gtk_window_get_size((GtkWindow*)WINDATA(data)->window, &width, &height);
-    pbyellow("current window size: %d %d", width, height);
 
     GtkTextIter *iter, start, end;
     iter = WINDATA(data)->iter;
@@ -705,7 +698,6 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         } 
     }
-
 }
 
 
@@ -727,16 +719,12 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
     gtk_widget_queue_draw( WINDATA(data)->window );
 
-    pbyellow("current indicate size %d %d",width, height );
-    gtk_window_get_size((GtkWindow*)WINDATA(data)->window, &width, &height);
-    pbyellow("current window size: %d %d", width, height);
-
     GtkTextBuffer *buf = WINDATA(data)->buf;
 
     if ( strlen (ZhTrans(ONLINE)) == 0 && strlen ( EnTrans(ONLINE) ) == 0 ) {
 
         pred("ZhTrans(ONLINE) & EnTrans(ONLINE)长度皆为0 \n");
-        reGetBaiduTransAndSetWin ( data, BAIDU );
+        reGetBaiduTrans ( data, BAIDU );
     }
 
     GtkTextIter start, end, *iter;
@@ -867,7 +855,7 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
                 pred("flag:%c \n", shmaddr_mysql[0]);
 
                 if ( WINDATA(data)->getOfflineTranslation )
-                    return displayOfflineTrans ( WINDATA(data)->offlineButton, data);
+                    return displayOfflineTrans ( WINDATA(data)->mysqlButton, data);
                 else
                     return displayGoogleTrans ( WINDATA(data)->googleButton, data);
             }
@@ -950,13 +938,12 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
 
     lastwidth = width;
     lastheight = height;
-
     syncImageSize ( (WINDATA(data))->window,width,height, data );
 
     gtk_window_resize ( GTK_WINDOW((WINDATA(data))->window), width, height );
     gtk_widget_set_size_request ( (GtkWidget*)(WINDATA(data))->scroll,  width, height);
 
-    /* layout不要重设打下，否则将造成无法在缩小窗口*/
+    /* layout不要在这重设大小，否则将造成无法在缩小窗口*/
     //gtk_widget_set_size_request ( (GtkWidget*)(WINDATA(data))->layout,  width, height);
 
     gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout, \
@@ -966,7 +953,7 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
             (WINDATA(data))->googleButton, width-RIGHT_BORDER_OFFSET*2, height-BOTTOM_OFFSET );
 
     gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
-            (WINDATA(data))->offlineButton, width-RIGHT_BORDER_OFFSET*3, height-BOTTOM_OFFSET );
+            (WINDATA(data))->mysqlButton, width-RIGHT_BORDER_OFFSET*3, height-BOTTOM_OFFSET );
 
     gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
             (WINDATA(data))->calibrationButton, width-RIGHT_BORDER_OFFSET*4, height-BOTTOM_OFFSET );
@@ -984,6 +971,34 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
     gtk_widget_show(window);
 }
 
+int calculateWidth ( int x ) {
+
+    double wa, wb, wc, wd; /* For width*/
+    genFitFunc ( "winSizeInfo_part1" );
+    getFitFunc ( expanduser("/home/$USER/.stran/winSizeInfo_part1.func"),\
+            FOR_WIN_WIDTH, &wa, &wb, &wc, &wd );
+
+    return  (int) ( wa*x*x*x + wb*x*x +wc*x +wd + 0.5 );
+}
+
+int calculateHeight ( int x ) {
+
+    double ha, hb, hc, hd; /* For height*/
+    genFitFunc ( "winSizeInfo_part2" );
+    getFitFunc ( expanduser("/home/$USER/.stran/winSizeInfo_part2.func"),\
+            FOR_WIN_HEIGHT, &ha, &hb, &hc, &hd );
+
+    return  (int) ( ha*x*x*x + hb*x*x +hc*x +hd + 0.5 );
+}
+
+void limitSize ( double *width, double *height ) {
+
+    /*别让窗口过小,或过大*/
+    //if ( *width < 400 ) *width = 400;
+    if ( *height < 100 ) *height = 100;
+    if ( *width > 1000 ) *width = 1000;
+    if ( *height > 900 ) *height = 900;
+}
 
 /* 设置NormalWin的窗口大小, type: ONLINE / OFFLINE*/
 void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
@@ -994,104 +1009,41 @@ void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
     if ( addr == shmaddr_baidu || addr == shmaddr_mysql) {
 
         maxlen = getMaxLenOfBaiduTrans ( type );
-        lines = getLinesOfBaiduTrans ( type );
-
-        STORE_DISPLAY_MAX_LEN ( window, WHO(addr), maxlen );
-        STORE_DISPLAY_LINES_NUM ( window, WHO(addr), lines );
-
-        pbred("maxlen=%d lines=%d \n", maxlen, lines);
-
-        double width, height;
-
-        width = maxlen * 15.6 + 42;
-        height = lines * 24 + 50;
-
-        /*别让窗口过小*/
-        if ( width < 400 ) {
-            width = 400;
-        }
-
-        if ( height < 300 )
-            height = 300;
-
-        if ( GET_DISPLAY_WITH(WHO(addr)) > 1000 )
-            width = 1000;
-
-        if ( GET_DISPLAY_HEIGHT(WHO(addr)) > 900 )
-            height = 900;
-
-        /*Update the window size only when the new size is larger than older's*/
-        STORE_DISPLAY_WIDTH(WHO(addr), width);
-        STORE_DISPLAY_HEIGHT(WHO(addr), height);
-
-        if ( WINDATA(window)->width < GET_DISPLAY_WITH(WHO(addr)) )
-            WINDATA(window)->width = GET_DISPLAY_WITH(WHO(addr));
-
-        if (WINDATA(window)->height < GET_DISPLAY_HEIGHT(WHO(addr)))
-            WINDATA(window)->height = GET_DISPLAY_HEIGHT(WHO(addr));
-
-        if ( WINDATA(window)->lastheight != WINDATA(window)->height 
-                || WINDATA(window)->width != WINDATA(window)->lastwidth )
-            WINDATA(window)->specific = 1;
-
-        return;
+        lines = getLinesNumOfBaiduTrans ( type );
     }
-}
+    else if ( addr == shmaddr_google ) {
 
-int getMaxLenOfBaiduTrans(int type) {
-
-    char **result = NULL;
-    if ( type == ONLINE )
-        result = baidu_result;
-    else if ( type == OFFLINE ) 
-        result = mysql_result;
-
-    int maxlen = 0;
-
-    for ( int i=0, len=0; i<BAIDUSIZE; i++ ) {
-        if ( result[i][0] != '\0')
-            len = countCharNums ( result[i] );
-
-        if ( len > maxlen )
-            maxlen = len;
+        lines = getLinesNumOfGoogleTrans();
+        maxlen = getMaxLenOfGoogleTrans();
     }
 
-    if ( maxlen > 28 )
-        maxlen = 28;
+    STORE_DISPLAY_MAX_LEN ( window, WHO(addr), maxlen );
+    STORE_DISPLAY_LINES_NUM ( window, WHO(addr), lines );
 
-    return maxlen;
-}
+    double width, height;
+    width = calculateWidth ( maxlen );
+    height = calculateHeight ( lines );
 
-int getLinesOfBaiduTrans (int type) {
+    pbred("maxlen=%d lines=%d", maxlen, lines);
+    pbred("width=%d height=%d", (int)width, (int)height);
 
-    char **result = NULL;
-    if ( type == ONLINE )
-        result = baidu_result;
-    else if ( type == OFFLINE )
-        result = mysql_result;
+    limitSize ( &width, &height );
 
-    int resultNum = 0;
+    /*Update the window size only when the new size is larger than older's*/
+    STORE_DISPLAY_WIDTH(WHO(addr), width);
+    STORE_DISPLAY_HEIGHT(WHO(addr), height);
 
-    /* lines起始为1，因为源数据没有被插入回车符，后面计算不到，这里
-     * 手动加1*/
-    int lines = 1;
+    if ( WINDATA(window)->width < GET_DISPLAY_WIDTH(WHO(addr)) )
+        WINDATA(window)->width = GET_DISPLAY_WIDTH(WHO(addr));
 
-    char *p = NULL;
+    if (WINDATA(window)->height < GET_DISPLAY_HEIGHT(WHO(addr)))
+        WINDATA(window)->height = GET_DISPLAY_HEIGHT(WHO(addr));
 
-    for ( int i=0; i<BAIDUSIZE; i++ ) {
-        if ( result[i][0] != '\0' ) {
-            resultNum++;
-            p = result[i];
-            while ( *p ) {
-                if ( *p++ == '\n' )
-                    lines++;
-            }
-        }
-    }
+    if ( WINDATA(window)->lastheight <= WINDATA(window)->height 
+            || WINDATA(window)->width <= WINDATA(window)->lastwidth )
+        WINDATA(window)->specific = 1;
 
-    /* 算上到时插入到显示界面的空行，最后一个结果后面不插入空行，
-     * 所以减1*/
-    lines = lines + resultNum - 1;
-
-    return lines;
+    if ( WINDATA(window)->specific == 1 )
+        syncNormalWinForConfigEvent ( WINDATA(window)->window, NULL, window );
+    return;
 }

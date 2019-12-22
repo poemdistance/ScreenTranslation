@@ -4,6 +4,11 @@
 void initMemoryMysql();
 void initMemoryBaidu();
 void initMemoryGoogle();
+void initMemoryTmp();
+
+void releaseMemoryGoogle();
+void releaseMemoryMysql();
+void releaseMemoryTmp();
 
 void clearMemory();
 

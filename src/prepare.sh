@@ -7,7 +7,8 @@ storage="$HOME/.stran"
 currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.png"\ 
     "../gif_pic/audio.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"\
     "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh"\
-    "../gif_pic/calibration.jpg" "../data/audioButtonPosition.data" "buttonPositionDataCtl.sh");
+    "../gif_pic/calibration.jpg" "../data/audioButtonPosition.data" "buttonPositionDataCtl.sh"\
+    "winSizeDataCtl.sh");
 
 declare -i len
 len=${#currFile[*]}-1
@@ -20,6 +21,8 @@ for i in $(seq 0 $len)
 do
     cp ${currFile[i]} $storage -v
 done
+
+chmod +x ~/.stran/winSizeDataCtl.sh
 
 git submodule foreach git pull origin master
 sudo pip3 install  mysql-connector-python

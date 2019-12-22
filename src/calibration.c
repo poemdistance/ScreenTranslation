@@ -4,13 +4,14 @@
 #include "calibration.h"
 #include "audio.h"
 #include "fitting.h" /* notExist()*/
+#include "expanduser.h"
 
 void writeAudioButtonInfo ( int l, int x, int y ) {
 
-    char cmd[140] = "bash ";
+    char bash[140] = "bash ";
     char num[20] = { '\0' };
-    char path[] = "/home/$USER/.stran/buttonPositionDataCtl.sh ";
-    char file[] = "/home/$USER/.stran/"AUDIO_BASE_NAME".data";
+    char *path = expanduser ( "/home/$USER/.stran/buttonPositionDataCtl.sh" );
+    char *file = expanduser("/home/$USER/.stran/"AUDIO_BASE_NAME".data");
 
     if ( notExist ( path ) ) {
         pbred ( "%s not exist ( writeAudioButtonInfo )", path );
@@ -19,23 +20,43 @@ void writeAudioButtonInfo ( int l, int x, int y ) {
 
     if ( notExist ( file ) ) {
         pbred ( "%s not exist, creating it...", file );
-        fclose ( fopen ( file, "w" ) );
+        fclose ( fopen ( file, "w" ) ); /* 这种写法不好，open可能返回空导致段错误,但是简洁...*/
     }
 
-    sprintf(num, "%d %d %d ", l, x, y );
-    system ( strcat ( strcat ( strcat ( cmd, path ), num ), file ) );
-
+    /* 注意不要忽略3个 %d 前后的空格, 否则bash命令组装错误无法正确运行*/
+    sprintf(num, " %d %d %d ", l, x, y );
+    system ( strcat ( strcat ( strcat ( bash, path ), num ), file ) );
 }
 
 void writeWinSizeInfo ( int linelen, int width, int linenum, int height  ) {
 
-    char cmd[140] = "bash ";
+    char bash[140] = "bash ";
     char num[20] = { '\0' };
-    char path[] = "/home/$USER/.stran/winSizeDataCtl.sh ";
-    char file[] = "/home/$USER/.stran/"WIN_SIZE_BASE_NAME".data";
+    char *path = expanduser("/home/$USER/.stran/winSizeDataCtl.sh");
+    char *file1 = expanduser("/home/$USER/.stran/"WIN_SIZE_BASE_NAME"_part1.data");
+    char *file2 = expanduser("/home/$USER/.stran/"WIN_SIZE_BASE_NAME"_part2.data");
 
-    sprintf(num, "%d %d %d %d ", linelen, width, linenum, height );
-    system ( strcat ( strcat ( strcat ( cmd, path ), num ), file ) );
+    if ( notExist ( path ) ) {
+        pbred ( "%s not exist ( writeAudioButtonInfo )", path );
+        return;
+    }
+
+    if ( notExist ( file1 ) ) {
+        pbred ( "%s not exist, creating it...", file1 );
+        fclose ( fopen ( file1, "w" ) );
+    }
+    if ( notExist ( file2 ) ) {
+        pbred ( "%s not exist, creating it...", file2 );
+        fclose ( fopen ( file2, "w" ) );
+    }
+
+    sprintf(num, " %d %d ", linelen, width );
+    system ( strcat ( strcat ( strcat ( bash, path ), num ), file1 ) );
+
+    memset ( num, '\0', sizeof(num) );
+    memset ( bash, '\0', sizeof(bash) );
+    sprintf(num, " %d %d ", linenum, height );
+    system ( strcat ( strcat ( strcat ( bash, path ), num ), file2 ) );
 }
 
 void recordWinInfo ( GtkWidget *button, gpointer *data ) {
@@ -55,6 +76,10 @@ void recordWinInfo ( GtkWidget *button, gpointer *data ) {
     writeAudioButtonInfo (
             countCharNums ( Phonetic ( TYPE ( WINDATA(data)->who ) ) ),\
             WINDATA(data)->ox, WINDATA(data)->oy);
+
+    writeWinSizeInfo ( \
+            GET_DISPLAY_MAX_LEN ( win, win->who ), width,\
+            GET_DISPLAY_LINES_NUM ( win, win->who ), height );
 }
 
 void insertCalibrationButton( WinData *win ) {

@@ -69,6 +69,7 @@ void WatchSelection(Display *display, const char *bufname)
 
     while ( 1 ) {
 
+        printf("Waiting next event (WatchSelection)\n");
         XNextEvent ( display, &event );
 
         if (event.type == event_base + XFixesSelectionNotify &&

@@ -15,13 +15,13 @@ GtkWidget *newGoogleButton ( WinData *win );
 
 void insertCalibrationButton( WinData *win );
 
-
 extern char *text;
-
 
 extern char *baidu_result[BAIDUSIZE];
 extern char *google_result[GOOGLESIZE];
 extern char *mysql_result[MYSQLSIZE];
+
+extern char *tmp;
 
 extern int InNewWin;
 extern char *shmaddr_google;
@@ -65,21 +65,18 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer s
 void adjustWinSize(GtkWidget *button, gpointer *arg, int which);
 void setWinSizeForNormalWin ( WinData *window, char *addr, int type);
 void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd);
-int getMaxLenOfBaiduTrans() ;
-int getLinesOfBaiduTrans () ;
 
 gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data );
 
 void *newNormalWindow();
-void adjustStr(char *p[3], int len, char *storage[3]);
+void adjustStrForGoogle(char *p[3], int len, char *storage[3]);
 
 void separateDataForBaidu(int *index, int len, int type);
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
 int getLinesOfGoogleTrans ( int *index_google );
-void separateGoogleDataSetWinSize ( int *index_google );
+void separateGoogleData ( int *index_google );
 int countLines ( int len, char *source );
 int countCharNums ( char *source );
 int adjustStrForScrolledWin(int len, char *source);
-
 
 #endif

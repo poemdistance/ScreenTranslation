@@ -1,9 +1,17 @@
 #ifndef __WINDOW_DATA__
 #define __WINDOW_DATA__
 
-#define GET_SHMADDR(who)  ( ( who ) == BAIDU ? (shmaddr_baidu) : ( shmaddr_mysql ) )
-#define TYPE(who)     ( ( who ) == BAIDU ? ( ONLINE ) : ( OFFLINE ))
-#define WHO(addr)     ( ( addr ) == shmaddr_mysql ? MYSQL : BAIDU )
+#define GET_SHMADDR(who)  ( ( who ) == BAIDU ? (shmaddr_baidu) : \
+        ( (who) == MYSQL ? shmaddr_mysql : shmaddr_google))
+
+#define GET_BUTTON(win,who)  ( ( who ) == BAIDU ? (WINDATA(win)->baiduButton) : ( (who) == MYSQL ? WINDATA(win)->mysqlButton : WINDATA(win)->googleButton))
+
+#define TYPE(who)     ( ( who ) == BAIDU ? ( ONLINE ) :\
+        ( ( who ) == MYSQL ? OFFLINE : -1 ))
+
+#define WHO(addr)     ( ( addr ) == shmaddr_mysql ? MYSQL : \
+        (addr == shmaddr_google ? GOOGLE : BAIDU))
+
 #define AUDIO(type)  ( ( type ) == ONLINE ? ( url_online ) : ( url_offline ) )
 
 
@@ -57,8 +65,11 @@
         gw.height = value;\
     }
 
-#define GET_DISPLAY_WITH(who)    ( ( who ) == BAIDU ? ( bw.width ): ( mw.width ) )
-#define GET_DISPLAY_HEIGHT(who)   ( ( who ) == BAIDU ? ( bw.height ): ( mw.height ) )
+#define GET_DISPLAY_WIDTH(who)    ( ( who ) == BAIDU ? ( bw.width ): \
+        ( (who) == GOOGLE ? ( gw.width ) : ( mw.width ) ) )
+
+#define GET_DISPLAY_HEIGHT(who)   ( ( who ) == BAIDU ? ( bw.height ): \
+        ( (who) == GOOGLE ? ( gw.height ) : ( mw.height ) ) )
 
 typedef struct Google {
     double width;
@@ -127,7 +138,7 @@ typedef struct WinData{
     GtkWidget *oldImage;
 
     GtkWidget *baiduButton;
-    GtkWidget *offlineButton;
+    GtkWidget *mysqlButton;
     GtkWidget *googleButton;
     GtkWidget *indicateButton;
     GtkWidget *switchButton;

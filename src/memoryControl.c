@@ -22,6 +22,29 @@ void initMemoryMysql() {
     }
 }
 
+void releaseMemoryMysql() {
+
+    /* 释放翻译结果存储空间 <Mysql>*/
+    if ( mysql_result[0] != NULL)
+        for (int i=0; i<MYSQLSIZE; i++)
+            free(mysql_result[i]);
+}
+
+void initMemoryTmp() {
+
+    if (tmp != NULL)
+        return;
+
+    tmp = calloc ( SHMSIZE , sizeof(char) );
+}
+
+void releaseMemoryTmp() {
+
+    /* 临时缓冲区释放*/
+    if ( tmp != NULL )
+        free ( tmp );
+}
+
 /* 初始化百度翻译结果存储空间*/
 void initMemoryBaidu() {
 
@@ -50,7 +73,18 @@ void initMemoryGoogle() {
     }
 }
 
+void releaseMemoryGoogle() {
+
+    /* 释放翻译结果存储空间 <Google>*/
+    if ( google_result[0] != NULL)
+        for (int i=0; i<GOOGLESIZE; i++)
+            free(google_result[i]);
+}
+
 void clearMemory () {
+
+    memset ( tmp, '0', 10 );
+    memset ( tmp, '\0', SHMSIZE-10);
 
     /* 标志位空间用字符0填充*/
     memset(shmaddr_baidu, '0', 10);
