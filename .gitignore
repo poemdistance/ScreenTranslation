@@ -13,3 +13,4 @@ google-translate/translate/package/Translator.py
 google-translate/translate/package/getTK.py
 google-translate/translate/package/tranen.py
 google-translate/translate/package/tranpic.py
+data/error.log
