@@ -885,7 +885,7 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
         else if ( i == 0  && strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0))==0 \
                 && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
 
-            gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n\n   必应翻译尚未获取成功\n",\
+            gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n\n   必应翻译尚未获取成功,或输入内容不支持\n   (只允许翻译单词)",\
                     -1, "brown-font",  "heavy-font", \
                     "font-size-11","letter-spacing", NULL);
         }
