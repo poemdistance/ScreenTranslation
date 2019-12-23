@@ -39,7 +39,7 @@ void adjustStrForGoogle(char *p[], int len, char *storage[]) {
     {
         nowlen = 0;
 
-        for ( int j=0, k=0; True ; j++, k++ ) 
+        for ( int j=0, k=0; p[i] != NULL ; j++, k++ ) 
         {
             storage[i][k] = p[i][j];
 

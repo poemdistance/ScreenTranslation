@@ -144,8 +144,8 @@ void separateGoogleData ( int *index ) {
 
         char *p[3];
         p[0] = &tmp[ACTUALSTART];
-        p[1] = &tmp[index[0]];
-        p[2] = &tmp[index[1]];
+        p[1] = index[0] != 0 ? &tmp[index[0]] : NULL;
+        p[2] = index[1] != 0 ? &tmp[index[1]] : NULL;
 
         adjustStrForGoogle(p, 28, google_result);
     }
