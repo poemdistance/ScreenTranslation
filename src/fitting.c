@@ -14,16 +14,16 @@
         *(double*)d=39.2648;\
     } \
     else if ( forWhich == FOR_WIN_WIDTH ){\
-        *(double*)a=0,\
-        *(double*)b=0,\
-        *(double*)c=15.6,\
-        *(double*)d=42;\
+        *(double*)a=0.00058368,\
+        *(double*)b=0.579037,\
+        *(double*)c=-17.1014,\
+        *(double*)d=546.854;\
     }\
     else if ( forWhich == FOR_WIN_HEIGHT ) {\
-        *(double*)a=0,\
-        *(double*)b=0,\
-        *(double*)c=24,\
-        *(double*)d=50;\
+        *(double*)a=-0.0283941,\
+        *(double*)b=1.60358,\
+        *(double*)c=-10.4371,\
+        *(double*)d=260.154;\
     }
 
 int notExist ( char *path ) {
@@ -32,7 +32,13 @@ int notExist ( char *path ) {
 }
 
 /* Get the fitting function parameters stored in 'path'*/
-int getFitFunc(char *path, int forWhich, double *a, double *b, double *c, double *d) {
+int getFitFunc(char *path, int forWhich, double *a, double *b, double *c, double *d, int disable) {
+
+    if ( disable ) {
+
+        SET_DEAULT_PARAS ( forWhich, a,b,c,d );
+        return 0;
+    }
 
     FILE *fp = fopen ( path, "r" );
     if ( ! fp ) {
@@ -60,7 +66,10 @@ int getFitFunc(char *path, int forWhich, double *a, double *b, double *c, double
 }
 
 /* Generate the fitting function by bash command*/
-void genFitFunc ( char *name ) {
+void genFitFunc ( char *name, int disable ) {
+
+    if ( disable  )
+        return;
 
     char *base = expanduser("/home/$USER/.stran/");
     char path[1024] = { '\0' };
@@ -79,6 +88,7 @@ void genFitFunc ( char *name ) {
 
     if ( notExist ( path )) {
         pbred ( "%s not exist", path );
+        fclose ( fopen ( path, "w" ) );
     }
 
     for ( int i=0; i<4; i++ )

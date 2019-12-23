@@ -6,7 +6,10 @@
 #include "fitting.h" /* notExist()*/
 #include "expanduser.h"
 
-void writeAudioButtonInfo ( int l, int x, int y ) {
+void writeAudioButtonInfo ( int l, int x, int y , int disable) {
+
+    if ( disable )
+        return;
 
     char bash[140] = "bash ";
     char num[20] = { '\0' };
@@ -28,7 +31,10 @@ void writeAudioButtonInfo ( int l, int x, int y ) {
     system ( strcat ( strcat ( strcat ( bash, path ), num ), file ) );
 }
 
-void writeWinSizeInfo ( int linelen, int width, int linenum, int height  ) {
+void writeWinSizeInfo ( int linelen, int width, int linenum, int height, int disable ) {
+
+    if ( disable )
+        return;
 
     char bash[140] = "bash ";
     char num[20] = { '\0' };
@@ -75,11 +81,11 @@ void recordWinInfo ( GtkWidget *button, gpointer *data ) {
 
     writeAudioButtonInfo (
             countCharNums ( Phonetic ( TYPE ( WINDATA(data)->who ) ) ),\
-            WINDATA(data)->ox, WINDATA(data)->oy);
+            WINDATA(data)->ox, WINDATA(data)->oy, FITTING_STATUS);
 
     writeWinSizeInfo ( \
             GET_DISPLAY_MAX_LEN ( win, win->who ), width,\
-            GET_DISPLAY_LINES_NUM ( win, win->who ), height );
+            GET_DISPLAY_LINES_NUM ( win, win->who ), height, FITTING_STATUS );
 }
 
 void insertCalibrationButton( WinData *win ) {
