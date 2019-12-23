@@ -1,6 +1,7 @@
 #include "common.h"
 #include "newWindow.h"
 #include "cleanup.h"
+#include <ctype.h>
 
 int adjustStrForScrolledWin(int len, char *source) {
 
@@ -61,10 +62,7 @@ int adjustStrForScrolledWin(int len, char *source) {
             char nextchar = source[j+1];
 
             /* 如果不是数字和字母，直接用回车符切割*/
-            if ( ! (\
-                        (nextchar >= '0' && nextchar <= '9' ) ||\
-                        (nextchar >= 'a' && nextchar <= 'z')  ||\
-                        (nextchar >= 'A' && nextchar <= 'Z')) ) {
+            if ( ! isalnum ( nextchar ) ) {
 
                 storage[++k] = '\n';
                 lines++;
