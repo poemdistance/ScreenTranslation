@@ -360,8 +360,11 @@ int destroyNormalWin(GtkWidget *window, WinData *wd) {
 /*Get index of separate symbols*/
 int getIndex(int *index, char *src) {
 
+    if ( ! tmp ){
+        pbred ( "临时内存未初始化" );
+        return -1;
+    }
     strcpy ( tmp, src );
-    pbyellow ( "tmp=%s", tmp );
     char *p = &tmp[ACTUALSTART];
     int i = ACTUALSTART;  /*同p一致指向同一个下标字符*/
     int charNum = 0;
@@ -472,7 +475,7 @@ int reGetBaiduTrans (gpointer *data, int who ) {
     int ret = 0;
     ret = getIndex(index, GET_SHMADDR(who) );
     if ( ret ) {
-
+        return ret;
     }
     separateDataForBaidu(index, 28, TYPE(who) );
 
@@ -488,7 +491,7 @@ int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
         int index[2] = { 0 };
         ret = getIndex(index, shmaddr_google);
         if ( ret ) {
-
+            return ret;
         }
 
         /* 找到分割符，数据分离提取才有意义*/
@@ -500,11 +503,14 @@ int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     else if ( who == BAIDU || who == MYSQL)
     {
         /*还未获取到结果，应重新获取并设置窗口大小*/
-        if ( strlen ( ZhTrans(TYPE(who), 0) ) == 0)
-            reGetBaiduTrans ( data, who );
+        if ( strlen ( ZhTrans(TYPE(who), 0) ) == 0) {
+            ret = reGetBaiduTrans ( data, who );
+            if ( ret ) return ret;
+        }
     }
 
-    setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who));
+    ret = setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who));
+    if ( ret ) return ret;
 
     return 0;
 }
@@ -532,13 +538,15 @@ int changeDisplay(GtkWidget *button, gpointer *data) {
 
 void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 
+    int ret = 0;
     pyellow("\n显示谷歌翻译结果:\n\n");
 
     WINDATA(data)->who = GOOGLE;
     WINDATA(data)->specific = 1;
 
     /* 调整窗口大小*/
-    adjustWinSize ( button, data, GOOGLE );
+    ret = adjustWinSize ( button, data, GOOGLE );
+    if ( ret ) return;
 
     gint width = WINDATA(data)->width;
     gint height = WINDATA(data)->height;
@@ -614,12 +622,14 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 /* 离线翻译结果展示窗口, 跟displayBaiduTrans重复较多*/
 void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 
+    int ret = 0;
     pmag("显示离线翻译:\n");
 
     WINDATA(data)->who = MYSQL;
     WINDATA(data)->specific = 1;
 
-    adjustWinSize ( button, data, MYSQL );
+    ret = adjustWinSize ( button, data, MYSQL );
+    if ( ret ) return;
 
     gint width = WINDATA(data)->width;
     gint height = WINDATA(data)->height;
@@ -738,12 +748,14 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 /* Baidu online translation display window */
 void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
+    int ret = 0;
     pgreen("显示百度翻译:");
 
     WINDATA(data)->who = BAIDU;
     WINDATA(data)->specific = 1;
 
-    adjustWinSize ( button, data, BAIDU );
+    ret = adjustWinSize ( button, data, BAIDU );
+    if ( ret ) return;
 
     gint width = WINDATA(data)->width;
     gint height = WINDATA(data)->height;
@@ -1052,6 +1064,9 @@ int setWinSizeForNormalWin (WinData *window, char *addr, int type) {
         lines = getLinesNumOfGoogleTrans();
         maxlen = getMaxLenOfGoogleTrans();
     }
+
+    if ( maxlen <= 0 || lines <= 0 )
+        return -1;
 
     pbred ("lines=%d maxlen=%d", lines, maxlen);
 
