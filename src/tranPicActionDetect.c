@@ -183,7 +183,7 @@ int detectTranPicAction () {
                 canShot = 0;
                 shmaddr_pic[1] = CLEAR;
                 printf("启动区域截图\n");
-                system("gnome-screenshot -a -B -f /home/$USER/.stran/1.png");
+                system("gnome-screenshot -a -B -f /home/$USER/.stran/pic/1.png");
             }
 
             if ( canShot ) {
