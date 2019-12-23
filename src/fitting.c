@@ -34,7 +34,7 @@ int notExist ( char *path ) {
 /* Get the fitting function parameters stored in 'path'*/
 int getFitFunc(char *path, int forWhich, double *a, double *b, double *c, double *d, int disable) {
 
-    if ( disable ) {
+    if ( disable == 0 ) {
 
         SET_DEAULT_PARAS ( forWhich, a,b,c,d );
         return 0;
@@ -68,7 +68,7 @@ int getFitFunc(char *path, int forWhich, double *a, double *b, double *c, double
 /* Generate the fitting function by bash command*/
 void genFitFunc ( char *name, int disable ) {
 
-    if ( disable  )
+    if ( disable == 0 )
         return;
 
     char *base = expanduser("/home/$USER/.stran/");

@@ -168,7 +168,6 @@ int getAudioButtonPositionX ( int x ) {
     genFitFunc ( AUDIO_BASE_NAME, FITTING_STATUS );
     if ( notExist ( file ) ) {
         pbred ( "Fitting function file not found (audioPlayer)" );
-        return 350;
     }
     getFitFunc ( file, FOR_AUDIO_BUTTON, &a, &b, &c, &d, FITTING_STATUS);
     return (int)(a * x*x*x  + b * x*x + c *x + d );
@@ -176,6 +175,7 @@ int getAudioButtonPositionX ( int x ) {
 
 int getAudioButtonPositionY ( ) {
 
+#if FITTING_STATUS
     char *file = expanduser("/home/$USER/.stran/"AUDIO_BASE_NAME".data");
 
     char awkCmd[] = "awk '{sum+=$3} END {print sum/NR}'";
@@ -190,12 +190,11 @@ int getAudioButtonPositionY ( ) {
     FILE *fp = popen ( cmd , "r");
     if ( ! fp ) {
         pbred ( "Pipe open failed (getAudioButtonPositionY)" );
-        return 40;
     }
 
     if ( fread ( buf, sizeof( buf ), sizeof(char), fp ) < 0 ) {
         pbred ( "fread error (getAudioButtonPositionY)" );
-        return 40;
+        return 43;
     }
 
     int yPostion = 0;
@@ -204,6 +203,9 @@ int getAudioButtonPositionY ( ) {
     pclose ( fp );
 
     return yPostion == 0 ? 40 : yPostion;
+#endif
+
+    return 43;
 }
 
 GtkWidget * insertAudioIcon( GtkWidget *window, GtkWidget *layout, WinData *wd, int type ) 
