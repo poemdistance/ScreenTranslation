@@ -153,17 +153,17 @@ void clearBaiduMysqlResultMemory() {
     for ( int i=0; i<BAIDUSIZE; i++ ) {
         if ( i == 2 || i == 3 ) {
             for ( int j=0; j<ZH_EN_TRAN_SIZE; j++ ) {
-                if ( baidu_result[i][j] )
+                if ( baidu_result[i] && baidu_result[i][j] )
                     memset ( baidu_result[i][j], '\0',  PER_SENTENCE_SIZE );
-                if ( mysql_result[i][j] )
+                if ( mysql_result[i] && mysql_result[i][j] )
                     memset ( mysql_result[i][j], '\0',  PER_SENTENCE_SIZE );
             }
         }
         else {
-            if ( baidu_result[i][0] ) {
+            if ( baidu_result[i] && baidu_result[i][0] ) {
                 memset ( baidu_result[i][0], '\0', SHMSIZE / BAIDUSIZE );
             }
-            if ( mysql_result[i][0] ) {
+            if ( mysql_result[i] && mysql_result[i][0] ) {
 
                 memset ( mysql_result[i][0], '\0', SHMSIZE / MYSQLSIZE );
             }
