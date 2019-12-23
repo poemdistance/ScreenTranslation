@@ -13,7 +13,6 @@ extern int timeout_id_2;
 extern int CanNewWin;
 extern int CanNewEntrance;
 
-extern char *baidu_result[BAIDUSIZE] ;
 extern char *google_result[GOOGLESIZE];
 
 extern char *shmaddr_google;

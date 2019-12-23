@@ -10,9 +10,6 @@
 /* 用于切换英音和美音*/
 int audioShow = -1;
 
-extern char *baidu_result[BAIDUSIZE]; /* For Phonetic*/
-extern char *mysql_result[BAIDUSIZE]; /* For Phonetic*/
-
 extern char audioOnline_en[512];
 extern char audioOnline_uk[512];
 
