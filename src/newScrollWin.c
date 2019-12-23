@@ -56,16 +56,16 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
 
     if ( addr == shmaddr_baidu ) {
 
-        int charNums = countCharNums ( &shmaddr_baidu[ACTUALSTART+2] );
+        int charNums = countCharNums ( &tmp[ACTUALSTART+2] );
 
         pgreen(" (showBaiduScrolledWin) charNums=%d\n", charNums);
 
         /* 根据字符数量控制窗口大小和单行长度*/
         if ( charNums < 400 ) {
 
-            int lines = countLines ( 30 , &shmaddr_baidu[ACTUALSTART+2] );
+            int lines = countLines ( 30 , &tmp[ACTUALSTART+2] );
             pgreen(" (showBaiduScrolledWin) lines=%d\n", lines);
-            adjustStrForScrolledWin ( 30, &shmaddr_baidu[2+ACTUALSTART] );
+            adjustStrForScrolledWin ( 30, &tmp[2+ACTUALSTART] );
             wd->width = 650;
             wd->height = lines * 30 + 45;
 
@@ -77,7 +77,7 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
         } 
         else  {
 
-            int lines = countLines ( 30 , &shmaddr_baidu[ACTUALSTART+2] );
+            int lines = countLines ( 30 , &tmp[ACTUALSTART+2] );
             pgreen("baiduRestlt countLines=%d \n", lines);
             wd->width = 950;
             wd->height = lines * 30;
@@ -88,8 +88,8 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
             if ( wd->height > 600 )
                 wd->height = 600;
 
-            adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
-            strcpy ( ZhTrans(ONLINE,0),  &shmaddr_baidu[ACTUALSTART+2]);
+            adjustStrForScrolledWin ( 46, &tmp[ACTUALSTART+2] );
+            strcpy ( ZhTrans(ONLINE,0),  &tmp[ACTUALSTART+2]);
         }
     }
 
@@ -98,14 +98,14 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
         int index[2] = { 0 };
         getIndex(index, shmaddr_google);
 
-        int charNums = countCharNums ( &shmaddr_google[ACTUALSTART] );
+        int charNums = countCharNums ( &tmp[ACTUALSTART] );
         pyellow("charNums=%d \n", charNums);
 
         /* 根据字符数量控制窗口大小和单行长度*/
         if ( charNums < 400 ) {
 
-            int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
-            adjustStrForScrolledWin( 30, &shmaddr_google[ACTUALSTART] );
+            int lines = countLines ( 30 , &tmp[ACTUALSTART] );
+            adjustStrForScrolledWin( 30, &tmp[ACTUALSTART] );
             wd->width = 650;
             wd->height = lines * 30;
             if ( wd->height < 500 )
@@ -116,7 +116,7 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
         }
         else {
 
-            int lines = countLines ( 30 , &shmaddr_google[ACTUALSTART] );
+            int lines = countLines ( 30 , &tmp[ACTUALSTART] );
             wd->width = 950;
             wd->height = lines * 30;
             if ( wd->height < 400 )
@@ -125,7 +125,7 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
             if ( wd->height > 600 )
                 wd->height = 600;
 
-            adjustStrForScrolledWin( 46, &shmaddr_google[ACTUALSTART] );
+            adjustStrForScrolledWin( 46, &tmp[ACTUALSTART] );
         }
 
     }
@@ -139,9 +139,15 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
     gtk_text_buffer_delete (gtbuf, &start, &end);
     gtk_text_buffer_get_iter_at_offset (gtbuf, iter, 0);
 
+    gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, "必应翻译结果太渣，未启用\n", -1,\
+            "green-font", "font-size-14", "bold-style", NULL );
+#if 0
     int index[13] = { 0 };
-    getIndex(index, shmaddr_baidu);
-
+    int ret = 0;
+    ret = getIndex(index, shmaddr_baidu);
+    if ( ret ) {
+        return;
+    }
     /* getIndex 会将分隔符修改为'\0', 再一次进入这个函数index[1]会成0
      * 所以这里是为了区分是否是第一次进入这里，如果不是，插入已经保存
      * 到ZhTrans(ONLINE,0)的数据, 否则先生成ZhTrans(ONLINE,0)*/
@@ -154,7 +160,7 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
         resizeScrolledWin ( wd, wd->width, wd->height );
         pgreen(" (showBaiduScrolledWin) width=%d height=%d\n", wd->width, wd->height);
 
-        strcpy ( ZhTrans(ONLINE,0),  &shmaddr_baidu[2+ACTUALSTART]);
+        strcpy ( ZhTrans(ONLINE,0),  &tmp[2+ACTUALSTART]);
 
         pgreen(" 调整后输出的百度翻译结果:%s\n", ZhTrans(ONLINE,0));
 
@@ -164,14 +170,11 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
 
     else if ( strlen ( ZhTrans(ONLINE,0) ) != 0 ) {
 
-        //adjustStrForScrolledWin ( 30, &shmaddr_baidu[ACTUALSTART+2] );
-        //strcpy ( ZhTrans(ONLINE,0),  &shmaddr_baidu[ACTUALSTART+2]);
-
         /* 窗口大了，对显示的字符串进行相应调整, 扩大单行显示长度为46*/
         if ( wd->width >= 900 ) {
 
-            adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
-            strcpy ( ZhTrans(ONLINE,0),  &shmaddr_baidu[ACTUALSTART+2]);
+            adjustStrForScrolledWin ( 46, &tmp[ACTUALSTART+2] );
+            strcpy ( ZhTrans(ONLINE,0),  &tmp[ACTUALSTART+2]);
         }
 
         resizeScrolledWin ( wd, wd->width, wd->height );
@@ -191,6 +194,7 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
         /* 重定向到谷歌翻译结果*/
         return (void)showGoogleScrolledWin (gtbuf, iter, wd);
     }
+#endif
 }
 
 int isContainSeparateChar ( char *str ) {
@@ -210,7 +214,7 @@ int isContainSeparateChar ( char *str ) {
 
 void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) {
 
-    pyellow("谷歌翻译结果:%s\n\n", &shmaddr_google[ACTUALSTART]);
+    pyellow("谷歌翻译结果:%s", &tmp[ACTUALSTART]);
 
     GtkTextIter start, end;
     gtk_text_buffer_get_start_iter (gtbuf, &start);
@@ -219,21 +223,21 @@ void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd)
     gtk_text_buffer_get_iter_at_offset (gtbuf, iter, 0);
 
     /* 仍旧包含分隔符，说明是新的字符串翻译结果，未显示，需要调整*/
-    if ( isContainSeparateChar ( &shmaddr_google[ACTUALSTART] ) )
-        wd->hadShowGoogleResult = 0;
+    //if ( isContainSeparateChar ( &tmp[ACTUALSTART] ) )
+    //wd->hadShowGoogleResult = 0;
 
-    if ( ! wd->hadShowGoogleResult ) {
+    //if ( ! wd->hadShowGoogleResult ) {
 
-        suitWinSizeWithCharNum ( shmaddr_google, wd );
+    suitWinSizeWithCharNum ( shmaddr_google, wd );
 
-        pyellow("window width,height %d %d \n", wd->width, wd->height);
+    pyellow("window width,height %d %d", wd->width, wd->height);
 
-        resizeScrolledWin ( wd, wd->width, wd->height );
+    resizeScrolledWin ( wd, wd->width, wd->height );
 
-        wd->hadShowGoogleResult  = 1;
-    }
+    //wd->hadShowGoogleResult  = 1;
+    //}
 
-    gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, &shmaddr_google[ACTUALSTART], -1,\
+    gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, &tmp[ACTUALSTART], -1,\
             "brown-font", "font-size-14", "bold-style", NULL );
 }
 
@@ -252,18 +256,26 @@ void switchScrolledWin(GtkWidget *button, gpointer data) {
 
 int  newScrolledWin() {
 
+    initMemoryTmp();
+    if ( ! tmp ) {
+        pbred ( "Tmp memory initialize failed" );
+        return -1;
+    }
+
     GtkWidget *window;
 
     /* 进入窗口标志变量，禁止继续检测鼠标状态*/
     InNewWin = 1;
 
-    gint width = 950;
+    gint width = 450;
     gint height;
 
     int lines = 0, charNums = 0, ret = 0;
 
     lines = countLines(46, &shmaddr_google[ACTUALSTART]);
     charNums = countCharNums(&shmaddr_google[ACTUALSTART]);
+
+    pbcyan ( "lines=%d charNums=%d", lines, charNums );
 
     if ( ( ret = countCharNums(&shmaddr_baidu[2]) ) > charNums)
         charNums = ret;
@@ -340,13 +352,11 @@ int  newScrolledWin() {
     if ( google_result[0] == NULL)
         initMemoryGoogle();
 
-    showBaiduScrolledWin(gtb, &iter, &wd);
+    showGoogleScrolledWin(gtb, &iter, &wd);
 
     gtk_widget_show_all(window);
 
     gtk_main();
-
-    InNewWin = 0;
 
     /* 清除共享内存和结果存储空间的数据*/
     clearMemory();
