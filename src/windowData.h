@@ -4,7 +4,8 @@
 #define GET_SHMADDR(who)  ( ( who ) == BAIDU ? (shmaddr_baidu) : \
         ( (who) == MYSQL ? shmaddr_mysql : shmaddr_google))
 
-#define GET_BUTTON(win,who)  ( ( who ) == BAIDU ? (WINDATA(win)->baiduButton) : ( (who) == MYSQL ? WINDATA(win)->mysqlButton : WINDATA(win)->googleButton))
+#define GET_BUTTON(win,who)  ( ( who ) == BAIDU ? (WINDATA(win)->baiduButton) :\
+        ( (who) == MYSQL ? WINDATA(win)->mysqlButton : WINDATA(win)->googleButton))
 
 #define TYPE(who)     ( ( who ) == BAIDU ? ( ONLINE ) :\
         ( ( who ) == MYSQL ? OFFLINE : -1 ))
@@ -115,7 +116,9 @@ typedef struct AudioButton {
 typedef struct WinData{
 
     int who;
-    int getOfflineTranslation;
+    int gotOfflineTran;
+    int gotBaiduTran;
+    int gotGoogleTran;
     int specific;
 
     Baidu *bw;
