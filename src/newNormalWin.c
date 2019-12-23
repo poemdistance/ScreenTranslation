@@ -367,6 +367,9 @@ int getIndex(int *index, char *src) {
         pbred ( "临时内存未初始化" );
         return -1;
     }
+
+    clearBaiduMysqlResultMemory();
+
     strcpy ( tmp, src );
     char *p = &tmp[ACTUALSTART];
     int i = ACTUALSTART;  /*同p一致指向同一个下标字符*/
@@ -481,7 +484,7 @@ int reGetBaiduTrans (gpointer *data, int who ) {
         return ret;
     }
 
-    int len = GET_DISPLAY_LINES_NUM ( data, who ) > 15 ? 46 : 28;
+    int len = GET_DISPLAY_LINES_NUM ( data, who ) > 15 ? 28 : 28;
     pbred ( "单行长度=%d", len );
     separateDataForBaidu(index, len, TYPE(who) );
 
@@ -1047,8 +1050,6 @@ int setWinSizeForNormalWin (WinData *window, char *addr, int type) {
 
     if ( maxlen <= 0 || lines <= 0 )
         return -1;
-
-    pbred ("lines=%d maxlen=%d", lines, maxlen);
 
     STORE_DISPLAY_MAX_LEN ( window, WHO(addr), maxlen );
     STORE_DISPLAY_LINES_NUM ( window, WHO(addr), lines );

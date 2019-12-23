@@ -15,6 +15,7 @@ void releaseMemoryBaidu();
 void releaseMemoryTmp();
 
 void clearMemory();
+void clearBaiduMysqlResultMemory();
 
 #endif
 
