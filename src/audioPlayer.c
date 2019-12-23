@@ -165,12 +165,12 @@ int getAudioButtonPositionX ( int x ) {
     char *file = expanduser("/home/$USER/.stran/"AUDIO_BASE_NAME".func");
     double a, b, c, d;
 
-    genFitFunc ( AUDIO_BASE_NAME );
+    genFitFunc ( AUDIO_BASE_NAME, FITTING_STATUS );
     if ( notExist ( file ) ) {
         pbred ( "Fitting function file not found (audioPlayer)" );
         return 350;
     }
-    getFitFunc ( file, FOR_AUDIO_BUTTON, &a, &b, &c, &d);
+    getFitFunc ( file, FOR_AUDIO_BUTTON, &a, &b, &c, &d, FITTING_STATUS);
     return (int)(a * x*x*x  + b * x*x + c *x + d );
 }
 

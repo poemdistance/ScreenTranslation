@@ -47,7 +47,7 @@ int checkWindowSize ( gpointer *data ) {
     gint iheight = WINDATA(data)->height;
     gtk_window_get_size((GtkWindow*)WINDATA(data)->window, &cwidth, &cheight);
 
-    //pbred ( "Indicate window size ?= Current window size, %d - %d   %d - %d" , iwidth, iheight, cwidth, cheight);
+    pbred ( "Indicate window size ?= Current window size, %d - %d   %d - %d" , iwidth, iheight, cwidth, cheight);
 
     if ( iwidth != cwidth || iheight != cheight ) {
         pbred ( "Indicate window size != Current window size,\
@@ -59,7 +59,7 @@ int checkWindowSize ( gpointer *data ) {
 }
 
 void selectDisplay( WinData *wd ) {
-    
+
     if ( wd->gotBaiduTran )
         wd->who = BAIDU;
     else if ( wd->gotOfflineTran )
@@ -133,7 +133,7 @@ int detect_ctrl_c(void *data) {
         return FALSE;
     }
 
-    checkWindowSize ( data );
+    //checkWindowSize ( data );
     return TRUE;
 }
 
@@ -480,7 +480,10 @@ int reGetBaiduTrans (gpointer *data, int who ) {
     if ( ret ) {
         return ret;
     }
-    separateDataForBaidu(index, 28, TYPE(who) );
+
+    int len = GET_DISPLAY_LINES_NUM ( data, who ) > 15 ? 46 : 28;
+    pbred ( "单行长度=%d", len );
+    separateDataForBaidu(index, len, TYPE(who) );
 
     return 0;
 }
@@ -506,10 +509,10 @@ int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     else if ( who == BAIDU || who == MYSQL)
     {
         /*还未获取到结果，应重新获取并设置窗口大小*/
-        if ( strlen ( ZhTrans(TYPE(who), 0) ) == 0) {
-            ret = reGetBaiduTrans ( data, who );
-            if ( ret ) return ret;
-        }
+        //if ( strlen ( ZhTrans(TYPE(who), 0) ) == 0) {
+        ret = reGetBaiduTrans ( data, who );
+        if ( ret ) return ret;
+        //}
     }
 
     ret = setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who));
@@ -541,15 +544,13 @@ int changeDisplay(GtkWidget *button, gpointer *data) {
 
 void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 
-    int ret = 0;
     pyellow("\n显示谷歌翻译结果:\n\n");
 
     WINDATA(data)->who = GOOGLE;
     WINDATA(data)->specific = 1;
 
     /* 调整窗口大小*/
-    ret = adjustWinSize ( button, data, GOOGLE );
-    if ( ret ) return;
+    adjustWinSize ( button, data, GOOGLE );
 
     gint width = WINDATA(data)->width;
     gint height = WINDATA(data)->height;
@@ -625,14 +626,12 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 /* 离线翻译结果展示窗口, 跟displayBaiduTrans重复较多*/
 void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 
-    int ret = 0;
     pmag("显示离线翻译:\n");
 
     WINDATA(data)->who = MYSQL;
     WINDATA(data)->specific = 1;
 
-    ret = adjustWinSize ( button, data, MYSQL );
-    if ( ret ) return;
+    adjustWinSize ( button, data, MYSQL );
 
     gint width = WINDATA(data)->width;
     gint height = WINDATA(data)->height;
@@ -751,14 +750,12 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 /* Baidu online translation display window */
 void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
-    int ret = 0;
     pgreen("显示百度翻译:");
 
     WINDATA(data)->who = BAIDU;
     WINDATA(data)->specific = 1;
 
-    ret = adjustWinSize ( button, data, BAIDU );
-    if ( ret ) return;
+    adjustWinSize ( button, data, BAIDU );
 
     gint width = WINDATA(data)->width;
     gint height = WINDATA(data)->height;
@@ -885,29 +882,9 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
         else if ( i == 0  && strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0))==0 \
                 && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
 
-            /* 一般来说谷歌翻译的结果获取快一点，如果百度翻译此时还没获取到，
-             * 先返回谷歌翻译的结果
-             *
-             * 只做一次重定向，之后再按切换按钮如果还没有获取到结果显示错误信息，不然一直刷新
-             * 界面都没有变化太难受了*/
-            if (  WINDATA(data)->hadRedirect )
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n\n   获取百度翻译结果失败\n",\
-                        -1, "brown-font",  "heavy-font", \
-                        "font-size-11","letter-spacing", NULL);
-
-            else if ( WINDATA(data)->hadRedirect != 1 ){
-
-                pred("翻译结果重定向");
-
-                WINDATA(data)->hadRedirect = 1;
-
-                pred("flag:%c \n", shmaddr_mysql[0]);
-
-                if ( WINDATA(data)->gotOfflineTran )
-                    return displayOfflineTrans ( WINDATA(data)->mysqlButton, data);
-                else
-                    return displayGoogleTrans ( WINDATA(data)->googleButton, data);
-            }
+            gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n\n   必应翻译尚未获取成功\n",\
+                    -1, "brown-font",  "heavy-font", \
+                    "font-size-11","letter-spacing", NULL);
         }
     }
 }
@@ -1023,9 +1000,9 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
 int calculateWidth ( int x ) {
 
     double wa, wb, wc, wd; /* For width*/
-    genFitFunc ( "winSizeInfo_part1" );
+    genFitFunc ( "winSizeInfo_part1", FITTING_STATUS );
     getFitFunc ( expanduser("/home/$USER/.stran/winSizeInfo_part1.func"),\
-            FOR_WIN_WIDTH, &wa, &wb, &wc, &wd );
+            FOR_WIN_WIDTH, &wa, &wb, &wc, &wd, FITTING_STATUS );
 
     return  (int) ( wa*x*x*x + wb*x*x +wc*x +wd + 0.5 );
 }
@@ -1033,9 +1010,9 @@ int calculateWidth ( int x ) {
 int calculateHeight ( int x ) {
 
     double ha, hb, hc, hd; /* For height*/
-    genFitFunc ( "winSizeInfo_part2" );
+    genFitFunc ( "winSizeInfo_part2", FITTING_STATUS );
     getFitFunc ( expanduser("/home/$USER/.stran/winSizeInfo_part2.func"),\
-            FOR_WIN_HEIGHT, &ha, &hb, &hc, &hd );
+            FOR_WIN_HEIGHT, &ha, &hb, &hc, &hd, FITTING_STATUS );
 
     return  (int) ( ha*x*x*x + hb*x*x +hc*x +hd + 0.5 );
 }
