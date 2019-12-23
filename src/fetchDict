@@ -99,7 +99,7 @@ def formatData(word, attributes):
                 elif key == 'phon_am':
                     output += '   ' + data[key] + '|';
                 else:
-                    output += data[key] + '|' ;
+                    output += data[key].replace('\n','') + '|' ;
 
             except Exception as e:
                 output += '|';
@@ -107,9 +107,9 @@ def formatData(word, attributes):
             try:
                 while isPartOfSpeech(attributes[i]):
                     if attributes[i] == 'other':
-                        output += attributes[i] + '.' + data[attributes[i]] + '|';
+                        output += attributes[i] + '.' + data[attributes[i]].replace('\n','') + '|';
                     else:
-                        output += attributes[i] + data[attributes[i]] + '|';
+                        output += attributes[i] + data[attributes[i]].replace('\n','') + '|';
                     
                     pos = pos + 1
                     i= i + 1

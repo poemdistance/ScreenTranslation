@@ -17,9 +17,9 @@ void insertCalibrationButton( WinData *win );
 
 extern char *text;
 
-extern char *baidu_result[BAIDUSIZE];
+extern char **baidu_result[BAIDUSIZE];
 extern char *google_result[GOOGLESIZE];
-extern char *mysql_result[MYSQLSIZE];
+extern char **mysql_result[MYSQLSIZE];
 
 extern char *tmp;
 
@@ -42,28 +42,28 @@ extern char *shmaddr_pic;
 #define OtherWordFormFlag(type) ( type == ONLINE ? ( shmaddr_baidu[4] - '0' ) : ( shmaddr_mysql[4] - '0' ))
 #define NumAudioFlag(type) ( type == ONLINE ? ( shmaddr_baidu[5] - '0' ) : ( shmaddr_mysql[5] - '0' ))
 
-#define SourceInput(type) ( type == ONLINE ? (( char *) baidu_result[0]) : ((char*)mysql_result[0]))
-#define Phonetic(type)( type == ONLINE ? (( char *) baidu_result[1]) : ((char*)mysql_result[1]))
-#define ZhTrans(type) ( type == ONLINE ? (( char *) baidu_result[2]) : ((char*)mysql_result[2]))
-#define EnTrans(type) ( type == ONLINE ? (( char *) baidu_result[3]) : ((char*)mysql_result[3]))
-#define OtherWordForm(type) ( type == ONLINE ? (( char *) baidu_result[4]) : ((char*)mysql_result[4]))
-#define Audios(type) ( type == ONLINE ? (( char *) baidu_result[5]) : ((char*)mysql_result[5]))
+#define SourceInput(type) ( type == ONLINE ? (( char *) baidu_result[0][0]) : ((char*)mysql_result[0][0]))
+#define Phonetic(type)( type == ONLINE ? (( char *) baidu_result[1][0]) : ((char*)mysql_result[1][0]))
+#define ZhTrans(type, i) ( type == ONLINE ? (( char *) baidu_result[2][i]) : ((char*)mysql_result[2][i]))
+#define EnTrans(type) ( type == ONLINE ? (( char *) baidu_result[3][0]) : ((char*)mysql_result[3][0]))
+#define OtherWordForm(type) ( type == ONLINE ? (( char *) baidu_result[4][0]) : ((char*)mysql_result[4][0]))
+#define Audios(type) ( type == ONLINE ? (( char *) baidu_result[5][0]) : ((char*)mysql_result[5][0]))
 
 
 int destroyNormalWin(GtkWidget *window, WinData *win);
 int waitForContinue();
-void getIndex(int *index, char *addr);
+int getIndex(int *index, char *addr);
 void printDebugInfo();
 int  newScrolledWin();
 void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter);
-void changeDisplay(GtkWidget *button, gpointer *arg);
+int changeDisplay(GtkWidget *button, gpointer *arg);
 void displayGoogleTrans(GtkWidget *button, gpointer *arg);
 void displayBaiduTrans(GtkWidget *button,  void **arg );
 void displayOfflineTrans ( GtkWidget *button, gpointer *arg );
 void syncScrolledWinWithConfigEvent ( GtkWidget *window, GdkEvent *event, gpointer *wd );
 void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer scroll );
-void adjustWinSize(GtkWidget *button, gpointer *arg, int which);
-void setWinSizeForNormalWin ( WinData *window, char *addr, int type);
+int adjustWinSize(GtkWidget *button, gpointer *arg, int which);
+int setWinSizeForNormalWin ( WinData *window, char *addr, int type);
 void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd);
 
 gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data );

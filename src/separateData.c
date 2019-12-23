@@ -6,11 +6,9 @@ extern char *shmaddr_baidu;
 extern char *shmaddr_google;
 extern char *shmaddr_mysql;
 
-extern char *baidu_result[BAIDUSIZE] ;
+extern char **baidu_result[BAIDUSIZE] ;
 extern char *google_result[GOOGLESIZE] ;
-extern char *mysql_result[MYSQLSIZE] ;
-
-extern char *baidu_result[BAIDUSIZE];
+extern char **mysql_result[MYSQLSIZE] ;
 
 extern char *text;
 
@@ -22,7 +20,7 @@ char audioOffline_uk[512] = { '\0' };
 
 void separateDataForBaidu(int *index, int len, int type) {
 
-    char **result = NULL;
+    char ***result = NULL;
     char *tmpBuffer = NULL;
 
     /* 根据类型设置操作地址*/
@@ -86,19 +84,25 @@ void separateDataForBaidu(int *index, int len, int type) {
             continue;
         }
 
+        int k=0;
         count = 0;
         /* 从python端来的数据缺少回车符，将在这里加上*/
         while ( count <  tmpBuffer[n] - '0') 
         {
-            strcat ( result[n],  &tmpBuffer[index[i++]]);
-            strcat ( result[n], "\n");
+            strcat ( result[n][k],  &tmpBuffer[index[i++]]);
+            strcat ( result[n][k], "\n");
 
             /* 除去最后一条中文翻译，之前的字符串都再加上回车（形成空行,用于隔开各个句子）*/
             if ( n == 2 && count + 1 < tmpBuffer[n] - '0') {
-                strcat ( ZhTrans(type), "\n");
+                strcat ( ZhTrans(type, k), "\n");
             }
 
             count++;
+
+            /* n为2,3分别对应中英文翻译，一条结果用单独一个空间存储，故i++,
+             * 除此外，其他结果只有一个存储空间，i不可超过0*/
+            if ( n == 2 || n == 3 )
+                k++;
         }
 
         /* ZhTrans(type)*/
@@ -107,15 +111,23 @@ void separateDataForBaidu(int *index, int len, int type) {
             if ( PhoneticFlag(type) == 0 && NumZhTranFlag(type) == 1 &&\
                     NumEnTranFlag(type) == 0 && OtherWordFormFlag(type) == 0 ) {
 
-                adjustStrForBaidu(len, result[n], 0, 1);
+                adjustStrForBaidu(len, result[n][0], 0, 1);
             }
 
-            else
-                adjustStrForBaidu(len, result[n], 1, 1);
+            else {
+
+                for ( int i=0; i<ZH_EN_TRAN_SIZE; i++ )
+                    adjustStrForBaidu(len, result[n][i], 1, 1);
+            }
         }
 
-        else if ( n == 3 || n == 4)
-            adjustStrForBaidu(len, result[n], 0, 1);
+        else if ( n == 3 ) {
+
+            for ( int i=0; i<ZH_EN_TRAN_SIZE; i++ )
+                adjustStrForBaidu(len, result[n][i], 0, 1);
+        }
+        else if ( n == 4 )
+            adjustStrForBaidu(len, result[n][0], 0, 1);
     }
 }
 

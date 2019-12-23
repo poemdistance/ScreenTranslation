@@ -5,7 +5,7 @@
 
 int getMaxLenOfBaiduTrans(int type) {
 
-    char **result = NULL;
+    char ***result = NULL;
     if ( type == ONLINE )
         result = baidu_result;
     else if ( type == OFFLINE ) 
@@ -14,11 +14,17 @@ int getMaxLenOfBaiduTrans(int type) {
     int maxlen = 0;
 
     for ( int i=0, len=0; i<BAIDUSIZE; i++ ) {
-        if ( result[i][0] != '\0')
-            len = countCharNums ( result[i] );
 
-        if ( len > maxlen )
-            maxlen = len;
+        if ( i == 2 || i == 3 ) {
+            for ( int j=0; j<ZH_EN_TRAN_SIZE; j++ ) {
+                len = countCharNums ( result[i][j] );
+                maxlen = len > maxlen ? len : maxlen;
+            }
+        }
+        else {
+            len = countCharNums ( result[i][0] );
+            maxlen = len > maxlen ? len : maxlen;
+        }
     }
 
     if ( maxlen > 28 )
@@ -29,7 +35,7 @@ int getMaxLenOfBaiduTrans(int type) {
 
 int getLinesNumOfBaiduTrans (int type) {
 
-    char **result = NULL;
+    char ***result = NULL;
     if ( type == ONLINE )
         result = baidu_result;
     else if ( type == OFFLINE )
@@ -44,12 +50,27 @@ int getLinesNumOfBaiduTrans (int type) {
     char *p = NULL;
 
     for ( int i=0; i<BAIDUSIZE; i++ ) {
-        if ( result[i][0] != '\0' ) {
-            resultNum++;
-            p = result[i];
-            while ( *p ) {
-                if ( *p++ == '\n' )
-                    lines++;
+
+        if ( i == 2 || i == 3 ) {
+            for ( int j=0; j<ZH_EN_TRAN_SIZE; j++ ) {
+                if ( result[i][j][0]) {
+                    resultNum++;
+                    p = result[i][j];
+                    while ( *p ) {
+                        if ( *p++ == '\n' )
+                            lines++;
+                    }
+                }
+            }
+        }
+        else {
+            if ( result[i][0][0] != '\0' ) {
+                resultNum++;
+                p = result[i][0];
+                while ( *p ) {
+                    if ( *p++ == '\n' )
+                        lines++;
+                }
             }
         }
     }

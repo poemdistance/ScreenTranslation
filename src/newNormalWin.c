@@ -13,9 +13,9 @@
 
 typedef void (*Display_func)(GtkWidget *, gpointer *);
 
-char *baidu_result[BAIDUSIZE] = { NULL };
+char **baidu_result[BAIDUSIZE] = { NULL };
 char *google_result[GOOGLESIZE] = { NULL };
-char *mysql_result[MYSQLSIZE] = { NULL };
+char **mysql_result[MYSQLSIZE] = { NULL };
 char *tmp;
 
 /* 用于和detectMouse通信，当已经新建翻译结果显示窗口时，
@@ -32,14 +32,14 @@ static inline int previousWindow ( int who ) {
     return who > 1 ? who -1 : 3;
 }
 
-void checkWindowSize ( gpointer *data ) {
+static inline Display_func choice_display( int who ) {
 
-    inline Display_func choice_display( int who ) {
+    return ( who == BAIDU ? displayBaiduTrans : \
+            ( who == GOOGLE ? displayGoogleTrans :\
+              displayOfflineTrans) );
+}
 
-        return ( who == BAIDU ? displayBaiduTrans : \
-                ( who == GOOGLE ? displayGoogleTrans :\
-                  displayOfflineTrans) );
-    }
+int checkWindowSize ( gpointer *data ) {
 
     gint cwidth = 0;
     gint cheight = 0;
@@ -52,11 +52,26 @@ void checkWindowSize ( gpointer *data ) {
     if ( iwidth != cwidth || iheight != cheight ) {
         pbred ( "Indicate window size != Current window size,\
                 %d - %d   %d - %d" , iwidth, iheight, cwidth, cheight);
-        choice_display(WINDATA(data)->who);
+        choice_display(WINDATA(data)->who) ( GET_BUTTON (data, WINDATA(data)->who), (void*)data );
     }
+
+    return 0;
 }
+
+void selectDisplay( WinData *wd ) {
+    
+    if ( wd->gotBaiduTran )
+        wd->who = BAIDU;
+    else if ( wd->gotOfflineTran )
+        wd->who = MYSQL;
+    else
+        wd->who = GOOGLE;
+
+    choice_display ( wd->who )(GET_BUTTON ( wd, wd->who ), (void*)wd);
+}
+
 /* 本函数代码借鉴自xdotool部分源码*/
-void focusOurWindow( WinData *wd ) {
+int focusOurWindow( WinData *wd ) {
 
     /* Get window id of x11*/
     GdkWindow *gw = gtk_widget_get_window ( GTK_WIDGET ( wd->window ) );
@@ -66,7 +81,7 @@ void focusOurWindow( WinData *wd ) {
     XWindowAttributes wattr;
     Display *dpy = XOpenDisplay (NULL);
     if ( !dpy ) 
-        return;
+        return -1;
 
     XGetWindowAttributes(dpy, wid, &wattr);
 
@@ -90,6 +105,7 @@ void focusOurWindow( WinData *wd ) {
 
     XCloseDisplay(dpy);
 
+    return 0;
 }
 
 int detect_ctrl_c(void *data) {
@@ -121,7 +137,7 @@ int detect_ctrl_c(void *data) {
     return TRUE;
 }
 
-void dataInit(WinData *wd) {
+int dataInit(WinData *wd) {
 
     /*Important: Pay attention to clear the values the global variables*/
     bw.width = 400; bw.height = 100; bw.lines = 0; bw.maxlen = 0;
@@ -145,6 +161,8 @@ void dataInit(WinData *wd) {
     wd->enter = 0;
     wd->ox = wd->oy = 0;
     wd->cx = wd->cy = 0;
+
+    return 0;
 }
 
 
@@ -162,7 +180,7 @@ void *newNormalWindow() {
     /* 窗口打开标志位 changed in captureShortcutEvent.c <变量shmaddr>*/
     shmaddr_keyboard[WINDOW_OPENED_FLAG] = '1';
 
-    wd.getOfflineTranslation = 0;
+    wd.gotOfflineTran = 0;
     wd.specific = 0;
 
     int ret = waitForContinue( &wd );
@@ -301,8 +319,7 @@ void *newNormalWindow() {
     /* GtkTextView 插入文本时的回调函数注册*/
     //g_signal_connect ( buf, "changed", G_CALLBACK(text_changed), (void*)&wd );
 
-    /*显示百度翻译结果*/
-    displayBaiduTrans(baiduButton, (void*)&wd );
+    selectDisplay ( &wd );
 
     gtk_main();
 
@@ -341,13 +358,16 @@ int destroyNormalWin(GtkWidget *window, WinData *wd) {
 }
 
 /*Get index of separate symbols*/
-void getIndex(int *index, char *src) {
+int getIndex(int *index, char *src) {
 
     strcpy ( tmp, src );
     pbyellow ( "tmp=%s", tmp );
     char *p = &tmp[ACTUALSTART];
     int i = ACTUALSTART;  /*同p一致指向同一个下标字符*/
     int charNum = 0;
+
+    if ( !*p )
+        return -1;
 
     while ( *p ) 
     {
@@ -363,6 +383,8 @@ void getIndex(int *index, char *src) {
         }
         p++; i++;
     }
+
+    return 0;
 }
 
 int waitForContinue(WinData *wd) {
@@ -432,9 +454,9 @@ int waitForContinue(WinData *wd) {
     }
 
     action = 0;
-
-    if ( shmaddr_mysql[0] == FINFLAG )
-        wd->getOfflineTranslation = 1;
+    wd->gotOfflineTran = ( shmaddr_mysql[0] == FINFLAG ) ? 1 : 0;
+    wd->gotGoogleTran = ( shmaddr_google[0] == FINFLAG ) ? 1 : 0;
+    wd->gotBaiduTran = ( shmaddr_baidu[0] == FINFLAG ) ? 1 : 0;
 
     /*原始数据超过一定长度，在ScrolledWin中显示, 并返回1，
      * 不再执行newWin函数*/
@@ -444,21 +466,30 @@ int waitForContinue(WinData *wd) {
     return 0;
 }
 /* 重新从共享内存获取百度翻译结果并设置窗口大小*/
-void reGetBaiduTrans (gpointer *data, int who ) { 
+int reGetBaiduTrans (gpointer *data, int who ) {
 
     int index[INDEX_SIZE] = { 0 };
+    int ret = 0;
+    ret = getIndex(index, GET_SHMADDR(who) );
+    if ( ret ) {
 
-    getIndex(index, GET_SHMADDR(who) );
-
+    }
     separateDataForBaidu(index, 28, TYPE(who) );
+
+    return 0;
 }
 
-void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
+int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
+
+    int ret = 0;
 
     if ( who == GOOGLE ) 
     {
         int index[2] = { 0 };
-        getIndex(index, shmaddr_google);
+        ret = getIndex(index, shmaddr_google);
+        if ( ret ) {
+
+        }
 
         /* 找到分割符，数据分离提取才有意义*/
         if ( index[0] != 0 )
@@ -469,11 +500,13 @@ void adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     else if ( who == BAIDU || who == MYSQL)
     {
         /*还未获取到结果，应重新获取并设置窗口大小*/
-        if ( strlen ( ZhTrans(TYPE(who)) ) == 0)
+        if ( strlen ( ZhTrans(TYPE(who), 0) ) == 0)
             reGetBaiduTrans ( data, who );
     }
 
     setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who));
+
+    return 0;
 }
 
 static inline int nextWindow ( int who )  {
@@ -481,7 +514,7 @@ static inline int nextWindow ( int who )  {
 }
 
 /* 切换各个翻译结果的显示*/
-void changeDisplay(GtkWidget *button, gpointer *data) {
+int changeDisplay(GtkWidget *button, gpointer *data) {
 
     WINDATA(data)->who = nextWindow((WINDATA(data)->who));
 
@@ -493,6 +526,8 @@ void changeDisplay(GtkWidget *button, gpointer *data) {
         displayGoogleTrans(button, data);
     else if ( WINDATA(data)->who == OFFLINE )
         displayOfflineTrans(button, data);
+
+    return 0;
 }
 
 void displayGoogleTrans(GtkWidget *button, gpointer *data) {
@@ -605,7 +640,7 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 
     WINDATA(data)->iter = iter ;
 
-    if ( ! WINDATA(data)->getOfflineTranslation && strlen ( ZhTrans(OFFLINE) ) == 0 )
+    if ( ! WINDATA(data)->gotOfflineTran && strlen ( ZhTrans(OFFLINE, 0) ) == 0 )
         gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n  NOT FOUND ANYTHING",\
                 -1, "yellow-font",  "heavy-font", \
                 "font-size-11", "letter-spacing", NULL);
@@ -618,45 +653,44 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
     for ( int i=0; i<BAIDUSIZE-1; i++ ) {
 
         /* 翻译结果不为空*/
-        if ( mysql_result[i][0] != '\0') {
+        if ( mysql_result[i][0][0] != '\0') {
 
             /* 翻译结果输出控制代码段*/
-            if ( i == 0 && strlen(mysql_result[i]) < 30 ) {
+            if ( i == 0 && strlen(mysql_result[i][0]) < 30 ) {
 
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i], \
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][0], \
                         -1,"black-font",  "bold-style", \
                         "font-size-15", "letter-spacing","underline", NULL);
             }
             else if ( i == 1 ) {
 
-                gtk_text_buffer_get_end_iter ( buf, &end );
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i],\
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][0],\
                         -1, "blue-font",  "heavy-font", \
                         "font-size-11", "letter-spacing", NULL);
 
             }
             else if ( i == 4 ) {
 
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i],\
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][0],\
                         -1, "brown-font",  "heavy-font", \
                         "font-size-11","letter-spacing", NULL);
             }
             else if ( i != 0 ) {
 
-                if ( strlen(Phonetic(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE)) != 0\
+                if ( strlen(Phonetic(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE, 0)) != 0\
                         && strlen(EnTrans(OFFLINE)) == 0 && strlen(OtherWordForm(OFFLINE)) == 0){
 
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i],\
+                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][0],\
                             -1, "brown-font",  "heavy-font", \
                             "font-size-11", "letter-spacing", NULL);
 
                 } else {
 
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i],\
-                            -1, "green-font",  "heavy-font", \
-                            "font-size-11", "letter-spacing", NULL);
+                    for ( int j=0; j<ZH_EN_TRAN_SIZE && mysql_result[i][j][0]; j++ )
+                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][j],\
+                                -1, "green-font",  "heavy-font", \
+                                "font-size-11", "letter-spacing", NULL);
                 }
 
             }
@@ -665,16 +699,16 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
             if ( i == 0 )  {
 
                 /* 只有源输入而之后没结果了，插入一个回车符*/
-                if (( strlen(mysql_result[3]) ==0 && strlen(mysql_result[4]) == 0\
-                            && strlen(mysql_result[2]) == 0 && strlen(mysql_result[1]) == 0)) 
+                if (( strlen(mysql_result[3][0]) ==0 && strlen(mysql_result[4][0]) == 0\
+                            && strlen(mysql_result[2][0]) == 0 && strlen(mysql_result[1][0]) == 0)) 
                 {
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                 }
 
                 else  
                 {   
-                    if (!(strlen(Phonetic(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE)) != 0 && strlen(EnTrans(OFFLINE)) == 0\
-                                && strlen(OtherWordForm(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE)) != 0) ){
+                    if (!(strlen(Phonetic(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE,0)) != 0 && strlen(EnTrans(OFFLINE)) == 0\
+                                && strlen(OtherWordForm(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE,0)) != 0) ){
                         gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                         gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                     }
@@ -685,16 +719,16 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
                 }
             }
 
-            else if ( i == 1 && strlen(mysql_result[1]) != 0 && ( strlen(mysql_result[2]) != 0\
-                        || strlen(mysql_result[3]) != 0 || strlen(mysql_result[4]) != 0))
+            else if ( i == 1 && strlen(mysql_result[1][0]) != 0 && ( strlen(mysql_result[2][0]) != 0\
+                        || strlen(mysql_result[3][0]) != 0 || strlen(mysql_result[4][0]) != 0))
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
 
-            else if ( i == 2 && ( strlen(mysql_result[3]) != 0 || strlen(mysql_result[4]) != 0 ) )
+            else if ( i == 2 && ( strlen(mysql_result[3][0]) != 0 || strlen(mysql_result[4][0]) != 0 ) )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
 
 
-            else if ( i == 3 && ( strlen(mysql_result[4]) != 0) )
+            else if ( i == 3 && ( strlen(mysql_result[4][0]) != 0) )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         } 
     }
@@ -721,9 +755,9 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
     GtkTextBuffer *buf = WINDATA(data)->buf;
 
-    if ( strlen (ZhTrans(ONLINE)) == 0 && strlen ( EnTrans(ONLINE) ) == 0 ) {
+    if ( strlen (ZhTrans(ONLINE,0)) == 0 && strlen ( EnTrans(ONLINE) ) == 0 ) {
 
-        pred("ZhTrans(ONLINE) & EnTrans(ONLINE)长度皆为0 \n");
+        pred("ZhTrans(ONLINE,0) & EnTrans(ONLINE)长度皆为0 \n");
         reGetBaiduTrans ( data, BAIDU );
     }
 
@@ -747,44 +781,44 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
     for ( int i=0; i<BAIDUSIZE-1; i++ ) {
 
         /* 翻译结果不为空*/
-        if ( baidu_result[i][0] != '\0') {
+        if ( baidu_result[i][0][0] != '\0') {
 
             /* 翻译结果输出控制代码段*/
-            if ( i == 0 && strlen(baidu_result[i]) < 30 ) {
+            if ( i == 0 && strlen(baidu_result[i][0]) < 30 ) {
 
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i], \
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][0], \
                         -1,"black-font",  "bold-style", \
                         "font-size-15", "letter-spacing","underline", NULL);
             }
             else if ( i == 1 ) {
 
-                gtk_text_buffer_get_end_iter ( buf, &end );
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][0],\
                         -1, "blue-font",  "heavy-font", \
                         "font-size-11", "letter-spacing", NULL);
             }
             else if ( i == 4 ) {
 
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
+                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][0],\
                         -1, "brown-font",  "heavy-font", \
                         "font-size-11","letter-spacing", NULL);
             }
-            else if ( i != 0 ) {
+            else if ( i != 0 ) { /* i==2 || i == 3*/
 
-                if ( strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE)) != 0\
+                /* 翻译结果只有一句(如短句翻译会出现这种情况),显示设置为棕色*/
+                if ( strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0)) != 0\
                         && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
 
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
+                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][0],\
                             -1, "brown-font",  "heavy-font", \
                             "font-size-11", "letter-spacing", NULL);
 
                 } else {
 
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i],\
-                            -1, "green-font",  "heavy-font", \
-                            "font-size-11", "letter-spacing", NULL);
+                    for ( int j=0; j<ZH_EN_TRAN_SIZE && baidu_result[i][j][0]; j++ )
+                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][j],\
+                                -1, "green-font",  "heavy-font", \
+                                "font-size-11", "letter-spacing", NULL);
                 }
 
             }
@@ -793,16 +827,16 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
             if ( i == 0 )  {
 
                 /* 只有源输入而之后没结果了，插入一个回车符*/
-                if (( strlen(baidu_result[3]) ==0 && strlen(baidu_result[4]) == 0\
-                            && strlen(baidu_result[2]) == 0 && strlen(baidu_result[1]) == 0)) 
+                if (( strlen(baidu_result[3][0]) ==0 && strlen(baidu_result[4][0]) == 0\
+                            && strlen(baidu_result[2][0]) == 0 && strlen(baidu_result[1][0]) == 0)) 
                 {
                     gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                 }
 
                 else  
                 {   
-                    if (!(strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE)) != 0 && strlen(EnTrans(ONLINE)) == 0\
-                                && strlen(OtherWordForm(ONLINE)) == 0 && strlen(ZhTrans(ONLINE)) != 0) ){
+                    if (!(strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0)) != 0 && strlen(EnTrans(ONLINE)) == 0\
+                                && strlen(OtherWordForm(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0)) != 0) ){
                         gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                         gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
                     }
@@ -813,16 +847,16 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
                 }
             }
 
-            else if ( i == 1 && strlen(baidu_result[1]) != 0 && ( strlen(baidu_result[2]) != 0\
-                        || strlen(baidu_result[3]) != 0 || strlen(baidu_result[4]) != 0))
+            else if ( i == 1 && strlen(baidu_result[1][0]) != 0 && ( strlen(baidu_result[2][0]) != 0\
+                        || strlen(baidu_result[3][0]) != 0 || strlen(baidu_result[4][0]) != 0))
 
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
 
-            else if ( i == 2 && ( strlen(baidu_result[3]) != 0 || strlen(baidu_result[4]) != 0 ) )
+            else if ( i == 2 && ( strlen(baidu_result[3][0]) != 0 || strlen(baidu_result[4][0]) != 0 ) )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
 
 
-            else if ( i == 3 && ( strlen(baidu_result[4]) != 0) )
+            else if ( i == 3 && ( strlen(baidu_result[4][0]) != 0) )
                 gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
         } 
 
@@ -833,7 +867,7 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
         /* 这里不要再用上面的用标志位检测，存在一种情况，翻译结果没复制过来，上面的结果插入语句无法执行
          * 刚好到这里的时候标志位又被刚好翻译结果写入完成的python端修改，导致重定向失败，这里的所有逻辑
          * 都不要用标志位判断*/
-        else if ( i == 0  && strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE))==0 \
+        else if ( i == 0  && strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0))==0 \
                 && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
 
             /* 一般来说谷歌翻译的结果获取快一点，如果百度翻译此时还没获取到，
@@ -854,7 +888,7 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
                 pred("flag:%c \n", shmaddr_mysql[0]);
 
-                if ( WINDATA(data)->getOfflineTranslation )
+                if ( WINDATA(data)->gotOfflineTran )
                     return displayOfflineTrans ( WINDATA(data)->mysqlButton, data);
                 else
                     return displayGoogleTrans ( WINDATA(data)->googleButton, data);
@@ -991,17 +1025,19 @@ int calculateHeight ( int x ) {
     return  (int) ( ha*x*x*x + hb*x*x +hc*x +hd + 0.5 );
 }
 
-void limitSize ( double *width, double *height ) {
+int limitSize ( double *width, double *height ) {
 
     /*别让窗口过小,或过大*/
     //if ( *width < 400 ) *width = 400;
     if ( *height < 100 ) *height = 100;
     if ( *width > 1000 ) *width = 1000;
     if ( *height > 900 ) *height = 900;
+
+    return 0;
 }
 
 /* 设置NormalWin的窗口大小, type: ONLINE / OFFLINE*/
-void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
+int setWinSizeForNormalWin (WinData *window, char *addr, int type) {
 
     int maxlen = 0;
     int lines = 0;
@@ -1016,6 +1052,8 @@ void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
         lines = getLinesNumOfGoogleTrans();
         maxlen = getMaxLenOfGoogleTrans();
     }
+
+    pbred ("lines=%d maxlen=%d", lines, maxlen);
 
     STORE_DISPLAY_MAX_LEN ( window, WHO(addr), maxlen );
     STORE_DISPLAY_LINES_NUM ( window, WHO(addr), lines );
@@ -1045,5 +1083,6 @@ void setWinSizeForNormalWin (WinData *window, char *addr, int type) {
 
     if ( WINDATA(window)->specific == 1 )
         syncNormalWinForConfigEvent ( WINDATA(window)->window, NULL, window );
-    return;
+
+    return 0;
 }

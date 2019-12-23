@@ -89,7 +89,7 @@ void suitWinSizeWithCharNum ( char *addr , WinData *wd) {
                 wd->height = 600;
 
             adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
-            strcpy ( ZhTrans(ONLINE),  &shmaddr_baidu[ACTUALSTART+2]);
+            strcpy ( ZhTrans(ONLINE,0),  &shmaddr_baidu[ACTUALSTART+2]);
         }
     }
 
@@ -144,7 +144,7 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
 
     /* getIndex 会将分隔符修改为'\0', 再一次进入这个函数index[1]会成0
      * 所以这里是为了区分是否是第一次进入这里，如果不是，插入已经保存
-     * 到ZhTrans(ONLINE)的数据, 否则先生成ZhTrans(ONLINE)*/
+     * 到ZhTrans(ONLINE,0)的数据, 否则先生成ZhTrans(ONLINE,0)*/
     if ( index[1] != 0 ) {
 
         shmaddr_baidu[0] = '0';
@@ -154,31 +154,31 @@ void showBaiduScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd) 
         resizeScrolledWin ( wd, wd->width, wd->height );
         pgreen(" (showBaiduScrolledWin) width=%d height=%d\n", wd->width, wd->height);
 
-        strcpy ( ZhTrans(ONLINE),  &shmaddr_baidu[2+ACTUALSTART]);
+        strcpy ( ZhTrans(ONLINE,0),  &shmaddr_baidu[2+ACTUALSTART]);
 
-        pgreen(" 调整后输出的百度翻译结果:%s\n", ZhTrans(ONLINE));
+        pgreen(" 调整后输出的百度翻译结果:%s\n", ZhTrans(ONLINE,0));
 
-        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans(ONLINE), -1,\
+        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans(ONLINE,0), -1,\
                 "brown-font", "font-size-14", "bold-style", NULL );
     }
 
-    else if ( strlen ( ZhTrans(ONLINE) ) != 0 ) {
+    else if ( strlen ( ZhTrans(ONLINE,0) ) != 0 ) {
 
         //adjustStrForScrolledWin ( 30, &shmaddr_baidu[ACTUALSTART+2] );
-        //strcpy ( ZhTrans(ONLINE),  &shmaddr_baidu[ACTUALSTART+2]);
+        //strcpy ( ZhTrans(ONLINE,0),  &shmaddr_baidu[ACTUALSTART+2]);
 
         /* 窗口大了，对显示的字符串进行相应调整, 扩大单行显示长度为46*/
         if ( wd->width >= 900 ) {
 
             adjustStrForScrolledWin ( 46, &shmaddr_baidu[ACTUALSTART+2] );
-            strcpy ( ZhTrans(ONLINE),  &shmaddr_baidu[ACTUALSTART+2]);
+            strcpy ( ZhTrans(ONLINE,0),  &shmaddr_baidu[ACTUALSTART+2]);
         }
 
         resizeScrolledWin ( wd, wd->width, wd->height );
 
-        pgreen(" ZhTrans(ONLINE)里的结果输出\n");
+        pgreen(" ZhTrans(ONLINE,0)里的结果输出\n");
 
-        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans(ONLINE), -1,\
+        gtk_text_buffer_insert_with_tags_by_name ( gtbuf, iter, ZhTrans(ONLINE,0), -1,\
                 "brown-font", "font-size-14", "bold-style", NULL );
     }
     else {
