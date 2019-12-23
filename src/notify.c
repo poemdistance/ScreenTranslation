@@ -13,6 +13,7 @@
 #include "common.h"
 #include "detectMouse.h"
 #include "cleanup.h"
+#include "printWithColor.h"
 
 int fd_key = -1;
 FILE *fp = NULL;
@@ -41,21 +42,18 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     if ( shmaddr_selection[0] == '1') {
 
         shmaddr_selection[0] = '0';
-        //printf("\033[0;31mPrimary Selection changed flag: set to 0\033[0m\n");
 
         /* 去吧, 皮卡丘*/
         pikaqiuGo = 1;
-
-        //printf("\033[0;35mPikaqiu Go \033[0m\n");
+        pbgreen ( "皮卡皮卡 GO" );
     }
 
     if ( ! pikaqiuGo ) {
 
-        //printf("\033[0;35mPikaqiu return \033[0m\n");
-
         action = 0;
         memset(*history, 0, sizeof(*history));
         CanNewEntrance = 0;
+        pbred ( "皮卡丘掉头跑了" );
         return;
     }
 
@@ -82,7 +80,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
 
     pclose(fp);
 
-    fprintf(stdout, "Focus window application: %s\n", appName);
+    fprintf(stdout, "Focus window application: %s", appName);
 
 
     if ( isApp("wantToIgnore", appName) == 1 ) {
@@ -128,6 +126,8 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
 
     /*清除鼠标记录*/
     memset(*history, 0, sizeof(*history));
+
+    pbgreen ( "Return from notify" );
 }
 
 void send_Ctrl_Shift_C() {
