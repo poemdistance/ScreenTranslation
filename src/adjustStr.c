@@ -3,6 +3,25 @@
 #include <ctype.h>
 #include "dataStatistics.h"
 
+int theThirdByteOfChinese ( char *c ) {
+
+    /*此处需要了解一下utf8编码格式
+     *
+     * 对于只有一个字节的字符,单字节最高位为0，
+     * 否则最高位开始往后数，有多少个1，就代表
+     * 当前字符有多少字节，utf-8在本机测试为3个字节，
+     * utf-8格式为111xxx 10xxxx 10xxxx(二进制表示).
+     * 所以只要判断到当前字节的高两位为10,即十进制为2，且下一个字节
+     * 的高两位不是10，即不是十进制中的2，说明单个汉字已经读取结束
+     * 这个时候才可以对该字符后进行截取(加回车符),不然可能导致乱码
+     *
+     * 另说明这里与上0xff纯粹是为了有时打印成int型值时提供方便,因为int型
+     * 有4个字节，需要截断才能显示正确的值*/
+    return \
+        (((*c & 0xff) >> 6) & 0x03) == 2  \
+        && (((*(c+1) & 0xff) >> 6) & 0x03) != 2;
+}
+
 /*字符串调整函数:
  * 向每超过一定长度的字符串中添加回车字符,避免单行过长
  *
@@ -23,7 +42,6 @@ void adjustStrForGoogle(char *p[], int len, char *storage[]) {
         for ( int j=0, k=0; True ; j++, k++ ) 
         {
             storage[i][k] = p[i][j];
-            //printf("i=%d %c\n",i, p[i][j]);
 
             /*读到结尾字符时退出内层for循环，处理下一个字符串*/
             if ( p[i][j] == '\0' ) {
@@ -36,23 +54,8 @@ void adjustStrForGoogle(char *p[], int len, char *storage[]) {
             if ( p[i][j] == ' ')
                 cansplit = k;
 
-            /*此处需要了解一下utf8编码格式
-             *
-             * 对于只有一个字节的字符,单字节最高位为0，
-             * 否则最高位开始往后数，有多少个1，就代表
-             * 当前字符有多少字节，utf-8在本机测试为3个字节，
-             * utf-8格式为111xxx 10xxxx 10xxxx(二进制表示).
-             * 所以只要判断到当前字节的高两位为10,即十进制为2，且下一个字节
-             * 的高两位不是10，即不是十进制中的2，说明单个汉字已经读取结束
-             * 这个时候才可以对该字符后进行截取(加回车符),不然可能导致乱码
-             *
-             * 另说明这里与上0xff纯粹是为了有时打印成int型值时提供方便,因为int型
-             * 有4个字节，需要截断才能显示正确的值*/
-            if ( (((p[i][j] & 0xff) >> 6) & 0x03) == 2  
-                    && (((p[i][j+1] & 0xff) >> 6) & 0x03) != 2 ) {
-
+            if (theThirdByteOfChinese(&p[i][j])) {
                 nowlen++;
-
                 if ( k > cansplit )
                     cansplit = k;
             }
@@ -97,8 +100,8 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
     int asciich = 0;
     int prefixLen = 0;
     int start = 0;
-    int validDot = 1;
     int cansplit = 0;
+    int notlock = 1;
 
     char buf[1024] = { '\0' };
 
@@ -124,33 +127,15 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         if ( source[j] == ' ')
             cansplit = k;
 
-        if ( source[j] == '\n') {
+        if ( addSpace && source[j] == '.' && notlock ) {
 
-            validDot = 1;
-            start = j;
-            nowlen = 0;
-            continue;
-        }
-
-        /*语句末有一个结束符号也是点，不是有效点，不能进这个if执行逻辑*/
-        if (addSpace && validDot && source[j] == '.' \
-                && source[j+1] != '\n' && source[j+1] != ' ' ) {
-
-            /* 新前面应该加的空格长度，应连个ascii作一个字符长，因乘2,
-             * start是上一个遇到的回车符的下标*/
             prefixLen = (j+1-start)*2;
-
-            //printf("\033[0;34mj=%d start=%d prefixLen=%d\033[0m\n", j, start, prefixLen);
             nowlen = (j-start)/2;
-            validDot = 0;
-
-            //printf("\033[0;32m j=%d start=%d nowlen=%d \033[0m\n\n",j, start, nowlen);
+            notlock = 0;
         }
 
         /* 单个汉字的最后一个字节*/
-        if ( (((source[j] & 0xff) >> 6) & 0x03) == 2  
-                && (((source[j+1] & 0xff) >> 6) & 0x03) != 2 ) {
-
+        if (theThirdByteOfChinese(&source[j])) {
             nowlen++;
 
             /* 汉字可分割，如果下标大于上一个可分割空格字符的，则替换之*/
@@ -159,7 +144,7 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
         }
 
         /* ascii字符范围*/
-        if ( (source[j]&0xff) < 128 && (source[j]&&0xff >= 0) )
+        if ( isalpha(source[j]) )
             asciich++;
 
         /* 两个ascii码作一个字符长度*/
@@ -176,13 +161,8 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
             int end = 0;
 
             /* 如果不是数字和字母，直接用回车符切割*/
-            if ( ! (\
-                        (nextchar >= '0' && nextchar <= '9' ) ||\
-                        (nextchar >= 'a' && nextchar <= 'z')  ||\
-                        (nextchar >= 'A' && nextchar <= 'Z')) ) {
-
+            if ( ! isalnum(nextchar) ) {
                 storage[++k] = '\n';
-
                 nowlen = 0;
             } 
             else {
@@ -225,7 +205,6 @@ void adjustStrForBaidu(int len, char *source, int addSpace, int copy) {
                 forward = 1;
             }
 
-            /*pressing*/
             if ( addSpace ) {
 
                 if ( forward == 1 )
