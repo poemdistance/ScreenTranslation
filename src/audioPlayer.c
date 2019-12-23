@@ -203,9 +203,11 @@ int getAudioButtonPositionY ( ) {
     pclose ( fp );
 
     return yPostion == 0 ? 40 : yPostion;
-#endif
 
+#else
     return 43;
+
+#endif
 }
 
 GtkWidget * insertAudioIcon( GtkWidget *window, GtkWidget *layout, WinData *wd, int type ) 
