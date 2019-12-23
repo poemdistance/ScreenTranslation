@@ -185,8 +185,10 @@ void *newNormalWindow() {
 
     int ret = waitForContinue( &wd );
 
-    if (ret == 1)
+    if (ret ) {
+        InNewWin = 0;
         return (void*)0;
+    }
 
     /*新建并设置窗口基本属性*/
     gtk_init(NULL, NULL);
@@ -323,6 +325,7 @@ void *newNormalWindow() {
 
     gtk_main();
 
+    InNewWin = 0;
     pthread_exit(NULL);
 }
 
