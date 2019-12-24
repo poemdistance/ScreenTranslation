@@ -11,6 +11,18 @@ import os
 import sys
 import re
 
+def doNothing():
+    pass
+
+def phoneticNum(attr):
+    cprint(attr, 'red' , attrs=['bold'])
+    if 'phon_en' in attr and 'phon_am' in attr:
+        return 2
+    if 'phon_en' in attr or 'phon_am' in attr:
+        return 1
+    else:
+        return 0
+
 """
 百度翻译结果: test |   美:[test]   英:[test]|n.测验,考查,(医疗上的)检查，化验，检验,试验,测试.|v.测验,考查,试验,检查,化验,检验,测试.|an examination of sb's knowledge or ability, consisting of questions for them to answer or activities for them to perform ( 测验；考查 )|['三单形式:tests', '现在分词:testing', '过去分词:tested', '复数:tests', '过去式:tested']|https://fanyi.baidu.com/gettts?lan=en&spd=3&source=web&text=test%20|https://fanyi.baidu.com/gettts?lan=uk&spd=3&source=web&text=test%20|
 """
@@ -67,7 +79,7 @@ def fetchWord(word, attributes):
             pass
 
     cnx.close()
-
+    cprint(attributes, 'green');
     return data;
 
 #Convert raw data to data that can be recognized by ScreenTranslation
@@ -75,6 +87,9 @@ def formatData(word, attributes):
 
     output = ""
     data = fetchWord(word, attributes);
+    print()
+    cprint("offline source:"+str(data), 'yellow')
+    print()
 
     global pos
 
@@ -92,9 +107,7 @@ def formatData(word, attributes):
 
         if key != 'zhtran':
             try:
-                if key == 'phon_en' and keys[i+1] != 'phon_am':
-                    output += '   ' + data[key] + '|' ;
-                elif key == 'phon_en':
+                if key == 'phon_en':
                     output += '   ' + data[key];
                 elif key == 'phon_am':
                     output += '   ' + data[key] + '|';
@@ -102,9 +115,11 @@ def formatData(word, attributes):
                     output += data[key].replace('\n','') + '|' ;
 
             except Exception as e:
-                output += '|';
+                if key != 'phon_en':
+                    output += '|';
         else:
             try:
+                i = i - 2 + phoneticNum(attributes)
                 while isPartOfSpeech(attributes[i]):
                     if attributes[i] == 'other':
                         output += attributes[i] + '.' + data[attributes[i]].replace('\n','') + '|';
@@ -169,13 +184,14 @@ def writeFlags(shm, attributes):
     flagStr += '2'
     flagStr += '0000'
 
-    cprint('Offline Translation flags:'+flagStr, 'blue')
+    cprint('Offline flags:'+flagStr, 'blue')
     shm.write ( flagStr, 1 )
 
 def main():
 
+    global useShm
     #Connect to the shared memory
-    shm = connectShm()
+    shm = connectShm() if useShm else doNothing
     offset = 0
     actualStart = 10
 
@@ -186,7 +202,7 @@ def main():
             cprint('Good bye\n', 'blue')
             sys.exit()
 
-        cprint('Offline Translation get the raw: ' +rawInput , 'blue')
+        cprint('Offline raw: ' +rawInput , 'blue')
 
         result = re.findall(r'\w+', rawInput);
         if len(result) > 1:
@@ -203,12 +219,21 @@ def main():
             data = formatData(word, attributes)
             if data is not None:
                 cprint(data, 'blue')
-                shm.write(data, actualStart)
-                writeFlags(shm, attributes)
-                shm.write('1', 0)
+                shm.write(data, actualStart) if useShm else doNothing
+                writeFlags(shm, attributes) if useShm else doNothing
+                shm.write('1', 0) if useShm else doNothing
             else:
                 cprint("NULL", 'blue')
 
+
+#共享内存使用标识
+useShm = 0
+sys.argv.remove(sys.argv[0])
+if len(sys.argv) >= 1:
+    for arg in sys.argv:
+        if arg == '-s':
+            cprint('Using SharedMemory (offline translate)', 'cyan')
+            useShm = 1
 
 
 #Global Value
