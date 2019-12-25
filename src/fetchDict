@@ -7,25 +7,33 @@ import sysv_ipc as ipc
 import getpass
 import readline
 import warnings
+import string
 import os
 import sys
 import re
 
+
 def doNothing():
     pass
 
+def deletePunctuations(src):
+
+    for i in range(len(src)-1, -1, -1):
+
+        if src[i] in string.punctuation or src[i].isspace():
+            src = src[:-1]
+        else:
+            return src
+
+
 def phoneticNum(attr):
-    cprint(attr, 'red' , attrs=['bold'])
+    #cprint(attr, 'red' , attrs=['bold'])
     if 'phon_en' in attr and 'phon_am' in attr:
         return 2
     if 'phon_en' in attr or 'phon_am' in attr:
         return 1
     else:
         return 0
-
-"""
-百度翻译结果: test |   美:[test]   英:[test]|n.测验,考查,(医疗上的)检查，化验，检验,试验,测试.|v.测验,考查,试验,检查,化验,检验,测试.|an examination of sb's knowledge or ability, consisting of questions for them to answer or activities for them to perform ( 测验；考查 )|['三单形式:tests', '现在分词:testing', '过去分词:tested', '复数:tests', '过去式:tested']|https://fanyi.baidu.com/gettts?lan=en&spd=3&source=web&text=test%20|https://fanyi.baidu.com/gettts?lan=uk&spd=3&source=web&text=test%20|
-"""
 
 def isPartOfSpeech(key):
 
@@ -79,7 +87,7 @@ def fetchWord(word, attributes):
             pass
 
     cnx.close()
-    cprint(attributes, 'green');
+    #cprint(attributes, 'green');
     return data;
 
 #Convert raw data to data that can be recognized by ScreenTranslation
@@ -87,9 +95,9 @@ def formatData(word, attributes):
 
     output = ""
     data = fetchWord(word, attributes);
-    print()
-    cprint("offline source:"+str(data), 'yellow')
-    print()
+    #print()
+    #cprint("offline source:"+str(data), 'yellow')
+    #print()
 
     global pos
 
@@ -160,7 +168,7 @@ def connectShm():
 
 def writeFlags(shm, attributes):
 
-    cprint('attributes:'+str(attributes), 'blue')
+    #cprint('attributes:'+str(attributes), 'blue')
 
     flagStr = ""
 
@@ -184,7 +192,7 @@ def writeFlags(shm, attributes):
     flagStr += '2'
     flagStr += '0000'
 
-    cprint('Offline flags:'+flagStr, 'blue')
+    #cprint('Offline flags:'+flagStr, 'blue')
     shm.write ( flagStr, 1 )
 
 def main():
@@ -202,13 +210,19 @@ def main():
             cprint('Good bye\n', 'blue')
             sys.exit()
 
-        cprint('Offline raw: ' +rawInput , 'blue')
+        cprint('Offline raw: ' +rawInput + '<' , 'yellow', attrs=['bold'], end='\n\n')
 
         result = re.findall(r'\w+', rawInput);
         if len(result) > 1:
-            cprint('Not a word: '+str(result), 'red')
+            #cprint('Not a word: '+str(result), 'red')
             continue
         
+        bak = rawInput
+        rawInput = deletePunctuations(rawInput)
+        if rawInput is None:
+            shm.write('101000'+'0000'+bak+'||'+bak+'|||||') if useShm else doNothing
+            continue 
+
         #Remove the space characters
         global pos
         pos = 0
@@ -218,7 +232,7 @@ def main():
         if not str.isspace(word) and word != '':
             data = formatData(word, attributes)
             if data is not None:
-                cprint(data, 'blue')
+                cprint('OFFLINE:  '+data, 'green', attrs=['bold'])
                 shm.write(data, actualStart) if useShm else doNothing
                 writeFlags(shm, attributes) if useShm else doNothing
                 shm.write('1', 0) if useShm else doNothing
