@@ -94,8 +94,11 @@ void quickSearch()
                     printf("等待搜索窗口退出\n");
 
                     /* 父进程等待子进程退出*/
-                    while ( ! childExitFlag )
-                        usleep(10000);
+                    //while ( ! childExitFlag )
+                        //usleep(10000);
+                     
+                    /* wait(pid)*/
+                    waitpid(pid, NULL, 0);
 
 
                     childExitFlag = 0;
