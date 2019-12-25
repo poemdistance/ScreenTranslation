@@ -71,11 +71,11 @@ void tranSelect() {
     shmaddr_baidu = addr_baidu;
     shmaddr_selection = addr_selection;
 
-    memset(shmaddr_google, '0', (size_t)10);
-    memset(shmaddr_baidu, '0', (size_t)10);
+    memset(shmaddr_google, '0', 10);
+    memset(shmaddr_baidu, '0', 10);
 
-    memset(shmaddr_google, '\0', SHMSIZE-10);
-    memset(shmaddr_baidu, '\0', SHMSIZE-10);
+    memset(&shmaddr_google[10], '\0', SHMSIZE-10);
+    memset(&shmaddr_baidu[10], '\0', SHMSIZE-10);
 
     arg.addr_google = shmaddr_google;
     arg.addr_baidu = shmaddr_baidu;

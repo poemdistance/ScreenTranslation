@@ -368,6 +368,7 @@ int getIndex(int *index, char *src) {
         return -1;
     }
 
+    pbyellow ( "getindex:%s", src );
     clearBaiduMysqlResultMemory();
 
     strcpy ( tmp, src );
@@ -533,10 +534,8 @@ int changeDisplay(GtkWidget *button, gpointer *data) {
 
     WINDATA(data)->who = nextWindow((WINDATA(data)->who));
 
-    adjustWinSize ( button, data, WINDATA(data)->who );
-
     if ( WINDATA(data)->who == BAIDU )
-        displayBaiduTrans( WINDATA(data)->baiduButton, data );
+        displayBaiduTrans( button, data );
     else if ( WINDATA(data)->who == GOOGLE )
         displayGoogleTrans(button, data);
     else if ( WINDATA(data)->who == OFFLINE )

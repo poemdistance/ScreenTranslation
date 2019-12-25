@@ -3,6 +3,7 @@
 #include <gobject/gvaluecollector.h>
 #include "audio.h"
 #include "newWindow.h"
+#include "windowData.h"
 
 /* 键值掩码在gdk/gdkkeysyms.h*/
 
@@ -23,7 +24,7 @@ gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data ) {
 
     if ( event->keyval == GDK_KEY_Return ) {
         g_print ("Key Return\n");
-        changeDisplay(NULL, data);
+        changeDisplay(GET_BUTTON(data, WINDATA(data)->who), data);
     }
 
     if ( event->keyval == GDK_KEY_space ) {

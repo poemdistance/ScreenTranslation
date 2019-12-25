@@ -177,7 +177,7 @@ void clearMemory () {
 
     if ( tmp ) {
         memset ( tmp, '0', 10 );
-        memset ( tmp, '\0', SHMSIZE-10);
+        memset ( &tmp[10], '\0', SHMSIZE-10);
     }
 
     /* 标志位空间用字符0填充*/
@@ -185,11 +185,12 @@ void clearMemory () {
     memset(shmaddr_mysql, '0', 10);
     memset(shmaddr_pic, '0', 10);
     memset(shmaddr_keyboard, '0', 10);
+    memset(shmaddr_google, '0', 10);
 
-    memset(shmaddr_google, '\0', SHMSIZE);
-    memset(shmaddr_baidu, '\0', SHMSIZE-10);
-    memset(shmaddr_mysql, '\0', SHMSIZE-10);
-    memset(shmaddr_pic, '\0', SHMSIZE-10);
+    memset(&shmaddr_google[10], '\0', SHMSIZE-10);
+    memset(&shmaddr_baidu[10], '\0', SHMSIZE-10);
+    memset(&shmaddr_mysql[10], '\0', SHMSIZE-10);
+    memset(&shmaddr_pic[10], '\0', SHMSIZE-10);
 
     memset ( audio_en(ONLINE), '\0', 512 );
     memset ( audio_uk(ONLINE), '\0', 512 );

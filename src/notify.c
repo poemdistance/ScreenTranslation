@@ -31,13 +31,26 @@ extern int HadDestroied;
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
 
     char appName[100];
-
     int pikaqiuGo = 0;
+    struct timeval tv;
+    gettimeofday( &tv, NULL );
+    double start =  ( tv.tv_sec*1e6 + tv.tv_usec ) / 1e3; /* ms*/
+    double now = 0;
 
     /* 必须延迟一下, 原因:
      * 检测Primary Selection的程序跑的没这边快，
      * 需要等到对方写完1后才能继续(如果对方正在写1)*/
     usleep(230000);
+
+    while ( shmaddr_selection[0] != '1' ) {
+
+        gettimeofday( &tv, NULL );
+        now = (tv.tv_sec*1e6-tv.tv_usec)/1e6;
+        if ( start - now > 300 )
+            return;
+    }
+
+    pikaqiuGo = 1;
 
     if ( shmaddr_selection[0] == '1') {
 
