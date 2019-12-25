@@ -6,6 +6,11 @@
 
 int fds[KEYBOARD_NUM] = { 0 };
 
+static inline int nowtime(struct timeval time) {
+
+    return abs (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3;
+}
+
 void closeDevice() {
 
     printf("\033[0;31mCLOSING DEVICE (captureShortcutEvent)\033[0m\n");
@@ -91,17 +96,6 @@ void captureShortcutEvent(int socket) {
         if ( retnum == 0 )
             continue;
 
-        /* value=0: release
-         * value=1: press
-         * value=2: auto repeat
-         *
-         * type: EV_KEY //What's this? 
-         *  EV_KEY: - Used to describe state changes of keyboards, 
-         *  buttons, or other key-like devices.
-         *
-         * code: KEY_*
-         * */
-
         for ( int i=0; i<KEYBOARD_NUM; i++ )
             if ( fds[i] != 0 )
                 if ( FD_ISSET ( fds[i], &fdset ) )
@@ -114,24 +108,22 @@ void captureShortcutEvent(int socket) {
         if ( ev.code == 4 || ev.code == KEY_RESERVED )
             continue;
 
-        if ( 0 && AltPress && shmaddr[SEARCH_WINDOW_OPENED_FLAG] == '1' ) {
-
-            printf("\033[0;31m发生死锁, AltPress=1, shmaddr[4]='1', 采取强制清空标志操作 \033[0m\n");
-            shmaddr[4] = '0';
+        gettimeofday ( &time, NULL );
+        if ( (nowtime(time) - lasttime ) > 350 && (int)lasttime) {
             AltPress = 0;
+            CtrlPress = 0;
         }
 
-        /* Alt被按下，且搜索窗口和翻译结果展示窗口都未被打开*/
-        if ( AltPress && shmaddr[SEARCH_WINDOW_OPENED_FLAG] != '1'  && shmaddr[WINDOW_OPENED_FLAG] != '1' ) {
 
-            printf("Some other key pressed\n");
+        /* Alt被按下，且搜索窗口和翻译结果展示窗口都未被打开*/
+        if ( AltPress && shmaddr[SEARCH_WINDOW_OPENED_FLAG] != '1'  \
+                && shmaddr[WINDOW_OPENED_FLAG] != '1' ) {
 
             gettimeofday ( &time, NULL );
 
             /* Alt , j,k按下间隔过长，抛弃此次结果，重置lasttime,AltPress, 监听下一次事件到来*/
-            if (abs ( (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3 - lasttime ) > 300 && (int)lasttime != 0) {
+            if ( ( nowtime(time) - lasttime ) > 350 && (int)lasttime ) {
 
-                printf("%f\n",  (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3 - lasttime ) ;
                 lasttime = 0;
                 AltPress = 0;
                 continue;
@@ -140,8 +132,6 @@ void captureShortcutEvent(int socket) {
             if ( ev.code == KEY_J ) {
 
                 fprintf(stdout, "Captured pressing event <Alt-J>\n");
-
-                /* quick search 快捷键标志位*/
                 shmaddr[QuickSearchShortcutPressed_FLAG] = '1';
             }
 
@@ -159,7 +149,8 @@ void captureShortcutEvent(int socket) {
 
             if ( ev.code == KEY_C ) {
 
-                fprintf(stdout, "Captured pressing event <Ctrl-C>, AltPress=%d shmaddr[4]=%c shmaddr[2]=%c\n", AltPress, shmaddr[4],shmaddr[2] );
+                fprintf(stdout, "Captured pressing event <Ctrl-C>, AltPress=%d shmaddr[4]=%c shmaddr[2]=%c\
+                        \n", AltPress, shmaddr[4],shmaddr[2] );
                 if ( shmaddr[WINDOW_OPENED_FLAG] == '1')
                     /* 退出快捷键标志位*/
                     shmaddr[CTRL_C_PRESSED_FLAG] = '1';
@@ -168,14 +159,13 @@ void captureShortcutEvent(int socket) {
             CtrlPress = 0;
         }
 
-        if ( ! AltPress && ( ev.code == KEY_RIGHTALT || ev.code == KEY_LEFTALT )) {
-
-            gettimeofday ( &time, NULL );
-            lasttime = (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3;
+        if ( ev.code == KEY_RIGHTALT || ev.code == KEY_LEFTALT )
             AltPress = 1;
-        }
 
-        if ( !CtrlPress && ( ev.code == KEY_LEFTCTRL || ev.code == KEY_RIGHTCTRL) )
+        if (  ev.code == KEY_LEFTCTRL || ev.code == KEY_RIGHTCTRL )
             CtrlPress = 1;
+
+        gettimeofday ( &time, NULL );
+        lasttime = (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3;
     }
 }
