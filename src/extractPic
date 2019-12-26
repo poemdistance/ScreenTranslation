@@ -46,6 +46,7 @@ class PicUtils(object):
         print('Open image.');
         try:
             image = Image.open(fileName)
+            image = image.point(lambda x: 0 if x<143 else 255)
             text = pytesseract.image_to_string(image)
         except Exception:
             return ""
