@@ -8,7 +8,6 @@
 int fd[2];
 char buf[2] = { '\0' };
 int InSearchWin = 0;
-int childExitFlag = 0;
 
 /* Byte 0: quick search 快捷键标志位(alt-j) <for newWindow.c>
  * Byte 1: 退出窗口快捷键标志位(ctrl-c) <for newWindow.c, 目前被屏蔽了>
@@ -33,12 +32,6 @@ void kill_ourselves() {
     kill ( captureShortcutEvent_pid, SIGKILL );
     kill ( captureShortcutEvent_pid, SIGKILL );
     exit(0);
-}
-
-void readChildProcessInfo(int signo) {
-
-    while ( waitpid(searchWindow_pid, NULL, WNOHANG) > 0)
-        childExitFlag = 1;
 }
 
 void quickSearch()
@@ -66,11 +59,6 @@ void quickSearch()
         captureShortcutEvent_pid = pid;
         searchWindowMonitor_pid = getpid();
 
-        sa.sa_handler = readChildProcessInfo;
-        sigemptyset ( &sa.sa_mask );
-        if ( sigaction ( SIGCHLD, &sa, NULL) != 0 )
-            err_exit_qs("Sigaction error in quickSearch 2");
-
         close ( fd[0] );
 
         while ( 1 ) {
@@ -92,19 +80,12 @@ void quickSearch()
                     searchWindow_pid = pid;
 
                     printf("等待搜索窗口退出\n");
-
-                    /* 父进程等待子进程退出*/
-                    //while ( ! childExitFlag )
-                        //usleep(10000);
                      
                     /* wait(pid)*/
                     waitpid(pid, NULL, 0);
 
-
-                    childExitFlag = 0;
                     shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '0';
-                    printf("搜索窗口已退出 shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG=]%c\n",\
-                            shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG]);
+                    printf("搜索窗口已退出\n");
                 }
             }
 

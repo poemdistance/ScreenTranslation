@@ -129,7 +129,7 @@ void *GuiEntrance(void *arg) {
     cd.window = window;
     cd.button = button;
     timeout_id_1 = g_timeout_add(1200, quit_entry, &cd);
-    timeout_id_2 = g_timeout_add(600, quit_test, &cd);
+    timeout_id_2 = g_timeout_add(100, quit_test, &cd);
 
     gtk_main();
 
@@ -161,8 +161,6 @@ int quit_test(void *arg) {
     cd = (struct clickDate*)arg;
     GtkWidget *button = cd->button;
     GtkWidget *window = cd->window;
-
-    //printf("单击检测\n");
 
     /*入口图标已在quit_entry中销毁,返回FALSE不再调用此函数*/
     if ( HadDestroied )

@@ -129,16 +129,22 @@ void captureShortcutEvent(int socket) {
                 continue;
             }
 
-            if ( ev.code == KEY_J ) {
+            switch ( ev.code ) {
 
-                fprintf(stdout, "Captured pressing event <Alt-J>\n");
-                shmaddr[QuickSearchShortcutPressed_FLAG] = '1';
-            }
+                case KEY_J:
+                    pbmag("Captured <Alt-J>\n");
+                    shmaddr[QuickSearchShortcutPressed_FLAG] = '1';
+                    break;
 
-            if ( ev.code == KEY_D ) {
+                case KEY_D:
+                    pbmag("Captured <Alt-D>\n");
+                    shmaddr_pic[1] = SCREEN_SHOT;
+                    break;
+                case KEY_V:
+                    pbmag ( "Captured <Alt-V>" );
+                    break;
 
-                fprintf(stdout, "Captured pressing event <Alt-D>\n");
-                shmaddr_pic[1] = SCREEN_SHOT;
+                default: break;
             }
 
             AltPress = 0;
@@ -159,12 +165,20 @@ void captureShortcutEvent(int socket) {
             CtrlPress = 0;
         }
 
-        if ( ev.code == KEY_RIGHTALT || ev.code == KEY_LEFTALT )
-            AltPress = 1;
+        switch ( ev.code ) {
 
-        if (  ev.code == KEY_LEFTCTRL || ev.code == KEY_RIGHTCTRL )
-            CtrlPress = 1;
+            case KEY_RIGHTALT: 
+            case KEY_LEFTALT:
+                AltPress = 1;
+                break;
 
+            case  KEY_LEFTCTRL:
+            case KEY_RIGHTCTRL:
+                CtrlPress = 1;
+                break;
+
+            default:break;
+        }
         gettimeofday ( &time, NULL );
         lasttime = (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3;
     }

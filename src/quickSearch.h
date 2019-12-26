@@ -14,7 +14,7 @@
 
 #include "sharedMemory.h"
 
-#define TEXT_SUBMIT_BYTE ( 20 )
+#define TEXT_SUBMIT_FLAG ( 20 )
 #define SUBMIT_TEXT ( 21 )
 
 char **getKeyboardDevice(char (*buf)[100]);

@@ -178,7 +178,7 @@ void *DetectMouse(void *arg) {
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_RESTART;
         if ( sigaction(SIGTERM, &sa, NULL) == -1) {
-            printf("\033[0;31msigaction exec failed (DetectMouse.c -> SIGTERM) \033[0m\n");
+            pbred("sigaction exec failed (DetectMouse.c -> SIGTERM)");
             perror("sigaction");
             quit();
         }
@@ -186,9 +186,8 @@ void *DetectMouse(void *arg) {
         // 打开鼠标设备
         mousefd = open("/dev/input/mice", O_RDONLY );
         if ( mousefd < 0 ) {
-            fprintf(stderr, "Failed to open mice\
-                    \nTry to execute as superuser or add \
-                    current user to group which /dev/input/mice belong to\n");
+            pbred("Failed to open mice, Try to execute as superuser\n\
+                    or add current user to group which /dev/input/mice belong to\n");
             quit();
         }
 
@@ -206,13 +205,13 @@ void *DetectMouse(void *arg) {
 
             retval = select( mousefd+1, &readfds, NULL, NULL, &tv );
 
-            if ( shmaddr_searchWin[TEXT_SUBMIT_BYTE] == '1') {
+            if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
 
                 if ( text == NULL )
                     if (( text = calloc(TEXTSIZE, 1)) == NULL)
                         err_exit("malloc failed in notify.c");
 
-                shmaddr_searchWin[TEXT_SUBMIT_BYTE] = '0';
+                shmaddr_searchWin[TEXT_SUBMIT_FLAG] = '0';
                 strcpy ( text,  &shmaddr_searchWin[SUBMIT_TEXT] );
                 writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[0] );
                 writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
@@ -263,15 +262,15 @@ void *DetectMouse(void *arg) {
 
             /* 任何一端翻译程序终止即退出取词翻译*/
             if ( BAIDU_TRANS_EXIT_FALG ) {
-                printf("\033[0;31m百度翻译子进程已退出 \033[0m\n");
-                printf("\033[0;31m准备退出取词翻译程序... \033[0m\n");
+                pbred("百度翻译子进程已退出");
+                pbred("准备退出取词翻译程序");
                 quit();
             } 
 
             if ( GOOGLE_TRANS_EXIT_FLAG ) {
 
-                printf("\033[0;31m谷歌翻译子进程已退出 \033[0m\n");
-                printf("\033[0;31m准备退出取词翻译程序... \033[0m\n");
+                pbred("谷歌翻译子进程已退出");
+                pbred("准备退出取词翻译程序");
                 quit();
             }
 
@@ -343,7 +342,7 @@ void *DetectMouse(void *arg) {
                     gettimeofday(&old, NULL);
                     oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                     memset(history, 0, sizeof(history));
-                    printf("\033[0;31m超时丢弃 \033[0m\n");
+                    pbred("超时丢弃");
                     continue;
                 }
 
@@ -364,7 +363,7 @@ void *DetectMouse(void *arg) {
     /*child process for google translate*/
     if (pid_google == 0){ 
 
-        printf("\033[0;34m执行谷歌翻译程序 \033[0m\n");
+        pbgreen("执行谷歌翻译程序");
 
         close(fd_google[1]); /*关闭写端口*/
 
@@ -400,14 +399,14 @@ void *DetectMouse(void *arg) {
             }
         }
 
-        printf("\033[0;34m执行百度翻译程序 \033[0m\n");
+        pbgreen("执行百度翻译程序");
         char * const cmd[3] = {"bing","-s", (char*)0};
         if ( execv( "/usr/bin/bing", cmd ) < 0) {
             fprintf(stderr, "Execv error (baidu)\n");
             perror("Execv error(baidu):");
             exit(1);
         }
-        printf("detectMouse.c (baidu)子进程已经退出...\n");
+        pbgreen("detectMouse.c (baidu)子进程已经退出...\n");
         exit(1);
 
     }
@@ -425,7 +424,7 @@ void *DetectMouse(void *arg) {
             }
         }
 
-        printf("\033[0;34mExecute the offline translation process\033[0m\n\n");
+        pbgreen("Execute the offline translation process\n");
         char * const cmd[3] = {"fetchDict","-s", (char*)0};
         if ( execv( "/usr/bin/fetchDict", cmd ) < 0) {
             fprintf(stderr, "Execv error (mysql)\n");

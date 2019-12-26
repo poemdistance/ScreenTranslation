@@ -54,7 +54,7 @@ void submit_text ( GtkSearchEntry *entry, gpointer *data ) {
     shared_memory_for_quickSearch( &shmaddr );
 
     /* 文本提交标记位*/
-    shmaddr[TEXT_SUBMIT_BYTE] = '1';
+    shmaddr[TEXT_SUBMIT_FLAG] = '1';
 
     strcat ( wg->buf, "\n" );
 
