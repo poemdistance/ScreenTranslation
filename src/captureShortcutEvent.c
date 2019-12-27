@@ -142,6 +142,7 @@ void captureShortcutEvent(int socket) {
                     break;
                 case KEY_V:
                     pbmag ( "Captured <Alt-V>" );
+                    shmaddr[SELECT_EXCLUDE_FLAG] = '1';
                     break;
 
                 default: break;

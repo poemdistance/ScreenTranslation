@@ -1,4 +1,13 @@
 #include "common.h"
+#include "cleanup.h"
+#include "detectMouse.h"
+
+typedef struct TmpIgnore {
+
+    char appname[30];
+    struct TmpIgnore *nextapp;
+
+}TmpIgnore;
 
 const static char termName[][20] =
 {
@@ -25,7 +34,6 @@ const static char wantToIgnore[][20] = {
 int BAIDU_TRANS_EXIT_FALG  = 0;
 int GOOGLE_TRANS_EXIT_FLAG = 0;
 
-extern FILE *fp;
 extern int action;
 
 extern char *lastText;
@@ -39,21 +47,130 @@ extern int shmid_baidu;
 extern pid_t google_translate_pid;
 extern pid_t baidu_translate_pid;
 
+TmpIgnore *getLinkHead () {
+
+    static TmpIgnore head = { { '\0' }, NULL };
+    return &head;
+}
+
+int releaseLink (  ) {
+
+    TmpIgnore *head = getLinkHead();
+    TmpIgnore *p = head->nextapp;
+    TmpIgnore *tmp = NULL;
+
+    while ( p ) {
+
+        tmp = p->nextapp;
+        free ( p );
+        p = tmp;
+    }
+
+    return 0;
+}
+
+int isExist(char *buf,  char *app ) {
+
+    TmpIgnore *head = getLinkHead();
+    TmpIgnore *p = head->nextapp;
+
+    while ( p ) {
+        if ( strcmp ( p->appname, app ) == 0 )
+            return 1;
+        p = p->nextapp;
+    }
+
+    return 0;
+}
+
+int deleteApp(char *app) {
+
+    TmpIgnore *head = getLinkHead();
+    TmpIgnore *p = head;
+    TmpIgnore *tmp = NULL;
+
+    while ( p->nextapp ) {
+        if ( strcmp ( p->nextapp->appname, app ) == 0 ) {
+            tmp = p->nextapp->nextapp;
+            free ( p->nextapp );
+            p->nextapp = tmp;
+            return 1;
+        }
+        p = p->nextapp;
+    }
+
+    return 0;
+}
+
+TmpIgnore *appendApp( char *app ) {
+
+    TmpIgnore *head = getLinkHead();
+    TmpIgnore *p = head;
+
+    while ( p->nextapp ) {
+        p = p->nextapp;
+    }
+
+    TmpIgnore *tmp = NULL;
+    tmp = calloc ( 1, sizeof(TmpIgnore) );
+    strcpy ( tmp->appname, app );
+    tmp->nextapp = NULL;
+
+    p->nextapp = tmp;
+    return tmp;
+}
+
+int printIgnoreApp() {
+
+    TmpIgnore *head = getLinkHead();
+    TmpIgnore *p = head->nextapp;
+    while ( p ) {
+        pbcyan("%s", p->appname);
+        p = p->nextapp;
+    }
+
+    return 0;
+}
+
+int checkApp(char *app) {
+
+    if ( ! app )
+        return -1;
+
+    printIgnoreApp();
+
+    if ( isExist (NULL, app ) ) {
+        pbcyan ( "Delete app" );
+        deleteApp ( app );
+        return 1;
+    }
+    else {
+        pbcyan ( "Append app" );
+        appendApp ( app );
+        return 0;
+    }
+}
+
+char *selectApp() {
+
+    static char app[30];
+    FILE *pp = popen("ps -p `xdotool selectwindow getwindowpid`|awk '{print $NF}' | tail -n 1", "r");
+
+    if ( !pp )
+        return NULL;
+
+    if ( fread ( app, sizeof(app), 1, pp ) < 0 )
+        return NULL;
+
+    pclose ( pp );
+
+    return app;
+}
+
 void err_exit(char *buf) {
     fprintf(stderr, "%s\n", buf);
     perror("errno");
-
-    /*TODO*/
-    //quit();
-    exit(1);
-}
-
-void delay() {
-
-    /*等待数据被写入剪贴板,若不延时,获取的剪贴板内容还是上次的*/
-    for(int i = 0; i < 1024; i++)
-        for ( int j = 0; j < 6024; j++ );
-
+    quit();
 }
 
 /*写数据到管道*/
@@ -141,7 +258,7 @@ int isApp( char *appName ,char *name ) {
             return 1;
         }
     }
-    return -1;
+    return 0;
 }
 
 /*获取当前数组下标的前一个下标值,
@@ -248,4 +365,12 @@ void simulateKey(int fd,  int key[], int len) {
 
     for(i=len-1; i>=0; i--)
         release(fd, key[i]);
+}
+
+void delay() {
+
+    /*等待数据被写入剪贴板,若不延时,获取的剪贴板内容还是上次的*/
+    for(int i = 0; i < 1024; i++)
+        for ( int j = 0; j < 6024; j++ );
+
 }

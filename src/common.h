@@ -74,6 +74,7 @@
 #define CTRL_C_PRESSED_FLAG (1)
 #define WINDOW_OPENED_FLAG (2)
 #define SEARCH_WINDOW_OPENED_FLAG (4)
+#define SELECT_EXCLUDE_FLAG (3)
 
 void tranSelect();
 void checkSelectionChanged();

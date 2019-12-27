@@ -3,5 +3,6 @@
 
 void quit();
 void err_exit(char *buf);
+int releaseLink();
 
 #endif

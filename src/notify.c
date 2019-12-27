@@ -96,8 +96,12 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     fprintf(stdout, "Focus window application: %s", appName);
 
 
-    if ( isApp("wantToIgnore", appName) == 1 ) {
-        printf("忽略此软件\n");
+    if ( isApp("wantToIgnore", appName)) {
+        printf("此软件在忽略名单\n");
+        return;
+    }
+    else if ( isExist ( "TmpIgnore", appName ) ) {
+        pbred ( "暂时忽略此软件，<Alt-V> 选中此软件解锁" );
         return;
     }
 

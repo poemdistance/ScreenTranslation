@@ -18,4 +18,8 @@ void *GuiEntrance(void *arg);
 void *DetectMouse(void *arg);
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
 
+int checkApp(char *app);
+char *selectApp();
+int isExist( char *buf,  char *app );
+
 #endif

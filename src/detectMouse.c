@@ -27,6 +27,7 @@ extern int CanNewWin;
 extern int CanNewEntrance;
 
 extern char *shmaddr_searchWin;
+extern char *shmaddr_keyboard;
 extern char *shmaddr_pic;
 extern int shmid_searchWin ;
 
@@ -247,6 +248,11 @@ void *DetectMouse(void *arg) {
                     }
 
                 continue;
+            }
+
+            if ( shmaddr_keyboard[SELECT_EXCLUDE_FLAG] == '1' ) {
+                checkApp ( selectApp() );
+                shmaddr_keyboard[SELECT_EXCLUDE_FLAG] = '0';
             }
 
             if(read(mousefd, buf, 3) <= 0) {

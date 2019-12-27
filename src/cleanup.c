@@ -98,6 +98,8 @@ void quit() {
     /* 手动再赋值空，保险一点*/
     display = NULL;
 
+    releaseLink();
+
     printf("\n");
     exit(0);
 }
