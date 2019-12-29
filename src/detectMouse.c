@@ -169,11 +169,11 @@ void *DetectMouse(void *arg) {
         fd_python[1] = fd_baidu[1];
         fd_python[2] = fd_mysql[1];
 
-        shmaddr_searchWin[0] =  *itoa(fd_python[0]);
-        shmaddr_searchWin[strlen(itoa(fd_python[0]))] =  '\0';
+        //shmaddr_searchWin[0] =  *itoa(fd_python[0]);
+        //shmaddr_searchWin[strlen(itoa(fd_python[0]))] =  '\0';
 
-        shmaddr_searchWin[10] =  *itoa(fd_python[1]);
-        shmaddr_searchWin[10 + strlen(itoa(fd_python[1]))] =  '\0';
+        //shmaddr_searchWin[10] =  *itoa(fd_python[1]);
+        //shmaddr_searchWin[10 + strlen(itoa(fd_python[1]))] =  '\0';
 
         sa.sa_handler = quit;
         sigemptyset(&sa.sa_mask);
