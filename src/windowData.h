@@ -87,7 +87,6 @@ typedef struct Baidu {
     int lines;
     int maxlen;
     char *audio_online[2];
-    char *audio_offline[2];
 }Baidu;
 
 Baidu bw;
@@ -97,7 +96,6 @@ typedef struct Mysql {
     double height;
     int lines;
     int maxlen;
-    char *audio_online[2];
     char *audio_offline[2];
 }Mysql;
 

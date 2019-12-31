@@ -57,18 +57,18 @@ gboolean mp3play (GtkWidget *button, gpointer *data)
     int type = *(int *)data;
 
     audioShow = ~audioShow;
-    char url_online[512] = { '\0' };
-    char url_offline[512] = { '\0' };
+    char *url_online = NULL;
+    char *url_offline = NULL;
 
     if ( audioShow ) {
 
-        strcpy ( url_online, bw.audio_online[0] );
-        strcpy ( url_offline, bw.audio_offline[0] );
+        url_online = bw.audio_online[0];
+        url_offline = mw.audio_offline[0];
     }
     else {
 
-        strcpy ( url_online, bw.audio_online[1] );
-        strcpy ( url_offline, bw.audio_offline[1] );
+        url_online = bw.audio_online[1];
+        url_offline = mw.audio_offline[1];
     }
 
     GMainLoop *loop;
@@ -88,7 +88,7 @@ gboolean mp3play (GtkWidget *button, gpointer *data)
     /* This works well*/
     if ( type == BAIDU )
         source   = gst_element_factory_make ("souphttpsrc",       "file-source");
-    else if ( type == OFFLINE )
+    else if ( type == MYSQL )
         source   = gst_element_factory_make ("filesrc",       "file-source");
     else
         return FALSE;
@@ -252,8 +252,8 @@ void syncAudioBtn ( WinData *wd, int type ) {
             bw.audio_online[0] = audio_en(ONLINE);
             bw.audio_online[1] = audio_uk(ONLINE);
 
-            bw.audio_offline[0] = audio_en(OFFLINE);
-            bw.audio_offline[1] = audio_uk(OFFLINE);
+            mw.audio_offline[0] = audio_en(OFFLINE);
+            mw.audio_offline[1] = audio_uk(OFFLINE);
 
             ((WinData*)wd)->audio = insertAudioIcon(((WinData*)wd)->window, ((WinData*)wd)->layout, ((WinData*)wd), type);
 

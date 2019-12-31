@@ -40,8 +40,8 @@ gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data ) {
         bw.audio_online[0] = audioOnline_en;
         bw.audio_online[1] = audioOnline_uk;
 
-        bw.audio_offline[0] = audioOffline_en;
-        bw.audio_offline[1] = audioOffline_uk;
+        mw.audio_offline[0] = audioOffline_en;
+        mw.audio_offline[1] = audioOffline_uk;
 
         mp3play (NULL, data);
     }
