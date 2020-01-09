@@ -79,8 +79,10 @@ void separateDataForBaidu(int *index, int len, int type) {
         /* 提取音频链接*/
         if ( n == 5 ) {
 
-            strcat ( audio_en(type), &tmpBuffer[index[i++]] );
-            strcat ( audio_uk(type), &tmpBuffer[index[i++]] );
+            strcpy ( audio_en(type), &tmpBuffer[index[i++]] );
+            pbgreen("copy audio:%s", audio_en(type));
+            strcpy ( audio_uk(type), &tmpBuffer[index[i++]] );
+            pbgreen("copy audio:%s", audio_en(type));
             continue;
         }
 
