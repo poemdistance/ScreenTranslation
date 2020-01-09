@@ -38,9 +38,6 @@ void captureShortcutEvent(int socket) {
     char device[KEYBOARD_NUM][100] = { '\0' };
     myopen( (char (*)[100])getKeyboardDevice(device) );
     int fd = 0;
-    double lasttime = 0;
-
-    struct timeval time;
 
     struct sigaction sa;
     sa.sa_handler = closeDevice;
@@ -75,7 +72,7 @@ void captureShortcutEvent(int socket) {
 
     for (;;) {
 
-        tv.tv_usec = 300000;
+        tv.tv_usec = 200000;
         tv.tv_sec = 0;
 
         FD_ZERO ( &fdset );
@@ -93,8 +90,11 @@ void captureShortcutEvent(int socket) {
         retnum = select ( maxfd+1, &fdset, NULL, NULL, &tv );
 
         /* 超时*/
-        if ( retnum == 0 )
+        if ( retnum == 0 ) {
+            AltPress = 0;
+            CtrlPress = 0;
             continue;
+        }
 
         for ( int i=0; i<KEYBOARD_NUM; i++ )
             if ( fds[i] != 0 )
@@ -108,26 +108,9 @@ void captureShortcutEvent(int socket) {
         if ( ev.code == 4 || ev.code == KEY_RESERVED )
             continue;
 
-        gettimeofday ( &time, NULL );
-        if ( (nowtime(time) - lasttime ) > 350 && (int)lasttime) {
-            AltPress = 0;
-            CtrlPress = 0;
-        }
-
-
         /* Alt被按下，且搜索窗口和翻译结果展示窗口都未被打开*/
         if ( AltPress && shmaddr[SEARCH_WINDOW_OPENED_FLAG] != '1'  \
                 && shmaddr[WINDOW_OPENED_FLAG] != '1' ) {
-
-            gettimeofday ( &time, NULL );
-
-            /* Alt , j,k按下间隔过长，抛弃此次结果，重置lasttime,AltPress, 监听下一次事件到来*/
-            if ( ( nowtime(time) - lasttime ) > 350 && (int)lasttime ) {
-
-                lasttime = 0;
-                AltPress = 0;
-                continue;
-            }
 
             switch ( ev.code ) {
 
@@ -149,7 +132,6 @@ void captureShortcutEvent(int socket) {
             }
 
             AltPress = 0;
-            lasttime = 0;
         }
 
         if ( CtrlPress ) {
@@ -180,7 +162,5 @@ void captureShortcutEvent(int socket) {
 
             default:break;
         }
-        gettimeofday ( &time, NULL );
-        lasttime = (time.tv_usec + (time.tv_sec*1e6)  ) / 1e3;
     }
 }
