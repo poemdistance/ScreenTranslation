@@ -68,6 +68,7 @@ void WatchSelection(Display *display, const char *bufname)
 
         select ( fd+1, &fds, NULL, NULL, &tv );
 
+        memset ( &event, '\0', sizeof(event) );
         while(XPending(display))
             XNextEvent(display, &event);
 
@@ -80,12 +81,13 @@ void WatchSelection(Display *display, const char *bufname)
             if ( shmaddr_selection[0] != '1' ) {
 
                 shmaddr_selection[0] = '1';
-                /* pred("Selection change: write finish flag: 1"); */
+                pred("Selection change: write finish flag: 1");
             }
         }
 
         if ( SIGTERM_SIGNAL ) break;
     }
 
+    pgreen ( "checkSelectionChanged exit" );
     XCloseDisplay ( display );
 }
