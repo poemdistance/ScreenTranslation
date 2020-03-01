@@ -30,8 +30,6 @@ extern pid_t detect_tran_pic_action_pid;
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
 
-extern Display *display;
-
 int hadCleanUp = 0;
 
 /* TODO:可能会被多次执行，如在终端输入ctrl-c，会被主函数注册的监听SIGINT捕捉到，
@@ -85,18 +83,10 @@ void quit() {
     if ( GOOGLE_TRANS_EXIT_FLAG != 1 )
         kill ( google_translate_pid, SIGKILL );
 
-    kill ( check_selectionEvent_pid, SIGKILL );
+    kill ( check_selectionEvent_pid, SIGTERM );
     kill ( quickSearchProcess_pid, SIGTERM );
     kill ( fetch_data_from_mysql_pid, SIGTERM );
     kill ( detect_tran_pic_action_pid, SIGTERM );
-
-    /* 进程所在文件也进行了清理，判断一下防止多次释放,
-     * (释放后display会被置为空)*/
-    if ( display )
-        XCloseDisplay(display);
-
-    /* 手动再赋值空，保险一点*/
-    display = NULL;
 
     releaseLink();
 

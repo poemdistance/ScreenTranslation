@@ -186,6 +186,6 @@ void listenRelativeEvent(GtkWidget *button, WinData *win ) {
     g_signal_connect ( button, "leave-notify-event",G_CALLBACK(leave_button), win);
     g_signal_connect ( button, "button-press-event",G_CALLBACK(press_button), win);
     g_signal_connect ( button, "button-release-event",G_CALLBACK(release_button), win);
-    g_signal_connect(win->window, "motion-notify-event", G_CALLBACK(deal_motion_notify_event), win);
+    /* g_signal_connect(win->window, "motion-notify-event", G_CALLBACK(deal_motion_notify_event), win); */
 
 }

@@ -12,7 +12,7 @@
 #include <X11/Xlib.h>
 #include "common.h"
 
-void show_utf8_prop(Display *dpy, Window w, Atom p, char *text)
+void show_utf8_prop(Display *display, Window w, Atom p, char *text)
 {
     Atom da, incr, type;
     int di;
@@ -20,11 +20,11 @@ void show_utf8_prop(Display *dpy, Window w, Atom p, char *text)
     unsigned char *prop_ret = NULL;
 
     /* Dummy call to get type and size. */
-    XGetWindowProperty(dpy, w, p, 0, 0, False, AnyPropertyType,
+    XGetWindowProperty(display, w, p, 0, 0, False, AnyPropertyType,
             &type, &di, &dul, &size, &prop_ret);
     XFree(prop_ret);
 
-    incr = XInternAtom(dpy, "INCR", False);
+    incr = XInternAtom(display, "INCR", False);
     if (type == incr)
     {
         fprintf(stderr,"Data too large and INCR mechanism not implemented\n");
@@ -32,7 +32,7 @@ void show_utf8_prop(Display *dpy, Window w, Atom p, char *text)
         return;
     }
 
-    XGetWindowProperty(dpy, w, p, 0, size, False, AnyPropertyType,
+    XGetWindowProperty(display, w, p, 0, size, False, AnyPropertyType,
             &da, &di, &dul, &dul, &prop_ret);
 
     /*TODO:如果是截图的时候发送了Ctrl-C到了这里会崩溃掉
@@ -43,12 +43,12 @@ void show_utf8_prop(Display *dpy, Window w, Atom p, char *text)
 
     /* Signal the selection owner that we have successfully read the
      * data. */
-    XDeleteProperty(dpy, w, p);
+    XDeleteProperty(display, w, p);
 }
 
 int getClipboard(char *text)
 {
-    Display *dpy;
+    Display *display;
     Window owner, target_window, root;
     int screen;
     Atom sel, target_property, utf8;
@@ -57,18 +57,18 @@ int getClipboard(char *text)
 
     /* 返回一个结构体：
      * 包含连接到xserver的全部信息*/
-    dpy = XOpenDisplay(NULL);
-    if (!dpy)
+    display = XOpenDisplay(NULL);
+    if (!display)
     {
         fprintf(stderr, "Could not open X display\n");
         return 1;
     }
 
     /*返回默认的被xopenDisplay引用的screen number*/
-    screen = DefaultScreen(dpy);
+    screen = DefaultScreen(display);
 
     /*返回root window， 用于绘图或顶层窗口*/
-    root = RootWindow(dpy, screen);
+    root = RootWindow(display, screen);
 
 
     /*
@@ -83,14 +83,14 @@ int getClipboard(char *text)
      * if only_if_exists is FALSE , the atom is created if 
      * it doesn't exists
      */
-    //sel = XInternAtom(dpy, "CLIPBOARD", False);
-    sel = XInternAtom(dpy, "PRIMARY", False);
-    utf8 = XInternAtom(dpy, "UTF8_STRING", False);
+    //sel = XInternAtom(display, "CLIPBOARD", False);
+    sel = XInternAtom(display, "PRIMARY", False);
+    utf8 = XInternAtom(display, "UTF8_STRING", False);
 
     /*
      * returns the window id associated(关联) with the window
      * that currently owns the specified selection*/
-    owner = XGetSelectionOwner(dpy, sel);
+    owner = XGetSelectionOwner(display, sel);
 
     if (owner == None)
     {
@@ -102,15 +102,15 @@ int getClipboard(char *text)
      * window: 
      *
      * crates a window that inherits its attribtes from its parant window*/
-    target_window = XCreateSimpleWindow(dpy, root, -10, -10, 1, 1, 0, 0, 0);
+    target_window = XCreateSimpleWindow(display, root, -10, -10, 1, 1, 0, 0, 0);
 
     /*requests the X server report the events associated with the specificed 
      * event mask */
-    XSelectInput(dpy, target_window, SelectionNotify);
+    XSelectInput(display, target_window, SelectionNotify);
 
     /* That's the property used by the owner. Note that it's completely
      * arbitrary.(随意地) */
-    target_property = XInternAtom(dpy, "Alien", False);
+    target_property = XInternAtom(display, "Alien", False);
 
     /* Request conversion to UTF-8. Not all owners will be able to
      * fulfill that request. 
@@ -132,7 +132,7 @@ int getClipboard(char *text)
      * Window requestor;
      * Time time;
      */
-    XConvertSelection(dpy, sel, utf8, target_property, target_window,
+    XConvertSelection(display, sel, utf8, target_property, target_window,
             CurrentTime);
 
     for (;;)
@@ -140,7 +140,7 @@ int getClipboard(char *text)
         /*
          * copies the first event from the event queue into the specified 
          * XEvent structure and then removes it from the queue*/
-        XNextEvent(dpy, &ev);
+        XNextEvent(display, &ev);
 
         /* SelectionNotify:
          * SelectionNotify would be sent by the owner to requestor when
@@ -153,18 +153,25 @@ int getClipboard(char *text)
                 if (sev->property == None)
                 {
                     fprintf(stderr,"Conversion could not be performed.\n");
-                    XCloseDisplay(dpy);
+                    XCloseDisplay(display);
                     return -1;
 
                 } else {
                     char *name;
-                    name = XGetAtomName(dpy, ((XSelectionRequestEvent*)&ev)->target);
+                    name = XGetAtomName(display, ((XSelectionRequestEvent*)&ev)->target);
                     XFree(name);
-                    show_utf8_prop(dpy, target_window, target_property, text);
-                    XCloseDisplay(dpy);
+                    show_utf8_prop(display, target_window, target_property, text);
+                    XCloseDisplay(display);
                     return 0;
                 }
                 break;
+
+            default: break;
         }
+
+        break;
     }
+
+    XCloseDisplay ( display );
+    return -1;
 }

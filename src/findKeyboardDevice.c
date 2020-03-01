@@ -43,8 +43,9 @@ char **getKeyboardDevice(char (*buf)[100])
 
         close ( fd );
 
-        //printf("\033[0;35minfo = %s \033[0m\n", info);
-        if ( strstr ( info, "Keyboard" ) != NULL || strstr ( info, "keyboard" ) != NULL ) {
+        printf("\033[0;35minfo = %s \033[0m\n", info);
+        if ( strstr ( info, "Keyboard" ) != NULL || strstr ( info, "keyboard" ) != NULL ||\
+                strstr ( info, "AKKO" ) != NULL ) {
 
             fprintf(stdout, "\033[0;32mFound keyboard device:%s <In findKeyboardDevice.c>\033[0;m\n\n", devname);
             strcpy ( buf[count++], devname );

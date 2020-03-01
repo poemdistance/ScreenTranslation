@@ -20,18 +20,15 @@ pid_t searchWindow_pid;
 pid_t searchWindowMonitor_pid;
 pid_t captureShortcutEvent_pid;
 
+int SIGTER_SIGNAL = 0;
+
 void kill_ourselves() {
 
     pred("KILL  captureShortcutEvent(), PID %d \n", captureShortcutEvent_pid);
-    //kill ( captureShortcutEvent_pid, SIGTERM );
 
-    /* 万一失败就不好了，多来几个*/
-    kill ( captureShortcutEvent_pid, SIGKILL );
-    kill ( captureShortcutEvent_pid, SIGKILL );
-    kill ( captureShortcutEvent_pid, SIGKILL );
-    kill ( captureShortcutEvent_pid, SIGKILL );
-    kill ( captureShortcutEvent_pid, SIGKILL );
-    exit(0);
+    kill ( captureShortcutEvent_pid, SIGTERM );
+
+    SIGTER_SIGNAL = 1;
 }
 
 void quickSearch()
@@ -90,6 +87,8 @@ void quickSearch()
             }
 
             usleep(10000);
+
+            if ( SIGTER_SIGNAL ) break;
         }
     } 
     else {

@@ -144,6 +144,7 @@ typedef struct WinData{
     GtkWidget *indicateButton;
     GtkWidget *switchButton;
     GtkWidget *calibrationButton;
+    GtkWidget *exitButton;
 
     GdkPixbuf *srcBackgroundImage;
 

@@ -113,6 +113,7 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     memset(text, 0, TEXTSIZE);
     int retval = 0;
 
+    /* TODO:返回值已经没有1*/
     if ( (retval = getClipboard(text) ) == 1 || isEmpty(text)) {
         printf("Not copy event or empty text\n");
         action = 0;

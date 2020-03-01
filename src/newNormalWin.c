@@ -247,7 +247,12 @@ void *newNormalWindow() {
     gtk_container_add (GTK_CONTAINER(layout), scroll);
     gtk_container_add (GTK_CONTAINER(newWin), layout);
 
+    //gtk_container_add (GTK_CONTAINER(layout), view);
+    //gtk_container_add (GTK_CONTAINER(scroll), layout);
+    //gtk_container_add (GTK_CONTAINER(newWin), scroll);
+
     setFontProperties(buf, &iter);
+
 
     wd.view = view;
     wd.window = newWin;
@@ -268,6 +273,33 @@ void *newNormalWindow() {
      * 要少很多, 放在前面可以等到数据全部成功获取(一般来说百度的翻译结果会
      * 获取的比较慢)*/
     wd.image = syncImageSize ( newWin, wd.width, wd.height, (void*)&wd );
+
+
+#if 1
+
+    gboolean on_button_press (GtkWidget* widget, GdkEventButton * event, GdkWindowEdge edge)
+    {
+        if (event->type == GDK_BUTTON_PRESS)
+        {
+            if (event->button == 1) {
+                gtk_window_begin_move_drag(GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+                        event->button,
+                        event->x_root,
+                        event->y_root,
+                        event->time);
+            }
+        }
+        return TRUE;
+    }
+
+    gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
+    g_signal_connect(G_OBJECT(newWin), "button-press-event", G_CALLBACK(on_button_press), NULL);
+
+    wd.exitButton = gtk_button_new_with_label ( "Exit" );
+    gtk_layout_put ( GTK_LAYOUT(layout), wd.exitButton, bw.width-RIGHT_BORDER_OFFSET*6, bw.height-BOTTOM_OFFSET );
+    g_signal_connect ( wd.exitButton, "clicked", G_CALLBACK(destroyNormalWin), &wd );
+
+#endif
 
     printDebugInfo();
 
@@ -329,7 +361,7 @@ void *newNormalWindow() {
     pthread_exit(NULL);
 }
 
-int destroyNormalWin(GtkWidget *window, WinData *wd) {
+int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
 
     clearMemory();
 
@@ -346,7 +378,7 @@ int destroyNormalWin(GtkWidget *window, WinData *wd) {
     shmaddr_google[0] = CLEAR;
 
     //gtk_window_close(GTK_WINDOW(window));
-    gtk_widget_destroy(window);
+    gtk_widget_destroy(wd->window);
     gtk_main_quit();
 
     /* TODO:按了exit键后变成了单击事件，此时再双击会导致检测错误
@@ -986,6 +1018,9 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
     gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
             (WINDATA(data))->calibrationButton, width-RIGHT_BORDER_OFFSET*4, height-BOTTOM_OFFSET );
 
+    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
+            (WINDATA(data))->exitButton, width-RIGHT_BORDER_OFFSET*5-20, height-BOTTOM_OFFSET );
+
     gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,(WINDATA(data))->indicateButton,\
             width-(200-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who)), height-INDICATE_OFFSET );
 
@@ -996,7 +1031,7 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
     WINDATA(data)->lastheight = height;
 
     gtk_widget_queue_draw ( window );
-    gtk_widget_show(window);
+    gtk_widget_show_all(window);
 }
 
 int calculateWidth ( int x ) {
