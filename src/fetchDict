@@ -8,6 +8,7 @@ import getpass
 import readline
 import warnings
 import string
+import signal
 import os
 import sys
 import re
@@ -24,7 +25,6 @@ def deletePunctuations(src):
             src = src[:-1]
         else:
             return src
-
 
 def phoneticNum(attr):
     #cprint(attr, 'red' , attrs=['bold'])
@@ -204,6 +204,9 @@ def writeFlags(shm, attributes):
     #cprint('Offline flags:'+flagStr, 'blue')
     shm.write ( flagStr, 1 )
 
+def exit(signo, frame):
+    sys.exit(0)
+
 def main():
 
     global useShm
@@ -211,6 +214,8 @@ def main():
     shm = connectShm() if useShm else doNothing
     offset = 0
     actualStart = 10
+
+    signal.signal ( signal.SIGTERM, exit )
 
     while True:
         try:
