@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS=-Wall -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g #-fsanitize=address 
+CFLAGS=-Wall -lm -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g #-fsanitize=address 
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
@@ -8,9 +8,10 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  countLines.o countCharNums.o adjustStrForScrolledWin.o\
 		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
 		  keyPressEvent.o quickSearch.o findKeyboardDevice.o\
-		  captureShortcutEvent.o  searchWindow.o tranSelect.o isEmpty.o \
+		  shortcutListener.o  searchWindow.o tranSelect.o isEmpty.o \
 		  tranPicActionDetect.o memoryControl.o calibration.o fitting.o \
-		  expanduser.o dataStatistics.o
+		  expanduser.o dataStatistics.o getPointerPosition.o strmask.o\
+		  useful.o configControl.o
 
 MONNITOR = StranMonitor.o
 
