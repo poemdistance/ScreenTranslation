@@ -5,7 +5,7 @@
 #include "printWithColor.h"
 #include "expanduser.h"
 #include "configControl.h"
-#include "strctl.h"
+#include "useful.h"
 
 typedef struct Link {
 
