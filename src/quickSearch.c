@@ -4,8 +4,9 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include "shortcutListener.h"
 
-int fd[2];
+/* int fd[2]; */
 char buf[2] = { '\0' };
 int InSearchWin = 0;
 
@@ -20,19 +21,22 @@ pid_t searchWindow_pid;
 pid_t searchWindowMonitor_pid;
 pid_t captureShortcutEvent_pid;
 
-int SIGTER_SIGNAL = 0;
+static int SIGTERM_SIGNAL = 0;
 
 void kill_ourselves() {
 
-    pred("KILL  captureShortcutEvent(), PID %d \n", captureShortcutEvent_pid);
+    pbgreen ("Kill listenShortcut");
 
     kill ( captureShortcutEvent_pid, SIGTERM );
 
-    SIGTER_SIGNAL = 1;
+    SIGTERM_SIGNAL = 1;
 }
 
 void quickSearch()
 {
+
+    pbyellow ( "启动 quick search" );
+
     pid_t pid;
 
     struct sigaction sa;
@@ -40,8 +44,10 @@ void quickSearch()
     sigemptyset ( &sa.sa_mask );
     if ( sigaction ( SIGTERM, &sa, NULL) != 0 )
         err_exit_qs("Sigaction error in quickSearch 1");
+    if ( sigaction ( SIGINT, &sa, NULL) != 0 )
+        err_exit_qs("Sigaction error in quickSearch 1");
 
-    socketpair ( AF_UNIX, SOCK_STREAM, 0, fd );
+    /* socketpair ( AF_UNIX, SOCK_STREAM, 0, fd ); */
 
 
     shared_memory_for_keyboard_event(&shmaddr_keyboard);
@@ -56,11 +62,13 @@ void quickSearch()
         captureShortcutEvent_pid = pid;
         searchWindowMonitor_pid = getpid();
 
-        close ( fd[0] );
+        /* close ( fd[0] ); */
 
         while ( 1 ) {
 
             if ( shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] == '1') {
+
+                pmag ( "准备启动quick search 窗口" );
 
                 //InSearchWin = 1;
                 shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '1';
@@ -88,16 +96,19 @@ void quickSearch()
 
             usleep(10000);
 
-            if ( SIGTER_SIGNAL ) break;
+            if ( SIGTERM_SIGNAL ) break;
         }
     } 
     else {
 
-        close ( fd[1] );
+        /* close ( fd[1] ); */
 
         /* 这又是子进程里的，获取到的变量父进程是用不到的!!!!!!!*/
         //captureShortcutEvent_pid = getpid();
 
-        captureShortcutEvent(fd[0]);
+        /* captureShortcutEvent(fd[0]); */
+        listenShortcut();
     }
+
+    pbcyan ( "QuickSearch.c 程序退出" );
 }

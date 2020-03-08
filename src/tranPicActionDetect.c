@@ -41,6 +41,8 @@ int detectTranPicAction () {
     sigemptyset ( &sa.sa_mask );
     if ( sigaction ( SIGTERM, &sa, NULL ) != 0 )
         err_exit("Sigaction for SIGTERM failed <tranPicActionDetect.c>");
+    if ( sigaction ( SIGINT, &sa, NULL ) != 0 )
+        err_exit("Sigaction for SIGTERM failed <tranPicActionDetect.c>");
 
     tranPicActionDetect_pid = getpid();
 
@@ -90,6 +92,8 @@ int detectTranPicAction () {
         kill ( child_pid, SIGKILL );
         while ( waitpid ( child_pid, NULL, WNOHANG ) > 0 );
     }
+
+    pbcyan ( "TranPic 退出" );
 
     return 0;
 }

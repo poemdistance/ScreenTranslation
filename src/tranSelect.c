@@ -24,6 +24,8 @@ int shmid_keyboard;
 int shmid_mysql;
 int shmid_pic;
 
+int SIGTERM_NOTIFY = 0;
+
 pthread_t t1 = 0, t2 = 0, t3 = 0;
 
 struct Arg {
@@ -33,9 +35,28 @@ struct Arg {
     char *addr_baidu;
 };
 
+void sigterm_notify_cb() {
+
+    SIGTERM_NOTIFY = 1;
+}
+
 void *newNormalWindowThread() {
 
     pthread_t t3;
+    struct sigaction sa;
+    sa.sa_handler = sigterm_notify_cb;
+    sigemptyset ( &sa.sa_mask );
+    int ret = 0;
+    if ( (ret = sigaction ( SIGTERM, &sa, NULL )) == -1) {
+        printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n");
+        perror("sigaction");
+        exit(1);
+    }
+    if ( (ret = sigaction ( SIGINT, &sa, NULL )) == -1) {
+        printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n");
+        perror("sigaction");
+        exit(1);
+    }
 
     while ( 1 ) {
 
@@ -46,9 +67,13 @@ void *newNormalWindowThread() {
             CanNewWin = 0;
         }
 
+        if ( SIGTERM_NOTIFY ) break;
         usleep(1000);
     }
 
+    pbcyan ( "newNormalWindowThread 退出" );
+
+    return NULL;
 }
 
 void tranSelect() {
@@ -91,7 +116,7 @@ void tranSelect() {
         /*启动翻译入口图标线程*/
         pthread_create(&t1, NULL, GuiEntrance, (void*)&arg);
         pthread_join(t1, &thread_ret);
-
+        if ( SIGTERM_NOTIFY ) break;
     }
 
     /*TODO:
@@ -100,4 +125,5 @@ void tranSelect() {
     pthread_join(t2, &thread_ret); 
     pthread_join(t3, &thread_ret); 
 
+    pbcyan ( "GuiEntrance 退出" );
 }

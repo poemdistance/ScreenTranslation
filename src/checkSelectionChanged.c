@@ -31,8 +31,6 @@ void checkSelectionChanged(int writefd, int readfd)
         quit();
     }
 
-    sa.sa_handler =  exitNotify;
-    sigemptyset ( &sa.sa_mask );
     if ( sigaction(SIGINT, &sa, NULL) == -1) {
         pred("sigaction err(checkSelectionChanged -> SIGTERM)");
         perror("sigaction");
@@ -88,6 +86,6 @@ void WatchSelection(Display *display, const char *bufname)
         if ( SIGTERM_SIGNAL ) break;
     }
 
-    pgreen ( "checkSelectionChanged exit" );
+    pbcyan ( "剪贴板监测程序退出" );
     XCloseDisplay ( display );
 }

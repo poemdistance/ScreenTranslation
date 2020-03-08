@@ -117,6 +117,7 @@ void captureShortcutEvent(int socket) {
                 case KEY_J:
                     pbmag("Captured <Alt-J>\n");
                     shmaddr[QuickSearchShortcutPressed_FLAG] = '1';
+                    shmaddr[QUICK_SEARCH_NOTIFY] = '1';
                     break;
 
                 case KEY_D:

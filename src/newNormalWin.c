@@ -10,6 +10,7 @@
 #include "dataStatistics.h"
 #include "memoryControl.h"
 #include "windowData.h"
+#include "pointer.h"
 
 typedef void (*Display_func)(GtkWidget *, gpointer *);
 
@@ -105,6 +106,14 @@ int focusOurWindow( WinData *wd ) {
 
     XCloseDisplay(dpy);
 
+    gint x=100, y=100;
+    getPointerPosition ( &x, &y );
+    if ( ! wd->quickSearchFlag ) {
+        gdk_window_move ( gtk_widget_get_window(wd->window), x, y );
+    }
+
+    gtk_widget_show_all((wd->window));
+
     return 0;
 }
 
@@ -114,7 +123,6 @@ int detect_ctrl_c(void *data) {
     if ( focustimes++ <= 5 ) {
         focusOurWindow ( WINDATA(data) );
     }
-
 
     /* 此处监听的是电脑全局，如果希望其他地方的ctrl-c
      * 使本翻译界面关闭，请注释掉下面代码中的: < 0 & >*/
@@ -161,6 +169,8 @@ int dataInit(WinData *wd) {
     wd->enter = 0;
     wd->ox = wd->oy = 0;
     wd->cx = wd->cy = 0;
+    
+    wd->quickSearchFlag = FALSE;
 
     return 0;
 }
@@ -198,13 +208,15 @@ void *newNormalWindow() {
     gtk_window_set_accept_focus ( GTK_WINDOW(newWin), TRUE );
     gtk_window_set_focus_on_map ( GTK_WINDOW(newWin), TRUE );
     gtk_widget_set_can_focus(newWin, TRUE);
+    gtk_window_set_position ( GTK_WINDOW(newWin), GTK_WIN_POS_MOUSE );
 
     /* quickSearch快捷键标志位, changed in captureShortcutEvent.c <变量shmaddr>*/
-    if ( shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] == '1') {
-        shmaddr_keyboard[QuickSearchShortcutPressed_FLAG ] = '0';
+    if ( shmaddr_keyboard[QUICK_SEARCH_NOTIFY] == '1') {
+        shmaddr_keyboard[QUICK_SEARCH_NOTIFY] = '0';
 
         /* 快捷键调出的窗口放置于中央*/
         gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_CENTER);
+        wd.quickSearchFlag = TRUE;
     }
     else
         /* 取词翻译的窗口跟随鼠标*/
@@ -292,7 +304,7 @@ void *newNormalWindow() {
         return TRUE;
     }
 
-    gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
+    /* gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE ); */
     g_signal_connect(G_OBJECT(newWin), "button-press-event", G_CALLBACK(on_button_press), NULL);
 
     wd.exitButton = gtk_button_new_with_label ( "Exit" );
@@ -346,7 +358,7 @@ void *newNormalWindow() {
     g_signal_connect (newWin, "configure-event", G_CALLBACK(syncNormalWinForConfigEvent), &wd);
 
 
-    timeout_id = g_timeout_add(500, detect_ctrl_c, &wd);
+    timeout_id = g_timeout_add(10, detect_ctrl_c, &wd);
 
     gtk_widget_show_all(newWin);
 
@@ -1031,7 +1043,6 @@ void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer d
     WINDATA(data)->lastheight = height;
 
     gtk_widget_queue_draw ( window );
-    gtk_widget_show_all(window);
 }
 
 int calculateWidth ( int x ) {

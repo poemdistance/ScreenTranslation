@@ -45,9 +45,11 @@ pid_t detect_tran_pic_action_pid;
 int mousefd;
 extern int action;
 
+extern int SIGTERM_NOTIFY;
+
 void *DetectMouse(void *arg) {
 
-    struct sigaction sa;
+    /* struct sigaction sa; */
     int retval ;
     char buf[3];
     int releaseButton = 1;
@@ -175,14 +177,15 @@ void *DetectMouse(void *arg) {
         //shmaddr_searchWin[10] =  *itoa(fd_python[1]);
         //shmaddr_searchWin[10 + strlen(itoa(fd_python[1]))] =  '\0';
 
-        sa.sa_handler = quit;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_RESTART;
-        if ( sigaction(SIGTERM, &sa, NULL) == -1) {
-            pbred("sigaction exec failed (DetectMouse.c -> SIGTERM)");
-            perror("sigaction");
-            quit();
-        }
+        /* sa.sa_handler = quit; */
+        /* sa.sa_handler = sigterm_notify_cb; */
+        /* sigemptyset(&sa.sa_mask); */
+        /* sa.sa_flags = SA_RESTART; */
+        /* if ( sigaction(SIGTERM, &sa, NULL) == -1) { */
+        /*     pbred("sigaction exec failed (DetectMouse.c -> SIGTERM)"); */
+        /*     perror("sigaction"); */
+        /*     quit(); */
+        /* } */
 
         // 打开鼠标设备
         mousefd = open("/dev/input/mice", O_RDONLY );
@@ -208,6 +211,8 @@ void *DetectMouse(void *arg) {
 
             if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
 
+                pbcyan ( "Quick Search 完毕" );
+
                 if ( text == NULL )
                     if (( text = calloc(TEXTSIZE, 1)) == NULL)
                         err_exit("malloc failed in notify.c");
@@ -221,6 +226,8 @@ void *DetectMouse(void *arg) {
             }
 
             if ( shmaddr_pic[0] == FINFLAG ) {
+
+                pbcyan ( "Tran pic 完毕" );
 
                 if ( text == NULL )
                     if (( text = calloc(TEXTSIZE, 1)) == NULL)
@@ -236,6 +243,8 @@ void *DetectMouse(void *arg) {
 
             /*超时*/
             if(retval==0) {
+
+                if ( SIGTERM_NOTIFY ) break;
 
                 gettimeofday( &whenTimeout, NULL );
                 inTimeout = (whenTimeout.tv_usec + whenTimeout.tv_sec*1000000) / 1000;
@@ -441,6 +450,7 @@ void *DetectMouse(void *arg) {
         exit(1);
 
     }
+    pbcyan ( "DetectMouse 退出" );
     pthread_exit(NULL);
 }
 

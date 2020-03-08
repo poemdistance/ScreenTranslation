@@ -30,7 +30,7 @@ extern pid_t detect_tran_pic_action_pid;
 extern int BAIDU_TRANS_EXIT_FALG;
 extern int GOOGLE_TRANS_EXIT_FLAG;
 
-int hadCleanUp = 0;
+static int hadCleanUp = 0;
 
 /* TODO:可能会被多次执行，如在终端输入ctrl-c，会被主函数注册的监听SIGINT捕捉到，
  * 之后python翻译程序退出，又接收到SIGCHLD，再被调用一次，最后StranMonitor程序
@@ -54,7 +54,7 @@ void quit() {
 
     hadCleanUp = 1;
 
-    printf("\033[0;35m\nCleaning up... \033[0m\n\n");
+    pbgreen ( "启动清理程序" );
 
     if ( text != NULL )
         free(text);
@@ -78,14 +78,14 @@ void quit() {
     releaseMemoryTmp();
 
 
-    if ( BAIDU_TRANS_EXIT_FALG != 1 )
-        kill ( baidu_translate_pid, SIGKILL );
-    if ( GOOGLE_TRANS_EXIT_FLAG != 1 )
-        kill ( google_translate_pid, SIGKILL );
+    /* if ( BAIDU_TRANS_EXIT_FALG != 1 ) */
+    kill ( baidu_translate_pid, SIGTERM );
+    /* if ( GOOGLE_TRANS_EXIT_FLAG != 1 ) */
+    kill ( google_translate_pid, SIGTERM );
+    kill ( fetch_data_from_mysql_pid, SIGTERM );
 
     kill ( check_selectionEvent_pid, SIGTERM );
     kill ( quickSearchProcess_pid, SIGTERM );
-    kill ( fetch_data_from_mysql_pid, SIGTERM );
     kill ( detect_tran_pic_action_pid, SIGTERM );
 
     releaseLink();

@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "expanduser.h"
+#include "cleanup.h"
 
 extern char *shmaddr_google;
 extern char *shmaddr_searchWin;
@@ -36,6 +37,8 @@ struct clickDate {
     GtkWidget *button;
 };
 
+extern int SIGTERM_NOTIFY;
+
 void *GuiEntrance(void *arg) {
 
     aboveWindow = 0;
@@ -66,6 +69,7 @@ void *GuiEntrance(void *arg) {
            return (void*)0;
            } */
 
+        if ( SIGTERM_NOTIFY ) return NULL;
         usleep(1000);
     }
 
@@ -121,7 +125,7 @@ void *GuiEntrance(void *arg) {
     /*移动入口图标防止遮挡视线*/
     gint cx, cy;
     gtk_window_get_position(GTK_WINDOW(window), &cx, &cy);
-    gtk_window_move(GTK_WINDOW(window), cx-30, cy-50);
+    gtk_window_move(GTK_WINDOW(window), cx+5, cy+20);
     gtk_widget_show_all(window);
 
     /*添加超时和单击销毁图标回调函数*/

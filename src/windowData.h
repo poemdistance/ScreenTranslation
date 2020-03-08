@@ -164,6 +164,8 @@ typedef struct WinData{
     gint ox, oy; /* current x,y position of button*/
     gdouble cx, cy; /* current x,y position relative to the up left corner of button*/
 
+    gboolean quickSearchFlag;
+
 }WinData;
 
 GtkWidget *newCalibrationButton ( WinData *win );

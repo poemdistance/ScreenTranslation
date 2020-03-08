@@ -104,15 +104,18 @@ void insertCalibrationButton( WinData *win ) {
 gboolean deal_motion_notify_event ( GtkWidget *widget, GdkEventMotion *event, gpointer *data)
 {
     int wx, wy; /* The absolutely position of the left up corner of window*/
-    int rx, ry; /* The position of the pointer relative to the left up corner of window*/
+    //int rx, ry; /* The position of the pointer relative to the left up corner of window*/
 
     gdk_window_get_position ( gtk_widget_get_window(WINDATA(data)->window), &wx, &wy );
 
-    rx = (int)event->x_root - wx;
-    ry = (int)event->y_root - wy;
+
+    /* rx = (int)event->x_root - wx; */
+    /* ry = (int)event->y_root - wy; */
 
     gtk_window_get_size (  (GtkWindow*)WINDATA(data)->window ,\
             &WINDATA(data)->width, &WINDATA(data)->height );
+
+#if 0
 
     /* 在Button上方按下按键后使能拖拽标志位,直到释放按钮清空该标志*/
     if ( WINDATA(data)->press &&  WINDATA(data)->enter )
@@ -138,6 +141,8 @@ gboolean deal_motion_notify_event ( GtkWidget *widget, GdkEventMotion *event, gp
         gtk_layout_move ( GTK_LAYOUT(WINDATA(data)->layout), WINDATA(data)->audio,\
                 rx-WINDATA(data)->cx, ry-WINDATA(data)->cy );
     }
+
+#endif
 
     return FALSE;
 }
@@ -186,6 +191,6 @@ void listenRelativeEvent(GtkWidget *button, WinData *win ) {
     g_signal_connect ( button, "leave-notify-event",G_CALLBACK(leave_button), win);
     g_signal_connect ( button, "button-press-event",G_CALLBACK(press_button), win);
     g_signal_connect ( button, "button-release-event",G_CALLBACK(release_button), win);
-    /* g_signal_connect(win->window, "motion-notify-event", G_CALLBACK(deal_motion_notify_event), win); */
+    g_signal_connect(win->window, "motion-notify-event", G_CALLBACK(deal_motion_notify_event), win);
 
 }
