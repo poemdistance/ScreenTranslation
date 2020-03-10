@@ -3,8 +3,10 @@
  *  创建翻译入口图标*/
 
 #include "common.h"
+#include "windowData.h"
 #include "expanduser.h"
 #include "cleanup.h"
+#include "configControl.h"
 
 extern char *shmaddr_google;
 extern char *shmaddr_searchWin;
@@ -41,6 +43,7 @@ extern int SIGTERM_NOTIFY;
 
 void *GuiEntrance(void *arg) {
 
+    ConfigData *config = ((struct Arg*)arg)->cd;
     aboveWindow = 0;
 
     /*等待鼠标事件到来创建入口图标*/
@@ -74,6 +77,9 @@ void *GuiEntrance(void *arg) {
     }
 
     GtkWidget *window;
+
+    int iconOffsetX = config->iconOffsetX;
+    int iconOffsetY = config->iconOffsetY;
 
     /*入口图标销毁标志置0，表示处于显示状态*/
     HadDestroied = 0;
@@ -125,14 +131,25 @@ void *GuiEntrance(void *arg) {
     /*移动入口图标防止遮挡视线*/
     gint cx, cy;
     gtk_window_get_position(GTK_WINDOW(window), &cx, &cy);
-    gtk_window_move(GTK_WINDOW(window), cx+5, cy+20);
+
+    gtk_window_move(
+            GTK_WINDOW(window), 
+            cx+iconOffsetX, 
+            cy+iconOffsetY
+            );
+
     gtk_widget_show_all(window);
 
     /*添加超时和单击销毁图标回调函数*/
     struct clickDate cd;
     cd.window = window;
     cd.button = button;
-    timeout_id_1 = g_timeout_add(1200, quit_entry, &cd);
+
+    timeout_id_1 = g_timeout_add(
+            config->iconShowTime == 0 ? 1200 : config->iconShowTime,
+            quit_entry,
+            &cd);
+
     timeout_id_2 = g_timeout_add(100, quit_test, &cd);
 
     gtk_main();
