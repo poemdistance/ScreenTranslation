@@ -7,9 +7,28 @@
 #define MAX_PREF_NUM ( 20 )
 #define BASE MAX_SHORTCUT_NUM
 
+
+typedef struct ConfigData {
+
+    int iconOffsetX;
+    int iconOffsetY;
+    int pointerOffsetX;
+    int pointerOffsetY;
+    int hideHeaderBar;
+    int alwaysDisplay;
+    int iconShowTime;
+    int ctrlCToClose;
+    int playAudioMask;
+    unsigned int playAudioKeyval;
+    int switchSourceMask;
+    unsigned int switchSourceKeyval;
+
+}ConfigData;
+
 int writeToConfig( char *keyName, char *value  );
 char *readFromConfig( char *keyName, char *receive );
 char **readFromConfigByKeyword ( char receive[][SHORTCUT_CONTENT_LEN], char *keyword );
 char *readNameByKeyword ( char (*receive)[SHORTCUT_CONTENT_LEN], char *keyword );
+void readNeededValueFromConfig( ConfigData *cd  );
 
 #endif

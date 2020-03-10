@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <gdk/gdk.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -6,6 +7,7 @@
 #include "expanduser.h"
 #include "configControl.h"
 #include "useful.h"
+#include "shortcutListener.h"
 
 typedef struct Link {
 
@@ -110,7 +112,16 @@ char *readFromConfig( char *keyName, char *receive ) {
                 p++;
             }
 
+            p = tmp;
+            lowerCase ( p );
+            *p = toupper(*p);
+            while ( ( p = strchr ( p, '-' ) ) ) {
+                p++;
+                *p = toupper(*p);
+            }
+
             fclose ( fp );
+            pbcyan ( "return buf: %s", tmp );
             return strcpy ( receive, tmp);
         }
     }
@@ -197,6 +208,9 @@ char *readNameByKeyword ( char (*receive)[SHORTCUT_CONTENT_LEN], char *keyword )
                 p = p2 + 1;
             }
 
+            p2 = strchr ( readBuf, '+' );
+            if ( p2 ) *(p2+1) = toupper(*(p2+1));
+
             strcpy ( receive[i++], readBuf );
 
             if ( i == MAX_SHORTCUT_NUM ) {
@@ -210,6 +224,52 @@ char *readNameByKeyword ( char (*receive)[SHORTCUT_CONTENT_LEN], char *keyword )
     return (char*)receive;
 }
 
+void readNeededValueFromConfig( ConfigData *cd  ) {
+
+    char buf[64] = { '\0' };
+    char keyname[64] = { '\0' };
+
+    cd->iconOffsetX =
+        str2int(readFromConfig ( "Icon-Popup-Offset-X", buf ) );
+    cd->iconOffsetY =
+        str2int(readFromConfig ( "Icon-Popup-Offset-Y", buf ) );
+    cd->pointerOffsetX = 
+        str2int(readFromConfig ("Pointer-Offset-X", buf) );
+    cd->pointerOffsetY = 
+        str2int(readFromConfig ("Pointer-Offset-Y", buf) );
+    cd->hideHeaderBar = 
+        str2bool(readFromConfig ( "Hide-Header-Bar-Pref", buf ));
+    cd->alwaysDisplay = 
+        str2bool(readFromConfig ( "Click-Outside-To-Close-Window-Pref", buf ));
+    cd->iconShowTime = 
+        str2int ( readFromConfig ( "Icon-Show-Time" , buf) );
+    cd->ctrlCToClose = 
+        str2bool ( readFromConfig ( "Control+C-To-Close-Window-Pref" , buf) );
+
+    cd->switchSourceMask = 
+        str2mask ( readFromConfig ( "Switch-Translation-Source-Shortcut", buf ) );
+
+    if ( ! getKeyString ( buf ) ) getRawKeyString ( buf );
+    cd->switchSourceKeyval = gdk_keyval_from_name ( (buf) );
+
+
+    cd->playAudioMask = 
+        str2mask ( readFromConfig ( "Play-Audio-Shortcut", buf ) );
+
+    if ( ! getKeyString ( buf ) ) getRawKeyString ( buf );
+    cd->playAudioKeyval = gdk_keyval_from_name ( (buf) );
+
+    printf("%d\n", cd->iconOffsetX);
+    printf("%d\n", cd->iconOffsetY);
+    printf("%d\n", cd->pointerOffsetX);
+    printf("%d\n", cd->pointerOffsetY);
+    printf("%d\n", cd->hideHeaderBar);
+    printf("%d\n", cd->alwaysDisplay);
+    printf("%d\n", cd->iconShowTime);
+    printf("%d\n", cd->ctrlCToClose);
+    printf("%d %d\n", cd->switchSourceMask, cd->switchSourceKeyval);
+    printf("%d %d\n", cd->playAudioMask, cd->playAudioKeyval);
+}
 
 /* int main(int argc, char **argv) */
 /* { */
