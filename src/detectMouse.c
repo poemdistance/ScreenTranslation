@@ -18,6 +18,8 @@
 #include "detectMouse.h"
 #include "cleanup.h"
 
+#define TIMOUE_OUT (1000)
+
 extern char *shmaddr;
 extern char *shmaddr_selection;
 extern int InNewWin;
@@ -43,6 +45,7 @@ pid_t fetch_data_from_mysql_pid;
 pid_t detect_tran_pic_action_pid;
 
 int mousefd;
+int mouseNotRelease;
 extern int action;
 
 extern int SIGTERM_NOTIFY;
@@ -52,7 +55,6 @@ void *DetectMouse(void *arg) {
     /* struct sigaction sa; */
     int retval ;
     char buf[3];
-    int releaseButton = 1;
     fd_set readfds;
     struct timeval tv;
     struct timeval old, now, whenTimeout;
@@ -60,6 +62,7 @@ void *DetectMouse(void *arg) {
     double newtime = 0;
     double lasttime = 0;
     double inTimeout = 0;
+    int releaseButton = 1;
     int thirdClick;
 
     int fd_google[2], fd_baidu[2], fd_mysql[2];
@@ -202,12 +205,14 @@ void *DetectMouse(void *arg) {
 
             /*超时时间*/
             tv.tv_sec = 0;
-            tv.tv_usec = 1000;
+            tv.tv_usec = TIMOUE_OUT;
 
             FD_ZERO( &readfds );
             FD_SET( mousefd, &readfds );
 
             retval = select( mousefd+1, &readfds, NULL, NULL, &tv );
+
+            if ( SIGTERM_NOTIFY ) break;
 
             if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
 
@@ -244,8 +249,6 @@ void *DetectMouse(void *arg) {
             /*超时*/
             if(retval==0) {
 
-                if ( SIGTERM_NOTIFY ) break;
-
                 gettimeofday( &whenTimeout, NULL );
                 inTimeout = (whenTimeout.tv_usec + whenTimeout.tv_sec*1000000) / 1000;
 
@@ -254,6 +257,7 @@ void *DetectMouse(void *arg) {
                     if ( history[0] | history[1] |  history[2] | history[3]) {
                         memset(history, 0, sizeof(history));
                         releaseButton = 1;
+                        action = 0;
                     }
 
                 continue;
@@ -272,8 +276,8 @@ void *DetectMouse(void *arg) {
              * NOTE: 这句要放在读鼠标设备的语句之后,防止窗口关闭后旧数据
              * 被读进history误判，而把任何时候的数据都读完了,
              * 其他代码逻辑才不会被旧数据影响*/
-            if ( InNewWin == 1 )
-                continue;
+            /* if ( InNewWin == 1 ) */
+            /* continue; */
 
             /* 任何一端翻译程序终止即退出取词翻译*/
             if ( BAIDU_TRANS_EXIT_FALG ) {
@@ -313,6 +317,12 @@ void *DetectMouse(void *arg) {
 
                 action = 0;
             }
+
+            /* 此变量用于newNormalWindow，
+             * 作用：拖动窗口标志变量(仅当拖动窗口时起效)
+             * 详见newNormalWindow*/
+            if ( isAction(history, i, ALLONE) ) mouseNotRelease = 1;
+
 
             /*按下左键*/
             /* 此处不要改变1 0的顺序，因为m n下标出现0 1可能是区域选择
@@ -368,8 +378,10 @@ void *DetectMouse(void *arg) {
                 continue;
             }
 
-            if ( isAction( history, i, SLIDE ) )
+            if ( isAction( history, i, SLIDE ) ) {
+                mouseNotRelease = 0;
                 notify(&history, &thirdClick, &releaseButton, fd_python);
+            }
 
         } /*while loop*/
 
