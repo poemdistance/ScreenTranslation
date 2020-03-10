@@ -1,7 +1,10 @@
 #include "common.h"
 #include "quickSearch.h"
+#include "windowData.h"
 #include "newWindow.h"
 #include "detectMouse.h"
+#include "configControl.h"
+#include "expanduser.h"
 
 char *shmaddr_google;
 char *shmaddr_baidu;
@@ -24,36 +27,59 @@ int shmid_keyboard;
 int shmid_mysql;
 int shmid_pic;
 
+pthread_t t1 = 0;
+pthread_t t2 = 0;
+pthread_t t3 = 0;
+pthread_t t4 = 0;
+
+
 int SIGTERM_NOTIFY = 0;
 
-pthread_t t1 = 0, t2 = 0, t3 = 0;
-
-struct Arg {
-    int argc;
-    char **argv;
-    char *addr_google;
-    char *addr_baidu;
-};
 
 void sigterm_notify_cb() {
 
     SIGTERM_NOTIFY = 1;
 }
 
-void *newNormalWindowThread() {
+void *updateConfigData ( void* data ) {
 
-    pthread_t t3;
+    ConfigData *cd = data;
+    struct stat st;
+    time_t lastModify = 0;
+    char *file = 
+        expanduser("/home/$USER/.stran/.configrc");
+
+    while ( 1 ) {
+
+        if ( SIGTERM_NOTIFY ) break;
+
+        stat ( file, &st );
+
+        if ( st.st_mtime - lastModify > 0 ) {
+            lastModify = st.st_mtime;
+            readNeededValueFromConfig ( cd );
+        }
+
+        usleep(1000000);
+    }
+
+    return NULL;
+}
+
+void *newNormalWindowThread( void *data ) {
+
+    ConfigData *cd = data;
     struct sigaction sa;
     sa.sa_handler = sigterm_notify_cb;
     sigemptyset ( &sa.sa_mask );
     int ret = 0;
     if ( (ret = sigaction ( SIGTERM, &sa, NULL )) == -1) {
-        printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n");
+        pbred("sigaction exec failed (Main.c -> SIGTERM)");
         perror("sigaction");
         exit(1);
     }
     if ( (ret = sigaction ( SIGINT, &sa, NULL )) == -1) {
-        printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n");
+        pbred("sigaction exec failed (Main.c -> SIGTERM)");
         perror("sigaction");
         exit(1);
     }
@@ -62,7 +88,7 @@ void *newNormalWindowThread() {
 
         if ( CanNewWin ) {
 
-            pthread_create(&t3, NULL, newNormalWindow, NULL);
+            pthread_create(&t3, NULL, newNormalWindow, cd);
             pthread_join(t3, NULL);
             CanNewWin = 0;
         }
@@ -79,6 +105,8 @@ void *newNormalWindowThread() {
 void tranSelect() {
 
     struct Arg arg;
+    ConfigData cd;
+    arg.cd = &cd;
 
     char *addr_google;
     char *addr_baidu;
@@ -107,7 +135,8 @@ void tranSelect() {
 
     /*启动鼠标动作检测线程*/
     pthread_create(&t2, NULL, DetectMouse, (void*)&arg);
-    pthread_create( &t3, NULL, newNormalWindowThread, NULL );
+    pthread_create( &t3, NULL, newNormalWindowThread, (void*)&cd );
+    pthread_create( &t4, NULL, updateConfigData, (void*)&cd );
 
     void *thread_ret;
 
@@ -124,6 +153,7 @@ void tranSelect() {
      * remember to handle it*/
     pthread_join(t2, &thread_ret); 
     pthread_join(t3, &thread_ret); 
+    pthread_join(t4, &thread_ret); 
 
     pbcyan ( "GuiEntrance 退出" );
 }
