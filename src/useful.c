@@ -108,7 +108,9 @@ char *int2str ( int num, char *str ) {
 
 int str2bool ( char *str ) {
 
-    char buf[16];
+    if ( !str ) return 0;
+
+    char buf[128];
     strcpy ( buf, str );
     upperCase ( buf );
 
