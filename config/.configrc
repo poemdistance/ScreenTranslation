@@ -1,0 +1,23 @@
+#注意Gnome如果启用了super键的Overview功能,将导致带super的快捷键失效
+
+Icon-Show-Time: 3695
+Quick-Search-Shortcut: Alt+j
+Toggle-Monitoring-Shortcut: Alt+v
+Play-Audio-Shortcut: SPACE
+Switch-Translation-Source-Shortcut: RETURN
+Translate-Picture-Shortcut: Alt+d
+Recall-Previous-Translation ( unfinish )-Shortcut: Empty
+Setting-Window-Height: 688
+Setting-Window-Width: 996
+Icon-Popup-Offset-X: -14
+Icon-Popup-Offset-Y: -52
+Icon-Absolute-X: 355
+Icon-Absolute-Y: 263
+Hide-Header-Bar-Pref: TRUE
+Click-Outside-To-Close-Window-Pref: TRUE
+Control+C-To-Close-Window-Pref: TRUE
+Pointer-Offset-X: 213
+Pointer-Offset-Y: 269
+Pointer-Absolute-X: 327
+Pointer-Absolute-Y: 339
+Allow-Auto-Adjust-Popup-Window ( unfinish )-Pref: TRUE
