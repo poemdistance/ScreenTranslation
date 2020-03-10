@@ -1,6 +1,8 @@
 #ifndef __WINDOW_DATA__
 #define __WINDOW_DATA__
 
+#include "configControl.h"
+
 #define GET_SHMADDR(who)  ( ( who ) == BAIDU ? (shmaddr_baidu) : \
         ( (who) == MYSQL ? shmaddr_mysql : shmaddr_google))
 
@@ -166,8 +168,21 @@ typedef struct WinData{
 
     gboolean quickSearchFlag;
 
+    ConfigData *cd;
+    gboolean mousePress;;
+    gboolean mouseRelease;
+
 }WinData;
 
 GtkWidget *newCalibrationButton ( WinData *win );
+
+struct Arg {
+
+    int argc;
+    char **argv;
+    char *addr_google;
+    char *addr_baidu;
+    ConfigData *cd;
+};
 
 #endif
