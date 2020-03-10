@@ -23,11 +23,15 @@ int getPointerPosition( int *x, int *y ) {
     int win_x, win_y;
     unsigned int mask_return;
 
+    /* XInitThreads(); */ //不要启用这句，程序会崩溃
     Display *display = XOpenDisplay(NULL);
-    assert(display);
+
+    if ( !display ) 
+        return FALSE;
+
     XSetErrorHandler(_XlibErrorHandler);
     number_of_screens = XScreenCount(display);
-    fprintf(stderr, "There are %d screens available in this X session\n", number_of_screens);
+    /* fprintf(stderr, "There are %d screens available in this X session\n", number_of_screens); */
     root_windows = malloc(sizeof(Window) * number_of_screens);
     for (i = 0; i < number_of_screens; i++) {
         root_windows[i] = XRootWindow(display, i);
@@ -42,12 +46,13 @@ int getPointerPosition( int *x, int *y ) {
     }
     if (result != True) {
         fprintf(stderr, "No mouse found.\n");
+        XCloseDisplay(display);
         return -1;
     }
     *x = root_x;
     *y = root_y;
 
-    printf("Mouse is at (%d,%d)\n", root_x, root_y);
+    /* printf("Mouse is at (%d,%d)\n", root_x, root_y); */
 
     free(root_windows);
     XCloseDisplay(display);
