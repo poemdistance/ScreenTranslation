@@ -31,6 +31,8 @@ static char shortcutValue[MAX_SHORTCUT_NUM][SHORTCUT_CONTENT_LEN] = { '\0' };
 Display* initXClient ()
 {
     int screen;
+    XInitThreads();
+    XInitThreads();
     Display *display = XOpenDisplay ( NULL );
     if (!display)
     {   
@@ -323,6 +325,7 @@ static void eventLoop (Display * display, int *listenKeys)
         if ( SIGTERM_SIGNAL ) break;
     }
 
+    pbcyan ( "Close XDisplay in shortcutListener" );
     XCloseDisplay ( display );
 }
 

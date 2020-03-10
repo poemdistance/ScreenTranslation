@@ -9,5 +9,7 @@ char* mask2str( int mask, char *result );
 char *toStr( int mask );
 int *extractShortcut ( Display *display );
 int listenShortcut();
+char *getKeyString ( char *str );
+char *getRawKeyString ( char *str );
 
 #endif
