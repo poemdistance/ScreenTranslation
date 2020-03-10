@@ -68,7 +68,7 @@ void quickSearch()
 
             if ( shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] == '1') {
 
-                pmag ( "准备启动quick search 窗口" );
+                pmag ( "启动quick search 窗口" );
 
                 //InSearchWin = 1;
                 shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '1';
@@ -78,19 +78,21 @@ void quickSearch()
                 /* 莫得办法，不每次都fork一个进程，窗口除第一次外都无法聚焦*/
                 if ( ( pid = fork() ) == 0) {
                     searchWindow();
+                    pbblue ( "searchWindow() 退出" );
+                    shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] = '0';
                     exit(0);
                 } 
                 else {
 
                     searchWindow_pid = pid;
 
-                    printf("等待搜索窗口退出\n");
-                     
+                    pbblue("等待搜索窗口退出");
+
                     /* wait(pid)*/
                     waitpid(pid, NULL, 0);
 
                     shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '0';
-                    printf("搜索窗口已退出\n");
+                    pbblue("搜索窗口已退出");
                 }
             }
 
