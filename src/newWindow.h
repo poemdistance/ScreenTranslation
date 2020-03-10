@@ -66,9 +66,9 @@ int adjustWinSize(GtkWidget *button, gpointer *arg, int which);
 int setWinSizeForNormalWin ( WinData *window, char *addr, int type);
 void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd);
 
-gboolean key_press ( GtkWidget *window, GdkEventKey *event, gpointer *data );
+gboolean on_key_press_cb ( GtkWidget *window, GdkEventKey *event, gpointer *data );
 
-void *newNormalWindow();
+void *newNormalWindow ( void *data );
 void adjustStrForGoogle(char *p[3], int len, char *storage[3]);
 
 void separateDataForBaidu(int *index, int len, int type);

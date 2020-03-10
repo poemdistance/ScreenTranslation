@@ -1,3 +1,5 @@
+#include <gtk/gtk.h>
+
 /* 注意不要频繁调用gtk_widget_queue_draw(),
  * 否则越靠后的重绘指令越有可能不被成功执行*/
 
@@ -11,6 +13,7 @@
 #include "memoryControl.h"
 #include "windowData.h"
 #include "pointer.h"
+#include "configControl.h"
 
 typedef void (*Display_func)(GtkWidget *, gpointer *);
 
@@ -25,6 +28,7 @@ int InNewWin = 0;
 
 /* 鼠标动作标志位*/
 extern int action;
+extern int mouseNotRelease;
 extern int CanNewWin;
 static int focustimes = 0;
 int timeout_id = 0;
@@ -74,6 +78,8 @@ void selectDisplay( WinData *wd ) {
 /* 本函数代码借鉴自xdotool部分源码*/
 int focusOurWindow( WinData *wd ) {
 
+    ConfigData *cd = wd->cd;
+
     /* Get window id of x11*/
     GdkWindow *gw = gtk_widget_get_window ( GTK_WIDGET ( wd->window ) );
     Window wid = gdk_x11_window_get_xid ( gw );
@@ -106,10 +112,30 @@ int focusOurWindow( WinData *wd ) {
 
     XCloseDisplay(dpy);
 
-    gint x=100, y=100;
-    getPointerPosition ( &x, &y );
+    gint pointerX=100, pointerY=100;
+    gint targetX = 100, targetY = 100;
+    gint winWidth = 0, winHeight = 0;
+    getPointerPosition ( &pointerX, &pointerY );
+    /* gtk_window_get_size ( GTK_WINDOW(wd->window), */ 
+    /*         &winWidth, &winHeight); */
+
+    winWidth = wd->width;
+    winHeight = wd->height;
+
+    targetX  =  pointerX -
+        ( cd->pointerOffsetX *1.0 / 400 ) * winWidth;
+
+    targetY  = pointerY - 
+        ( cd->pointerOffsetY *1.0 / 252 ) * winHeight;
+
+    pmag ( "Target window position %d %d, Original offset %d %d ",
+            targetX, targetY, cd->pointerOffsetX, cd->pointerOffsetY );
+    pmag ( "Win size: %d %d", winWidth, winHeight );
+
     if ( ! wd->quickSearchFlag ) {
-        gdk_window_move ( gtk_widget_get_window(wd->window), x, y );
+        gdk_window_move ( 
+                gtk_widget_get_window(wd->window),
+                targetX, targetY );
     }
 
     gtk_widget_show_all((wd->window));
@@ -117,31 +143,160 @@ int focusOurWindow( WinData *wd ) {
     return 0;
 }
 
-int detect_ctrl_c(void *data) {
+int getFocusWinPos( int *x, int *y ) {
+
+    gint wx = 0;
+    gint wy = 0;
+    gint win_x = 0;
+    gint win_y = 0;
+
+    GdkWindow *win=gdk_screen_get_active_window(gdk_screen_get_default());
+    gdk_window_get_position (win,&wx,&wy);
+    gdk_window_get_root_origin(win,&win_x,&win_y);
+
+    *x = win_x;
+    *y = win_y;
+
+    /* pyellow ( "Current focus window pos: %d %d", *x, *y ); */
+
+    /* win_width=gdk_window_get_width (win); */
+    /* win_height=gdk_window_get_height(win); */
+
+    return 0;
+}
+
+/* 此函数由于on_button_press_cb中拖动窗口的代码
+ * 导致失效*/
+gboolean on_button_release_cb ( 
+        GtkWidget *widget,
+        GdkEventButton *event,
+        WinData *wd) {
+
+    pyellow("Mouse Release");
+    wd->mouseRelease = TRUE;
+    return TRUE;
+}
+
+gboolean on_button_press_cb ( 
+        GtkWidget *widget,
+        GdkEventButton *event,
+        WinData *wd) {
+
+    if (event->type == GDK_BUTTON_PRESS)
+    {
+        if (event->button == 1) {
+            gtk_window_begin_move_drag(GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+                    event->button,
+                    event->x_root,
+                    event->y_root,
+                    event->time);
+        }
+    }
+
+    wd->mousePress = TRUE;
+    return TRUE;
+}
+
+int detect_outside_click_action ( void *data ) {
+
+    ConfigData *cd = WINDATA(data)->cd;
+    static gboolean block = FALSE;
+
+    if ( ! action ){ return TRUE; } 
+
+    if ( ! cd->alwaysDisplay ) return FALSE;
+
+    /* block由函数末尾处识别到拖动窗口时使能,
+     * 如果当前在拖动窗口并且鼠标没有释放，则直接
+     * 返回TRUE，继续等待执行此函数内部逻辑
+     *
+     * 综合作用: 防止拖动窗口过快导致鼠标触及到窗口
+     * 之外导致窗口意外关闭,
+     *
+     * 此处解决办法不是监听鼠标release事件是因为drag窗口动作导致
+     * 此事件的回调函数没办法被执行到,应该是信号被阻断了*/
+    if ( block && mouseNotRelease ) { return TRUE; }
+
+    block = FALSE;
+
+    /* GtkWidget *widget; */
+    gint wx = 0;
+    gint wy = 0;
+    /* gint focusWinX = 0; */
+    /* gint focusWinY = 0; */
+    gboolean condition = FALSE;
+    /* gboolean condition2 = FALSE;; */
+
+
+    gtk_window_get_position ( 
+            GTK_WINDOW(WINDATA(data)->window), &wx, &wy);
+
+#if 1
+
+    GdkWindow *win = gtk_widget_get_window(WINDATA(data)->window);
+    gint w = gdk_window_get_width(win);
+    gint h = gdk_window_get_height(win);
+    gint pointerX = 0;
+    gint pointerY = 0;
+    gtk_window_get_size ( GTK_WINDOW(WINDATA(data)->window), &w, &h );
+
+    getPointerPosition ( &pointerX, &pointerY );
+
+    /* 获取到的窗口宽度和高度分别加上窗口坐标
+     * 得到的矩形区域与实际窗口占据的区域在纵向
+     * 上有一点偏差，这里+50是为了弥补这个偏差
+     * 防止点击翻译窗口底部按钮时意外关闭*/
+    condition = 
+        pointerX >= wx && pointerX <= wx+w &&
+        pointerY >= wy+30 && pointerY <= wy+h+50;
+
+    /* condition满足，说明鼠标点击了窗口，并且
+     * 鼠标未释放时，使能block变量*/
+    if ( condition && mouseNotRelease )
+        block = TRUE;
+
+#endif
+
+#if 0
+    /* 这段代码会导致拖动翻译窗口的时候误关*/
+
+    getFocusWinPos( &focusWinX, &focusWinY );
+
+    /* 如果当前聚焦窗口坐标跟翻译窗口不同，则关闭翻译窗口
+     * 有很小几率聚焦的窗口不是翻译窗口但是坐标又相同
+     * 这里不予考虑*/
+    condition2 = 
+        wx == focusWinX && wy == focusWinY;
+
+#endif
+
+    /* if ( ! condition && ! condition2 ) */
+    if ( ! condition )
+        destroyNormalWin ( NULL, WINDATA(data) );
+
+    return TRUE;
+}
+
+int focus_request(void *data) {
+
+    /* GtkWidget *widget; */
 
     /* 每隔一定时间多次尝试重新聚焦窗口防止聚焦窗口被抢占*/
-    if ( focustimes++ <= 5 ) {
+    if ( focustimes <= 5 ) {
         focusOurWindow ( WINDATA(data) );
+        focustimes++;
     }
 
-    /* 此处监听的是电脑全局，如果希望其他地方的ctrl-c
-     * 使本翻译界面关闭，请注释掉下面代码中的: < 0 & >*/
+    if ( focustimes > 5 ) {
 
-    /* Ctrl_C事件标志位, 赋值位置 captureShortcutEvent.c <变量shmaddr>*/
-    if ( 0 & (shmaddr_keyboard[CTRL_C_PRESSED_FLAG ] == '1') ) {
+        g_source_remove ( timeout_id );
 
-        pyellow("窗口检测到Control-C");
-
-        WinData *wd = WINDATA(data);
-
-        gtk_window_present_with_time ( GTK_WINDOW(wd->window), time(NULL) );
-        gtk_window_set_focus ( (GtkWindow*)wd->window, wd->view );
-        gtk_window_set_focus ( (GtkWindow*)wd->window, wd->scroll );
-        destroyNormalWin(wd->window, wd);
-        return FALSE;
+        timeout_id = g_timeout_add (
+                100,
+                detect_outside_click_action,
+                WINDATA(data));
     }
 
-    //checkWindowSize ( data );
     return TRUE;
 }
 
@@ -169,18 +324,23 @@ int dataInit(WinData *wd) {
     wd->enter = 0;
     wd->ox = wd->oy = 0;
     wd->cx = wd->cy = 0;
-    
+
     wd->quickSearchFlag = FALSE;
+    wd->mousePress = FALSE;
+    wd->mouseRelease = FALSE;
 
     return 0;
 }
 
 
 /*新建翻译结果窗口, 本文件入口函数*/
-void *newNormalWindow() {
+void *newNormalWindow ( void *data ) {
 
     /* Storage the relative element or data in this window*/
     WinData wd;
+    ConfigData *cd = data;
+
+    wd.cd = cd;
 
     dataInit(&wd);
 
@@ -278,7 +438,7 @@ void *newNormalWindow() {
      * */
 
     /* 监听键盘事件的回调函数*/
-    g_signal_connect ( newWin, "key-press-event", G_CALLBACK(key_press), (void*)&wd );
+    g_signal_connect ( newWin, "key-press-event", G_CALLBACK(on_key_press_cb), (void*)&wd );
 
     /* 这个获取背景图片并适应窗口的代码段放在分离翻译数据之前耗的时间才有
      * 意义，因为图片加载虽然花了一定时间，但总的还是会比翻译结果获取成功
@@ -286,32 +446,13 @@ void *newNormalWindow() {
      * 获取的比较慢)*/
     wd.image = syncImageSize ( newWin, wd.width, wd.height, (void*)&wd );
 
-
-#if 1
-
-    gboolean on_button_press (GtkWidget* widget, GdkEventButton * event, GdkWindowEdge edge)
-    {
-        if (event->type == GDK_BUTTON_PRESS)
-        {
-            if (event->button == 1) {
-                gtk_window_begin_move_drag(GTK_WINDOW(gtk_widget_get_toplevel(widget)),
-                        event->button,
-                        event->x_root,
-                        event->y_root,
-                        event->time);
-            }
-        }
-        return TRUE;
-    }
-
-    /* gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE ); */
-    g_signal_connect(G_OBJECT(newWin), "button-press-event", G_CALLBACK(on_button_press), NULL);
+    if ( cd->hideHeaderBar )
+        gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
 
     wd.exitButton = gtk_button_new_with_label ( "Exit" );
     gtk_layout_put ( GTK_LAYOUT(layout), wd.exitButton, bw.width-RIGHT_BORDER_OFFSET*6, bw.height-BOTTOM_OFFSET );
     g_signal_connect ( wd.exitButton, "clicked", G_CALLBACK(destroyNormalWin), &wd );
 
-#endif
 
     printDebugInfo();
 
@@ -355,10 +496,15 @@ void *newNormalWindow() {
     wd.scroll = scroll;
 
     /*捕获resize window信号, 进行显示调整*/
-    g_signal_connect (newWin, "configure-event", G_CALLBACK(syncNormalWinForConfigEvent), &wd);
+    g_signal_connect (newWin, "configure-event", 
+            G_CALLBACK(syncNormalWinForConfigEvent), &wd);
+    g_signal_connect (newWin, "button-press-event", 
+            G_CALLBACK(on_button_press_cb), &wd);
+    g_signal_connect (newWin, "button-release-event", 
+            G_CALLBACK(on_button_release_cb), &wd);
 
 
-    timeout_id = g_timeout_add(10, detect_ctrl_c, &wd);
+    timeout_id = g_timeout_add(10, focus_request, &wd);
 
     gtk_widget_show_all(newWin);
 
