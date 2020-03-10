@@ -99,6 +99,33 @@ char *findBlank ( char *p ) {
     return p;
 }
 
+char *getRawKeyString ( char *str ) {
+    
+    if ( !str ) return NULL;
+
+    char *p = NULL;
+    char *tmp = NULL;
+
+    p = skipBlank(str);
+
+    /* Invalid shortcut*/
+    if ( strchr ( p, '+' ) || strchr ( p, '-' ) )
+        return NULL;
+
+    tmp = p;
+    p = findBlank ( p );
+
+    if ( *p ) *p = '\0';
+
+    /* Invalid shortcut(空格后还有内容)*/
+    if ( *skipBlank(p+1) ) return NULL;
+
+    p = tmp;
+    lowerCase(p);
+    *p = toupper(*p);
+
+    return strcpy ( str, p );
+}
 
 /* 判断快捷键是否有效，如果有效，返回去除modifier后的按键字符串
  * 否则返回NULL
@@ -172,6 +199,8 @@ char* getKeyString ( char *str ) {
 
         /* 保持首字母大写，之后的字母需要小写*/
         lowerCase ( tmp + 1 );
+
+        pbcyan ( "tmp:%s", tmp );
 
         return strcpy ( str, tmp );
     }
