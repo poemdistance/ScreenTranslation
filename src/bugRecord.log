@@ -1,0 +1,12 @@
+bug1:有一定几率触发,原因未知,bug应该来自新的更新,非本人代码漏洞
+看上去是x11内部的问题:
+Gdk-Message: 10:31:38.945: stran: Fatal IO error 2 (No such file or directory) on X server :0.
+
+bug2:
+Detect mouse action, creating icon entry CanNewEntrance = 1 action=1
+An error occured detecting the mouse position
+[xcb] Unknown sequence number while processing queue
+[xcb] Most likely this is a multi-threaded client and XInitThreads has not been called
+[xcb] Aborting, sorry about that.
+stran: xcb_io.c:260: poll_for_event: Assertion `!xcb_xlib_threads_sequence_lost' failed.
+
