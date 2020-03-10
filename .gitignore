@@ -1,6 +1,5 @@
 test/
 quickSearch/
-src (copy)/
 src/*.o
 src/mstran
 src/stran
@@ -14,3 +13,6 @@ google-translate/translate/package/getTK.py
 google-translate/translate/package/tranen.py
 google-translate/translate/package/tranpic.py
 data/error.log
+src/tags
+src/updateTran
+src/overview.c
