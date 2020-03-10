@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS=-Wall -lm -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g #-fsanitize=address 
+CFLAGS=-Wall -lm -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g -Wno-deprecated-declarations#-fsanitize=address 
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
@@ -13,15 +13,22 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  expanduser.o dataStatistics.o getPointerPosition.o strmask.o\
 		  useful.o configControl.o
 
-MONNITOR = StranMonitor.o
+
+#公用文件
+COMMON = useful.o configControl.o expanduser.o strmask.o
+
+MONNITOR = StranMonitor.o gtkLabel.o iconShowTimeSetting.o removeWidget.o \
+		   shortcutSetting.o windowPrefSetting.o focus.o setting.o \
+		   settingWindow.o tray.o iconPositionSetting.o settingList.o
+
 
 all : stran mstran
 
 stran : $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDLIBS) $(CFLAGS) -o $@
 
-mstran : $(MONNITOR)
-	$(CC) StranMonitor.c -o mstran
+mstran : $(MONNITOR) $(COMMON)
+	$(CC) $(MONNITOR) $(COMMON) $(LDLIBS) $(CFLAGS) -o $@
 
 
 #$@为目标集合，@<为依赖集合
@@ -29,7 +36,8 @@ $(OBJECTS) : %.o : %.c
 	$(CC) -c $(LDLIBS) $(CFLAGS) $< -o $@  
 
 $(MONNITOR) : %.o : %.c
-	$(CC) -c  $< -o $@  -Wall
+	# $(CC) $(LDLIBS) $(CFLAGS) -c  $< -o $@  -Wall
+	$(CC) $(LDLIBS) $(CFLAGS) -c  $< -o $@  -Wall
 
 install:
 	bash ./stop.sh
@@ -65,6 +73,7 @@ uninstall:
 	sudo rm -rf /usr/share/applications/Mstran.desktop
 	sudo rm -rf /usr/bin/fetchDict
 	sudo rm -rf /usr/bin/extractPic
+	sudo rm -rf /usr/bin/stoptran
 
 prepare:
 	bash prepare.sh
