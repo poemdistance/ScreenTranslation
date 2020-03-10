@@ -25,10 +25,14 @@ extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 extern char *shmaddr_selection;
 extern int action;
+extern int InNewWin;
 
 extern int HadDestroied;
 
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
+
+    /* 禁止套娃*/
+    if ( InNewWin ) return;
 
     char appName[100];
     int pikaqiuGo = 0;
