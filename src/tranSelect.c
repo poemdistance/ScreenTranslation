@@ -68,6 +68,8 @@ void *updateConfigData ( void* data ) {
 
 void *newNormalWindowThread( void *data ) {
 
+    pbblue ( "启动线程 newNormalWindowThread" );
+
     ConfigData *cd = data;
     struct sigaction sa;
     sa.sa_handler = sigterm_notify_cb;
@@ -112,6 +114,8 @@ void tranSelect() {
     char *addr_baidu;
     char *addr_selection;
 
+    pbblue ( "tranSelect 运行:%d", getpid() );
+
     shmid_google = shared_memory_for_google_translate(&addr_google);
     shmid_baidu = shared_memory_for_baidu_translate(&addr_baidu);
     shmid_selection = shared_memory_for_selection(&addr_selection);
@@ -132,6 +136,8 @@ void tranSelect() {
 
     arg.addr_google = shmaddr_google;
     arg.addr_baidu = shmaddr_baidu;
+
+    pbblue ( ">>>启动4个线程>>" );
 
     /*启动鼠标动作检测线程*/
     pthread_create(&t2, NULL, DetectMouse, (void*)&arg);

@@ -253,13 +253,13 @@ static void eventLoop (Display * display, int *listenKeys)
     {
 
         FD_SET ( fd, &fds );
-        tv.tv_sec = 0;
-        tv.tv_usec = 100000;
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
 
         /* 主要用于延时但又可以保证有事件到来不会被继续阻塞*/
-        /* readfd = */select ( fd+1, &fds, NULL, NULL, &tv );
-
-        /* memset ( &e, '\0', sizeof(e) ); */
+        select ( fd+1, &fds, NULL, NULL, &tv );
+        memset ( &e, '\0', sizeof(e) );
 
         /* The XPending function returns the number of events that have been received 
          * from the X server but have not been removed from the event queue.
@@ -270,10 +270,13 @@ static void eventLoop (Display * display, int *listenKeys)
              * If the event queue is empty, XNextEvent flushes the output buffer and
              * blocks until an event is received.
              *
-             * 如上英文所述: 如果有event在队列，会被复制到XEvent结构体中，而上面Xpending保证
-             * 有event到来才会执行下面的语句，所以可以保证下面这条语句必定不会被阻塞*/
+             * 如上英文所述: 如果有event在队列，会被复制到XEvent结构体中,并将其从队列
+             * 中移除，而上面Xpending会保证在
+             * 有event到来才会执行下面的语句，所以可以保证程序不会被下面这条语句阻塞*/
             XNextEvent(display, &e);
 
+
+        /* fprintf(stdout, "TEST POINT\n"); */
 
         switch (e.type)
         {
@@ -319,7 +322,9 @@ static void eventLoop (Display * display, int *listenKeys)
                 printf("Button Release\n");
                 break;
 
-            default: break;
+            default: 
+                /* pbcyan ( "Default: e.type=%d", e.type );; */
+                break;
         }
 
         if ( SIGTERM_SIGNAL ) break;

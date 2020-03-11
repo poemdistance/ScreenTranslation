@@ -43,6 +43,8 @@ extern int SIGTERM_NOTIFY;
 
 void *GuiEntrance(void *arg) {
 
+    pbblue ( "启动线程GuiEntrance" );
+
     ConfigData *config = ((struct Arg*)arg)->cd;
     aboveWindow = 0;
 
