@@ -11,6 +11,7 @@
 #include "useful.h"
 #include "printWithColor.h"
 #include "expanduser.h"
+#include "sharedMemory.h"
 
 
 extern GtkWidget *items[LIST_BOX_ITEMS];
@@ -36,6 +37,9 @@ void removeLockFile () {
 
 void gtk_window_destroy ( GtkWidget *window, SettingWindowData *settingWindowData ) {
 
+    if ( ! settingWindowData->shm )
+        shared_memory_for_setting ( &settingWindowData->shm );
+    settingWindowData->shm[1] = '0';
     gtk_widget_destroy(window);
     memset ( settingWindowData, '\0', sizeof(SettingWindowData) );
     memset ( items, '\0', sizeof(items) ); /* Necessary*/
@@ -172,7 +176,7 @@ gboolean on_key_press_cb (
 
     if ( event->state ==  GDK_CONTROL_MASK ) {
         if ( event->keyval == GDK_KEY_c) {
-            gtk_main_quit();
+            gtk_window_destroy ( window, settingWindowData );
         }
 
         return true;
