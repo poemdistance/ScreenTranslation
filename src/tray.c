@@ -4,6 +4,7 @@
 #include "settingWindowData.h"
 #include "tray.h"
 #include "panel.h"
+#include "expanduser.h"
 
 void Settings(GtkWidget *menuItemSetting, SettingWindowData *settingWindowData) {
 
@@ -26,7 +27,10 @@ gboolean menuPopup (GtkStatusIcon *status_icon, GdkEvent *event, gpointer menu) 
 
 void initTrayIcon ( SettingWindowData *settingWindowData ) {
 
-    GtkStatusIcon *trayIcon = gtk_status_icon_new_from_file("/home/rease/.stran/tran.png");
+    GtkStatusIcon *trayIcon = 
+        gtk_status_icon_new_from_file(
+                expanduser("/home/$USER/.stran/tran.png"));
+
     settingWindowData->trayIcon = (GtkWidget*)trayIcon;
 
     GtkWidget *menu = gtk_menu_new();
