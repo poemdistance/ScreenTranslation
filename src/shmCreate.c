@@ -1,12 +1,18 @@
 #include "common.h"
-#include "quickSearch.h"
 #include "cleanup.h"
+#include "sharedMemory.h"
+
+void err( char *str ) {
+
+    pbred ( "%s", str );
+    perror("errno");
+}
 
 int shared_memory_new ( char **addr, int projectid, int size, char *comment ) {
 
     key_t key = ftok(GETEKYDIR, projectid);
     if ( key < 0 )
-        err_exit("ftok error");
+        err("ftok error");
 
     int shmid;
     shmid = shmget(key, size, IPC_CREAT | IPC_EXCL | 0664);
@@ -17,7 +23,7 @@ int shared_memory_new ( char **addr, int projectid, int size, char *comment ) {
             pbred("reference shmid = %d", shmid);
         } else {
             perror("errno");
-            err_exit("shmget error");
+            err("shmget error");
         }
     } else {
         pbgreen("Obtained shared memory successful shmid=%d <%s>", shmid, comment);
@@ -27,7 +33,7 @@ int shared_memory_new ( char **addr, int projectid, int size, char *comment ) {
      * and attach for read & write*/
     if ( (*addr = shmat(shmid, 0, 0) ) == (void*)-1) {
         if (shmctl(shmid, IPC_RMID, NULL) == -1)
-            err_exit("shmctl error");
+            err("shmctl error");
         else {
             pbred("Attach shared memory failed <%s>", comment);
             pbgreen("remove shared memory identifier successful <%s>", comment);
@@ -35,7 +41,7 @@ int shared_memory_new ( char **addr, int projectid, int size, char *comment ) {
 
         char buf[100] = "shmat error: ";
         strcat ( buf, comment );
-        err_exit(buf);
+        err(buf);
 
     } else {
         pbgreen("Attach to %p <%s>", addr, comment);
@@ -77,5 +83,10 @@ int shared_memory_for_mysql(char **addr) {
 
 int shared_memory_for_pic(char **addr) {
 
-    return shared_memory_new ( addr, PIC_PROJECT, SHMSIZE, "mysql" );
+    return shared_memory_new ( addr, PIC_PROJECT, SHMSIZE, "pic" );
+}
+
+int shared_memory_for_setting ( char **addr ) {
+
+    return shared_memory_new ( addr, SETTING_PROJECT, 100, "setting" );
 }
