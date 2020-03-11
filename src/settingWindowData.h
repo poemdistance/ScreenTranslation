@@ -137,6 +137,8 @@ typedef struct SettingWindowData {
 
     gint selectedItem;
 
+    gchar *shm;
+
 }SettingWindowData;
 
 
