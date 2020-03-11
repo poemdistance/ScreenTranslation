@@ -75,6 +75,32 @@ void selectDisplay( WinData *wd ) {
     choice_display ( wd->who )(GET_BUTTON ( wd, wd->who ), (void*)wd);
 }
 
+int adjustTargetPosition( 
+        int *targetx, int *targety,
+        int pointerx, int pointery,
+        WinData *wd ) {
+
+    ConfigData *cd = wd->cd;
+    GdkRectangle workarea = { '\0' };
+
+    gdk_monitor_get_workarea(
+            gdk_display_get_monitor_at_window ( 
+                gdk_display_get_default(),
+                gtk_widget_get_window(wd->window)),
+            &workarea);
+
+    if ( cd->iconOffsetY < 0 && *targety < 0 ) {
+        *targety = pointery - cd->iconOffsetY + 30;
+        pcyan ( "重新调整y轴位置 y=%d", *targety);
+    }
+    else if ( cd->iconOffsetY > 0 && *targety+wd->height > workarea.height ) {
+        *targety = pointery - wd->height - cd->iconOffsetY - 50;
+        pcyan ( "重新调整y轴位置 y=%d", *targety);
+    }
+
+    return 0;
+}
+
 /* 本函数代码借鉴自xdotool部分源码*/
 int focusOurWindow( WinData *wd ) {
 
@@ -106,9 +132,8 @@ int focusOurWindow( WinData *wd ) {
             SubstructureNotifyMask | SubstructureRedirectMask,
             &xev);
 
-    if ( ret == 0 ) {
+    if ( ret == 0 )
         pred("窗口聚焦请求失败(focusOurWindow)");
-    }
 
     XCloseDisplay(dpy);
 
@@ -128,11 +153,21 @@ int focusOurWindow( WinData *wd ) {
     targetY  = pointerY - 
         ( cd->pointerOffsetY *1.0 / 252 ) * winHeight;
 
+    if ( cd->pointerOffsetY < 0 )
+        targetY = pointerY - cd->pointerOffsetY;
+
+    if ( cd->pointerOffsetY > 0 && targetY > pointerY + wd->height )
+        targetY = pointerY + wd->height + cd->pointerOffsetY;
+
     pmag ( "Target window position %d %d, Original offset %d %d ",
             targetX, targetY, cd->pointerOffsetX, cd->pointerOffsetY );
     pmag ( "Win size: %d %d", winWidth, winHeight );
 
     if ( ! wd->quickSearchFlag ) {
+
+        if ( cd->allowAutoAdjust ) 
+            adjustTargetPosition( &targetX, &targetY, pointerX, pointerY, wd );
+
         gdk_window_move ( 
                 gtk_widget_get_window(wd->window),
                 targetX, targetY );

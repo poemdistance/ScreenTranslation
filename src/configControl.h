@@ -22,6 +22,7 @@ typedef struct ConfigData {
     unsigned int playAudioKeyval;
     int switchSourceMask;
     unsigned int switchSourceKeyval;
+    int allowAutoAdjust;
 
 }ConfigData;
 

@@ -227,7 +227,6 @@ char *readNameByKeyword ( char (*receive)[SHORTCUT_CONTENT_LEN], char *keyword )
 void readNeededValueFromConfig( ConfigData *cd  ) {
 
     char buf[64] = { '\0' };
-    char keyname[64] = { '\0' };
 
     cd->iconOffsetX =
         str2int(readFromConfig ( "Icon-Popup-Offset-X", buf ) );
@@ -259,6 +258,9 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     if ( ! getKeyString ( buf ) ) getRawKeyString ( buf );
     cd->playAudioKeyval = gdk_keyval_from_name ( (buf) );
 
+    cd->allowAutoAdjust = 
+        str2bool ( readFromConfig ( "Allow-Auto-Adjust-Popup-Window-Pref" , buf ) );
+
     printf("%d\n", cd->iconOffsetX);
     printf("%d\n", cd->iconOffsetY);
     printf("%d\n", cd->pointerOffsetX);
@@ -269,6 +271,7 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     printf("%d\n", cd->ctrlCToClose);
     printf("%d %d\n", cd->switchSourceMask, cd->switchSourceKeyval);
     printf("%d %d\n", cd->playAudioMask, cd->playAudioKeyval);
+    printf("%d\n", cd->allowAutoAdjust);
 }
 
 /* int main(int argc, char **argv) */
