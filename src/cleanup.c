@@ -13,6 +13,7 @@ extern int shmid_searchWin;
 extern int shmid_keyboard;
 extern int shmid_mysql;
 extern int shmid_pic;
+extern int shmid_setting;
 
 extern int mousefd;
 
@@ -71,6 +72,7 @@ void quit() {
     releaseSharedMemory(shmaddr_keyboard, shmid_keyboard, "keyboard");
     releaseSharedMemory(shmaddr_mysql, shmid_mysql, "mysql");
     releaseSharedMemory(shmaddr_pic, shmid_pic, "pic");
+    releaseSharedMemory(shmaddr_setting, shmid_setting, "setting");
 
 
     releaseMemoryGoogle();
