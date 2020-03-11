@@ -413,7 +413,6 @@ void addShortcutToListBox (
     GtkWidget *label;
     GtkWidget *image;
     GtkWidget *button;
-    GdkPixbuf *pixbuf;
 
     /* grid->box->label grid->box->label*/
     for ( int i=0; i<MAX_SHORTCUT_NUM; i++ ) {
