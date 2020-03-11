@@ -146,9 +146,9 @@ void exitNotify ( ) {
 char *getShortcutName ( char *shortcut ) {
 
     for ( int i=0; i<MAX_SHORTCUT_NUM; i++ ) {
-        pgreen ( "shortcutValue = %s", shortcutValue[i] );
         if ( ! *shortcutValue[i] ) return NULL;
         if ( strcmp ( shortcutValue[i], shortcut ) == 0 ) {
+            pbgreen ( "Found match shortcut: %s", shortcutName[i] );
             return shortcutName[i];
         }
     }
@@ -160,7 +160,8 @@ void shortcutReceiveNotify (
         char *modifiers,
         char *key,
         char *shmaddr_pic,
-        char *shmaddr_keyboard
+        char *shmaddr_keyboard,
+        char *shmaddr_setting
         ) {
 
     char shortcutValue[128];
@@ -186,6 +187,10 @@ void shortcutReceiveNotify (
     } else if ( strstr ( shortcutName, "Toggle-Monitoring" ) ) {
         pcyan ( "Toggle-Monitoring-Shortcut" );
         shmaddr_keyboard[SELECT_EXCLUDE_FLAG] = '1';
+    } else if ( strstr ( shortcutName, "Open-Setting-Window" ) ) {
+        pcyan ( "Open-Setting-Window-Shortcut" );
+        if ( shmaddr_setting[1] == '0' )
+            shmaddr_setting[0] = '1';
     }
 
     /* pcyan ( "Return " ); */
@@ -236,9 +241,11 @@ static void eventLoop (Display * display, int *listenKeys)
 
     char *shmaddr_pic = NULL;
     char *shmaddr_keyboard = NULL;
+    char *shmaddr_setting = NULL;
     shared_memory_for_pic ( &shmaddr_pic );
     shared_memory_for_keyboard_event ( &shmaddr_keyboard );
-    if ( ! shmaddr_pic || ! shmaddr_keyboard) {
+    shared_memory_for_setting ( &shmaddr_setting );
+    if ( ! shmaddr_pic || ! shmaddr_keyboard || !shmaddr_setting) {
         pred ( "Got shared memory failed in shortcutListener!!!" );
         quit();
     }
@@ -313,7 +320,9 @@ static void eventLoop (Display * display, int *listenKeys)
                         mask2str(e.xkey.state, modifierstr),
                         keystrArray,
                         shmaddr_pic,
-                        shmaddr_keyboard);
+                        shmaddr_keyboard,
+                        shmaddr_setting
+                        );
 
                 break;
 
@@ -330,7 +339,7 @@ static void eventLoop (Display * display, int *listenKeys)
                 break;
 
             default: 
-                pbcyan ( "Default: e.type=%d", e.type );;
+                /* pbcyan ( "Default: e.type=%d", e.type );; */
                 break;
         }
 
