@@ -15,6 +15,8 @@
 #define LABEL_POS_LEFT ( 0 )
 #define LABEL_POS_RIGHT ( 1 )
 
+GtkLabel *getLabelBySelectedRow ( SettingWindowData *swd, int label_pos );
+const char *getLabelText ( GtkLabel *label );
 
 static const guint forbidden_keyvals[] = {
     /* Navigation keys */
@@ -45,6 +47,32 @@ static void release_grab ( GdkDevice *grab_pointer, GtkWidget *window );
 void toggleWindowSensitive ( SettingWindowData *settingWindowData, gboolean mode ) {
 
     gtk_widget_set_sensitive ( settingWindowData->window, mode );
+}
+
+void on_clear_button_click_cb ( 
+        GtkWidget *button,
+        SettingWindowData *swd
+        ) {
+
+    ShortcutSettingWindowData *sswd = swd->shortcutSettingWindowData;
+
+    GtkWidget *box = gtk_widget_get_parent ( button );
+    GtkWidget *grid = gtk_widget_get_parent ( box );
+    GtkWidget *listBoxRow = gtk_widget_get_parent ( grid );
+
+    sswd->selectedRow = (GtkListBoxRow*)listBoxRow;
+    GtkLabel *label =  getLabelBySelectedRow ( swd, 0 );
+    const char *text = getLabelText ( label );
+    gchar keyName[64];
+    strcpy ( keyName, text );
+    strcat ( keyName, "-Shortcut" );;
+
+    writeToConfig ( keyName, "Disable" );
+
+    label = getLabelBySelectedRow ( swd, 1 );
+    gtk_label_set_text ( label, "DISABLE" );
+
+    gtk_widget_show ( (GtkWidget*)label );
 }
 
 void on_dialog_destroy_cb ( GtkWidget *dialog, SettingWindowData *settingWindowData ) {
@@ -383,6 +411,9 @@ void addShortcutToListBox (
     GtkWidget *grid;
     GtkWidget *box;
     GtkWidget *label;
+    GtkWidget *image;
+    GtkWidget *button;
+    GdkPixbuf *pixbuf;
 
     /* grid->box->label grid->box->label*/
     for ( int i=0; i<MAX_SHORTCUT_NUM; i++ ) {
@@ -394,7 +425,7 @@ void addShortcutToListBox (
 
             /* 快捷键名称*/
             box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-            gtk_widget_set_size_request ( box, 225, -1 );
+            gtk_widget_set_size_request ( box, 250, -1 );
 
             label = gtk_label_new ( key[i] );
             gtk_grid_attach ( GTK_GRID(grid), box, 0, 0, 1, 1 );
@@ -408,7 +439,7 @@ void addShortcutToListBox (
 
             /* 快捷键键值*/
             box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-            gtk_widget_set_size_request ( box, 145, -1 );
+            gtk_widget_set_size_request ( box, 100, -1 );
             label = gtk_label_new ( shortcut[i] );
             gtk_widget_set_margin_end ( label, MARGIN_END );
             gtk_grid_attach ( GTK_GRID(grid), box, 1, 0, 1, 1 );
@@ -417,7 +448,24 @@ void addShortcutToListBox (
             gtk_widget_set_hexpand ( label, TRUE );
             gtk_widget_set_halign ( label, GTK_ALIGN_START );
 
-            gtk_grid_set_column_spacing ( GTK_GRID(grid), 100 );
+            /* Clear 图标*/
+            box = gtk_box_new ( GTK_ORIENTATION_HORIZONTAL, 0 );
+            gtk_widget_set_size_request ( box, 50, -1 );
+            image = gtk_image_new_from_icon_name ( "edit-clear", 3 );
+            button = gtk_button_new();
+            gtk_button_set_image ( GTK_BUTTON(button), image );
+            gtk_button_set_relief ( GTK_BUTTON(button), None  );
+            gtk_grid_attach ( GTK_GRID(grid), box, 2, 0, 1, 1 );
+            gtk_box_pack_start ( GTK_BOX(box), button, 1, 1, 1 );
+            /* gtk_widget_set_vexpand ( button, TRUE ); */
+            /* gtk_widget_set_hexpand ( button, TRUE ); */
+            gtk_widget_set_halign ( button, GTK_ALIGN_CENTER );
+            gtk_widget_set_valign ( button, GTK_ALIGN_CENTER );
+            g_signal_connect ( button, "clicked", 
+                    G_CALLBACK(on_clear_button_click_cb), settingWindowData);
+
+
+            gtk_grid_set_column_spacing ( GTK_GRID(grid), 36 );
 
             gtk_list_box_insert ( GTK_LIST_BOX(list), grid, -1 );
         }
