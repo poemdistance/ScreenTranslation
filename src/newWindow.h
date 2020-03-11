@@ -29,6 +29,7 @@ extern char *shmaddr_baidu;
 extern char *shmaddr_keyboard;
 extern char *shmaddr_mysql;
 extern char *shmaddr_pic;
+extern char *shmaddr_setting;
 
 #define WINDATA(addr) ((WinData*)addr)
 

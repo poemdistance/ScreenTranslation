@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include "shortcutListener.h"
+#include "sharedMemory.h"
 
 /* int fd[2]; */
 char buf[2] = { '\0' };

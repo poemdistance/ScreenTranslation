@@ -1,6 +1,7 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include "common.h"
+#include "sharedMemory.h"
 #include "quickSearch.h"
 
 typedef struct Widget {

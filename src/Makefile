@@ -3,7 +3,7 @@ CFLAGS=-Wall -lm -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g -Wno-deprecated
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
-		  notify.o detectMouse.o shmCreate.o newNormalWin.o\
+		  notify.o detectMouse.o newNormalWin.o\
 		  separateData.o cleanup.o adjustStr.o Main.o newScrollWin.o\
 		  countLines.o countCharNums.o adjustStrForScrolledWin.o\
 		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
@@ -11,11 +11,11 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  shortcutListener.o  searchWindow.o tranSelect.o isEmpty.o \
 		  tranPicActionDetect.o memoryControl.o calibration.o fitting.o \
 		  expanduser.o dataStatistics.o getPointerPosition.o strmask.o\
-		  useful.o configControl.o
+		  useful.o configControl.o shmCreate.o
 
 
 #公用文件
-COMMON = useful.o configControl.o expanduser.o strmask.o
+COMMON = useful.o configControl.o expanduser.o strmask.o shmCreate.o
 
 MONNITOR = StranMonitor.o gtkLabel.o iconShowTimeSetting.o removeWidget.o \
 		   shortcutSetting.o windowPrefSetting.o focus.o setting.o \
