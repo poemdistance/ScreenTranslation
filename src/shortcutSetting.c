@@ -10,6 +10,7 @@
 #include "shortcutListener.h"
 #include "gtkLabel.h"
 #include "useful.h"
+#include "printWithColor.h"
 
 #define LABEL_POS_LEFT ( 0 )
 #define LABEL_POS_RIGHT ( 1 )
@@ -324,7 +325,7 @@ static void on_listbox_row_selected_cb (
     /* Dialog windows should be set transient for the main application window they were spawned from.
      * This allows window managers to e.g. keep the dialog on top of the main window,
      * or center the dialog over the main window. */
-    gtk_window_set_transient_for ( GTK_WINDOW(dialog) , (GtkWindow*)settingWindowData->window );;
+    /* gtk_window_set_transient_for ( GTK_WINDOW(dialog) , (GtkWindow*)settingWindowData->window );; */
 
     GObject *replaceButton = gtk_builder_get_object ( builder, "replace_button" );
     GObject *addButton = gtk_builder_get_object ( builder, "add_button" );
@@ -368,6 +369,9 @@ static void on_listbox_row_selected_cb (
 
     g_signal_connect ( replaceButton, "clicked",
             G_CALLBACK(replace_button_click_cb), settingWindowData );
+
+    gtk_widget_show ( (GtkWidget*)dialog );
+    gtk_widget_grab_focus ( (GtkWidget*) dialog );
 }
 
 void addShortcutToListBox ( 
