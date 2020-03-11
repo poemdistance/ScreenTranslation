@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <poll.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h> /* KeySym*/
 #include <X11/Xutil.h> /* XLookupString*/
@@ -249,16 +250,22 @@ static void eventLoop (Display * display, int *listenKeys)
     readFromConfigByKeyword ( shortcutValue, "Shortcut" );
     readNameByKeyword ( shortcutName, "Shortcut" );
 
+    struct pollfd pfd;
+    int timeout = 1000;
+    pfd.fd = fd;
+    pfd.events = POLLIN|POLLPRI;
+
     while (True)
     {
 
-        FD_SET ( fd, &fds );
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
+        /* FD_SET ( fd, &fds ); */
+        /* tv.tv_sec = 1; */
+        /* tv.tv_usec = 0; */
 
 
         /* 主要用于延时但又可以保证有事件到来不会被继续阻塞*/
-        select ( fd+1, &fds, NULL, NULL, &tv );
+        /* select ( fd+1, &fds, NULL, NULL, &tv ); */
+        poll ( &pfd, 1, timeout );
         memset ( &e, '\0', sizeof(e) );
 
         /* The XPending function returns the number of events that have been received 
@@ -323,7 +330,7 @@ static void eventLoop (Display * display, int *listenKeys)
                 break;
 
             default: 
-                /* pbcyan ( "Default: e.type=%d", e.type );; */
+                pbcyan ( "Default: e.type=%d", e.type );;
                 break;
         }
 
