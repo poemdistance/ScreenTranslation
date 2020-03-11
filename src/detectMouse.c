@@ -52,7 +52,9 @@ extern int SIGTERM_NOTIFY;
 
 void *DetectMouse(void *arg) {
 
-    /* struct sigaction sa; */
+    pbblue ( "启动线程DetectMouse" );
+
+    struct sigaction sa;
     int retval ;
     char buf[3];
     fd_set readfds;
@@ -180,15 +182,13 @@ void *DetectMouse(void *arg) {
         //shmaddr_searchWin[10] =  *itoa(fd_python[1]);
         //shmaddr_searchWin[10 + strlen(itoa(fd_python[1]))] =  '\0';
 
-        /* sa.sa_handler = quit; */
-        /* sa.sa_handler = sigterm_notify_cb; */
-        /* sigemptyset(&sa.sa_mask); */
-        /* sa.sa_flags = SA_RESTART; */
-        /* if ( sigaction(SIGTERM, &sa, NULL) == -1) { */
-        /*     pbred("sigaction exec failed (DetectMouse.c -> SIGTERM)"); */
-        /*     perror("sigaction"); */
-        /*     quit(); */
-        /* } */
+        sa.sa_handler = handler;
+        sigemptyset(&sa.sa_mask);
+        if ( sigaction(SIGCHLD, &sa, NULL) == -1) {
+            pbred("sigaction exec failed (DetectMouse.c -> SIGTERM)");
+            perror("sigaction");
+            quit();
+        }
 
         // 打开鼠标设备
         mousefd = open("/dev/input/mice", O_RDONLY );
@@ -213,6 +213,24 @@ void *DetectMouse(void *arg) {
             retval = select( mousefd+1, &readfds, NULL, NULL, &tv );
 
             if ( SIGTERM_NOTIFY ) break;
+
+            /* 任何一端翻译程序终止即退出取词翻译*/
+            if ( BAIDU_TRANS_EXIT_FALG ) {
+                pbred("百度翻译子进程已退出");
+                pbred("准备退出取词翻译程序");
+                SIGTERM_NOTIFY = 1;
+                break;
+                /* quit(); */
+            } 
+
+            if ( GOOGLE_TRANS_EXIT_FLAG ) {
+
+                pbred("谷歌翻译子进程已退出");
+                pbred("准备退出取词翻译程序");
+                SIGTERM_NOTIFY = 1;
+                break;
+                /* quit(); */
+            }
 
             if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
 
@@ -278,20 +296,6 @@ void *DetectMouse(void *arg) {
              * 其他代码逻辑才不会被旧数据影响*/
             /* if ( InNewWin == 1 ) */
             /* continue; */
-
-            /* 任何一端翻译程序终止即退出取词翻译*/
-            if ( BAIDU_TRANS_EXIT_FALG ) {
-                pbred("百度翻译子进程已退出");
-                pbred("准备退出取词翻译程序");
-                quit();
-            } 
-
-            if ( GOOGLE_TRANS_EXIT_FLAG ) {
-
-                pbred("谷歌翻译子进程已退出");
-                pbred("准备退出取词翻译程序");
-                quit();
-            }
 
             /*循环写入鼠标数据到数组*/
             history[i++] = buf[0] & 0x07;

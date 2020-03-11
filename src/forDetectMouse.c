@@ -219,14 +219,14 @@ void writePipe(char *text, int fd) {
 }
 
 /*获取子进程状态，防止僵尸进程*/
-/* void handler(int signo) { */
+void handler(int signo) {
 
-/*     while( waitpid(baidu_translate_pid, NULL, WNOHANG) > 0) */
-/*         BAIDU_TRANS_EXIT_FALG = 1; */
+    while( waitpid(baidu_translate_pid, NULL, WNOHANG) > 0)
+        BAIDU_TRANS_EXIT_FALG = 1;
 
-/*     while( waitpid(google_translate_pid, NULL, WNOHANG) > 0) */
-/*         GOOGLE_TRANS_EXIT_FLAG = 1; */
-/* } */
+    while( waitpid(google_translate_pid, NULL, WNOHANG) > 0)
+        GOOGLE_TRANS_EXIT_FLAG = 1;
+}
 
 /*判断当前聚焦窗口是否为终端*/
 int isApp( char *appName ,char *name ) {
