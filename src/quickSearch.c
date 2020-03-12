@@ -24,11 +24,17 @@ pid_t captureShortcutEvent_pid;
 
 static int SIGTERM_SIGNAL = 0;
 
+static void readChild() {
+
+    while( waitpid(captureShortcutEvent_pid, NULL, WNOHANG) > 0);
+}
+
 void kill_ourselves() {
 
     pbgreen ("Kill listenShortcut");
 
     kill ( captureShortcutEvent_pid, SIGTERM );
+    usleep(100000);
 
     SIGTERM_SIGNAL = 1;
 }
@@ -41,11 +47,14 @@ void quickSearch()
     pid_t pid;
 
     struct sigaction sa;
-    sa.sa_handler = kill_ourselves;
     sigemptyset ( &sa.sa_mask );
+    sa.sa_handler = kill_ourselves;
     if ( sigaction ( SIGTERM, &sa, NULL) != 0 )
         err_exit_qs("Sigaction error in quickSearch 1");
     if ( sigaction ( SIGINT, &sa, NULL) != 0 )
+        err_exit_qs("Sigaction error in quickSearch 1");
+    sa.sa_handler = readChild;
+    if ( sigaction ( SIGCHLD, &sa, NULL) != 0 )
         err_exit_qs("Sigaction error in quickSearch 1");
 
     /* socketpair ( AF_UNIX, SOCK_STREAM, 0, fd ); */

@@ -27,6 +27,10 @@ void sendTerminate() {
     exit(0);
 }
 
+static void readChild() {
+    waitpid ( quickSearchProcess_pid, NULL, WNOHANG);
+}
+
 int main(int argc, char **argv)
 {
 
@@ -41,25 +45,23 @@ int main(int argc, char **argv)
     void (*tranSelectProcess)(void);
     tranSelectProcess = tranSelect;
 
-    /* struct sigaction sa; */
+    struct sigaction sa;
     /* sa.sa_handler = sendTerminate; */
     /* sigemptyset ( &sa.sa_mask ); */
-    /* int ret = 0; */
-    /* if ( (ret = sigaction ( SIGTERM, &sa, NULL )) == -1) { */
+    /* if ( sigaction ( SIGTERM, &sa, NULL ) ) { */
     /*     printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n"); */
     /*     perror("sigaction"); */
     /*     exit(1); */
     /* } */
 
-    /* printf("ret=%d\n", ret); */
 
-    /* sa.sa_handler = sendTerminate; */
-    /* sigemptyset ( &sa.sa_mask ); */
-    /* if ( sigaction ( SIGINT, &sa, NULL ) == -1) { */
-    /*     printf("\033[0;31msigaction exec failed (Main.c -> SIGINT) \033[0m\n"); */
-    /*     perror("sigaction"); */
-    /*     exit(1); */
-    /* } */
+    sa.sa_handler = readChild;
+    sigemptyset ( &sa.sa_mask );
+    if ( sigaction ( SIGCHLD, &sa, NULL ) == -1) {
+        pbred("sigaction exec failed (Main.c -> SIGCHLD)");
+        perror("sigaction");
+        exit(1);
+    }
 
     /* 启动取词翻译进程和quickSearch进程*/
     if ( pid > 0 ) {

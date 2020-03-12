@@ -46,6 +46,9 @@ extern int shmid_baidu;
 
 extern pid_t google_translate_pid;
 extern pid_t baidu_translate_pid;
+extern pid_t check_selectionEvent_pid;
+extern pid_t fetch_data_from_mysql_pid;
+extern pid_t detect_tran_pic_action_pid;
 
 TmpIgnore *getLinkHead () {
 
@@ -226,6 +229,10 @@ void handler(int signo) {
 
     while( waitpid(google_translate_pid, NULL, WNOHANG) > 0)
         GOOGLE_TRANS_EXIT_FLAG = 1;
+
+    while( waitpid(check_selectionEvent_pid, NULL, WNOHANG) > 0);
+    while( waitpid(fetch_data_from_mysql_pid, NULL, WNOHANG) > 0);
+    while( waitpid(detect_tran_pic_action_pid, NULL, WNOHANG) > 0);
 }
 
 /*判断当前聚焦窗口是否为终端*/
