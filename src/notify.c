@@ -24,6 +24,7 @@ int CanNewEntrance = 0;
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 extern char *shmaddr_selection;
+extern char *shmaddr_keyboard;
 extern int action;
 extern int InNewWin;
 
@@ -32,7 +33,12 @@ extern int HadDestroied;
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
 
     /* 禁止套娃*/
-    if ( InNewWin ) return;
+    if ( InNewWin ) {
+        pbred ( "Notify: window already opened, return." );
+        pbred ( "Flag: InNewWin=%d shmaddr_keyboard:%c",
+                InNewWin, shmaddr_keyboard[WINDOW_OPENED_FLAG] );
+        return;
+    }
 
     char appName[100];
     int pikaqiuGo = 0;
