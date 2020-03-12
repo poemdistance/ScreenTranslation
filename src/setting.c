@@ -54,7 +54,7 @@ gboolean check_open_window_shortcut_event ( void *data ) {
     if ( swd->shm[0] == '1' ) {
         event_come = TRUE;
         swd->shm[0] = '0';
-        swd->shm[1] = '1'; /* 自鎖標志*/
+        //swd->shm[1] = '1'; /* 自鎖標志*/
     }
 
     if ( event_come ) settingWindow(NULL, swd);
