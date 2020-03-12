@@ -100,7 +100,10 @@ void shortcutReceiveNotify (
     pbcyan ( "Got shortcut name:%s", shortcutName );
 
     if ( strstr ( shortcutName, "Quick-Search" ) ) {
-        if ( shmaddr_keyboard[WINDOW_OPENED_FLAG] == '1' ) return;
+        if ( shmaddr_keyboard[WINDOW_OPENED_FLAG] == '1' ) {
+            pbred ( "Window has opened, return" );
+            return;
+        }
 
         pcyan ( "Quick-Search-Shortcut" );
         shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] = '1';
