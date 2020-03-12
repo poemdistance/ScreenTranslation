@@ -10,7 +10,8 @@ currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.p
     "../gif_pic/calibration.jpg" "../data/audioButtonPosition.data" "buttonPositionDataCtl.sh"\
     "winSizeDataCtl.sh" "../ui/cc-keyboard-shortcut-editor.ui" "../ui/enter-keyboard-shortcut.svg"\
     "../ui/icon_position_setting.ui" "../ui/window-no-title-bar1.png"\
-    "../ui/window-has-title-bar1.png" "../config/.configrc" "../ui/window-preference.ui");
+    "../ui/window-has-title-bar1.png" "../config/.configrc" "../ui/window-preference.ui" \
+    "../ui/enter-keyboard-shortcut.png");
 
 declare -i len
 len=${#currFile[*]}-1
