@@ -139,6 +139,8 @@ typedef struct SettingWindowData {
 
     gchar *shm;
 
+    gint timeoutid;
+
 }SettingWindowData;
 
 

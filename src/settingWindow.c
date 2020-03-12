@@ -190,7 +190,7 @@ gboolean on_key_press_cb (
             GDK_KEY_Tab &
             GDK_KEY_Alt_R &
             GDK_KEY_Alt_L
-            )
+       )
         return false;
 
     if ( ! settingWindowData->searchEntryShow )
@@ -203,11 +203,14 @@ void settingWindow(
         GtkWidget  *menuItemSetting,
         SettingWindowData *settingWindowData) {
 
+    SettingWindowData *swd = settingWindowData;
+
     char *fileName = expanduser("/home/$USER/.stran/settingWindow.lock");
 
     if ( ! access ( fileName, F_OK ) ) {
-        if ( focusRequest(settingWindowData->window) )
-            return;
+        pmag ( "窗口已经存在，请求聚焦" );
+        focusRequest(swd);
+        return;
     }
 
     fclose ( fopen ( fileName, "w" ) );
@@ -293,9 +296,12 @@ void settingWindow(
 
     settingWindowData->configure_event_signal_id = 
         g_signal_connect ( window, "configure-event",
-            G_CALLBACK(on_configure_event_cb), settingWindowData );
+                G_CALLBACK(on_configure_event_cb), settingWindowData );
 
     gtk_widget_show_all(window);
+
+    swd->timeoutid = 
+        g_timeout_add ( 100, (int(*)(void*))focusRequest, swd);
 
     /* TEST CODE*/
     /* gtk_list_box_select_row ( GTK_LIST_BOX(listBox),
