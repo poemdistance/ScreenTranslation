@@ -350,10 +350,12 @@ static void on_listbox_row_selected_cb (
     gtk_window_set_position ( GTK_WINDOW(dialog), GTK_WIN_POS_CENTER );
     gtk_widget_show ( (GtkWidget*)( dialog ) );
 
-    /* Dialog windows should be set transient for the main application window they were spawned from.
-     * This allows window managers to e.g. keep the dialog on top of the main window,
-     * or center the dialog over the main window. */
-    /* gtk_window_set_transient_for ( GTK_WINDOW(dialog) , (GtkWindow*)settingWindowData->window );; */
+    /* /1* Dialog windows should be set transient for the main application 
+     * window they were spawned from. */
+    /* * This allows window managers to e.g. keep the dialog on top of the main window, */
+    /* * or center the dialog over the main window. *1/ */
+    gtk_window_set_transient_for ( GTK_WINDOW(dialog) ,
+            (GtkWindow*)settingWindowData->window );;
 
     GObject *replaceButton = gtk_builder_get_object ( builder, "replace_button" );
     GObject *addButton = gtk_builder_get_object ( builder, "add_button" );
@@ -381,7 +383,7 @@ static void on_listbox_row_selected_cb (
             G_CALLBACK(replace_button_click_cb), settingWindowData );
 
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file ( 
-            expanduser("/home/$USER/.stran/enter-keyboard-shortcut.svg"), NULL
+            expanduser("/home/$USER/.stran/enter-keyboard-shortcut.png"), NULL
             );
     gtk_image_set_from_pixbuf ( GTK_IMAGE(image), pixbuf );
 
