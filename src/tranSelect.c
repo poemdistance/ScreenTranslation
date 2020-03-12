@@ -38,6 +38,8 @@ pthread_t t4 = 0;
 
 int SIGTERM_NOTIFY = 0;
 
+extern int InNewWin;
+
 
 void sigterm_notify_cb() {
 
@@ -99,7 +101,7 @@ void *newNormalWindowThread( void *data ) {
         }
 
         if ( SIGTERM_NOTIFY ) break;
-        usleep(1000);
+        usleep(100000);
     }
 
     pbcyan ( "newNormalWindowThread 退出" );
