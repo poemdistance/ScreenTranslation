@@ -16,5 +16,5 @@ data/error.log
 src/tags
 src/updateTran
 src/overview.c
-src/test
-src/test.c
+src/test*
+
