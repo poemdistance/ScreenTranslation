@@ -13,6 +13,7 @@
  * */
 
 
+#include <poll.h>
 #include "common.h"
 #include "quickSearch.h"
 #include "detectMouse.h"
@@ -57,8 +58,6 @@ void *DetectMouse(void *arg) {
     struct sigaction sa;
     int retval ;
     char buf[3];
-    fd_set readfds;
-    struct timeval tv;
     struct timeval old, now, whenTimeout;
     double oldtime = 0;
     double newtime = 0;
@@ -176,12 +175,6 @@ void *DetectMouse(void *arg) {
         fd_python[1] = fd_baidu[1];
         fd_python[2] = fd_mysql[1];
 
-        //shmaddr_searchWin[0] =  *itoa(fd_python[0]);
-        //shmaddr_searchWin[strlen(itoa(fd_python[0]))] =  '\0';
-
-        //shmaddr_searchWin[10] =  *itoa(fd_python[1]);
-        //shmaddr_searchWin[10 + strlen(itoa(fd_python[1]))] =  '\0';
-
         sa.sa_handler = handler;
         sigemptyset(&sa.sa_mask);
         if ( sigaction(SIGCHLD, &sa, NULL) == -1) {
@@ -200,17 +193,14 @@ void *DetectMouse(void *arg) {
 
         int history[4] = { 0 };
         int i = 0, n = 0, m = 0;
+        struct pollfd pfd;
+        int timeout = 20;
+        pfd.fd = mousefd;
+        pfd.events = POLLIN|POLLPRI;
 
         while(1) {
 
-            /*超时时间*/
-            tv.tv_sec = 0;
-            tv.tv_usec = TIMOUE_OUT;
-
-            FD_ZERO( &readfds );
-            FD_SET( mousefd, &readfds );
-
-            retval = select( mousefd+1, &readfds, NULL, NULL, &tv );
+            retval = poll ( &pfd, 1, timeout );
 
             if ( SIGTERM_NOTIFY ) break;
 
@@ -307,8 +297,8 @@ void *DetectMouse(void *arg) {
             n = previous(m);
 
             /*LOG*/
-            //int j = previous(n), x = previous(j);
-            //printf("%d %d %d %d\n", history[m], history[n], history[j], history[x]);
+            /* int j = previous(n), x = previous(j); */
+            /* printf("%d %d %d %d\n", history[m], history[n], history[j], history[x]); */
 
             /*没有按下按键并活动鼠标,标志releaseButton=1*/
             if ( history[m] == 0 && history[n] == 0 ) {
