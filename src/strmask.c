@@ -5,6 +5,7 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h> /* KeySym*/
 #include <ctype.h>
+#include <strings.h>
 #include "shortcutListener.h"
 #include "printWithColor.h"
 #include "configControl.h"
@@ -12,6 +13,11 @@
 
 char modifier[7][10] = {
     "Shift", "Caps", "Ctrl", "Alt", "Super", "NumLock", "ScrollLock"
+};
+
+const char upperLetterKey[][20] = {
+    "Left", "Right", "Up", "Down", "End", "Next", "Prior",
+    "Home", "Delete", "Pause", "BackSpace", "Enter", "Tab",
 };
 
 int modifier2maskTable[7] = { 0 };
@@ -210,6 +216,16 @@ char* getKeyString ( char *str ) {
 
 }
 
+int isInUpperLetterKeys ( char *str ) {
+
+    for ( int i=0; i<sizeof(upperLetterKey)/sizeof(upperLetterKey[0]); i++ ) {
+        if ( strcasecmp ( str, upperLetterKey[i] ) == 0 )
+            return 1;
+    }
+
+    return 0;
+}
+
 int *extractShortcut ( Display *display ) {
 
     static char shortcut[MAX_SHORTCUT_NUM][SHORTCUT_CONTENT_LEN];
@@ -234,6 +250,15 @@ int *extractShortcut ( Display *display ) {
             if ( ! getKeyString((char*)&shortcut[i]) ) { 
                 grabKeys[j] = 0;
                 continue; 
+            }
+
+            if ( ! isInUpperLetterKeys ( (char*)&shortcut[i] ) )
+                lowerCase ( (char*)&shortcut[i] );
+            else {
+                lowerCase ( (char*)&shortcut[i] );
+                shortcut[i][0] = toupper(shortcut[i][0]);
+                if ( strcasecmp ( (char*)&shortcut[i], "BackSpace" ) == 0 )
+                    shortcut[i][4] = 'S';
             }
 
             KeySym sym = XStringToKeysym ( (char*)&shortcut[i] );
