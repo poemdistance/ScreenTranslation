@@ -78,7 +78,7 @@ void quit() {
     releaseMemoryGoogle();
     releaseMemoryMysql();
     releaseMemoryTmp();
-
+    releaseLink();
 
     /* if ( BAIDU_TRANS_EXIT_FALG != 1 ) */
     kill ( baidu_translate_pid, SIGTERM );
@@ -90,8 +90,6 @@ void quit() {
     kill ( quickSearchProcess_pid, SIGTERM );
     kill ( detect_tran_pic_action_pid, SIGTERM );
 
-    releaseLink();
-
     printf("\n");
-    exit(0);
+    /* exit(0); */
 }
