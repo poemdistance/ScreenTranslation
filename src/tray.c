@@ -27,9 +27,18 @@ gboolean menuPopup (GtkStatusIcon *status_icon, GdkEvent *event, gpointer menu) 
 
 void initTrayIcon ( SettingWindowData *settingWindowData ) {
 
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file ( 
+            expanduser("/home/$USER/.stran/tran.png"), NULL
+            );
+
+    GdkPixbuf *dst = gdk_pixbuf_scale_simple ( pixbuf, 20, 20, GDK_INTERP_BILINEAR  );
+    g_object_unref ( pixbuf );
+
     GtkStatusIcon *trayIcon = 
-        gtk_status_icon_new_from_file(
-                expanduser("/home/$USER/.stran/tran.png"));
+        gtk_status_icon_new_from_pixbuf ( dst );
+
+        /* gtk_status_icon_new_from_file( */
+        /*         expanduser("/home/$USER/.stran/tran.png")); */
 
     settingWindowData->trayIcon = (GtkWidget*)trayIcon;
 
