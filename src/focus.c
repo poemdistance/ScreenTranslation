@@ -5,7 +5,9 @@
 #include "printWithColor.h"
 
 /* 本函数代码借鉴自xdotool部分源码*/
-int focusRequest( GtkWidget *window ) {
+int focusRequest( SettingWindowData *swd ) {
+
+    GtkWidget *window = swd->window;
 
     if ( ! window ) {
         pred ( "NULL WINDOW" );
@@ -21,7 +23,7 @@ int focusRequest( GtkWidget *window ) {
     XInitThreads();
     Display *dpy = XOpenDisplay (NULL);
     if ( !dpy )
-        return TRUE;
+        return FALSE;
 
     XGetWindowAttributes(dpy, wid, &wattr);
 
@@ -45,5 +47,10 @@ int focusRequest( GtkWidget *window ) {
 
     XCloseDisplay(dpy);
 
-    return TRUE;
+    if ( swd->timeoutid ) {
+        g_source_remove ( swd->timeoutid );
+        swd->timeoutid = 0;
+    }
+
+    return FALSE;
 }

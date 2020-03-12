@@ -227,6 +227,9 @@ def main():
         except KeyboardInterrupt as e:
             cprint('Good bye\n', 'blue')
             sys.exit()
+        except Exception as e:
+            print(str(e))
+            continue
 
         cprint('Offline raw: ' +rawInput + '<' , 'yellow', attrs=['bold'], end='\n\n')
 
