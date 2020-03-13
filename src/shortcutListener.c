@@ -121,6 +121,7 @@ void shortcutReceiveNotify (
         /* if ( shmaddr_setting[1] == '0' ) */
         shmaddr_setting[0] = '1';
     } else if ( strstr ( shortcutName, "Recall-Previous-Translation" ) ) {
+        shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = '1';
         pcyan ( "Recall-Previous-Translation" );
     }
 

@@ -85,7 +85,7 @@ int adjustTargetPosition(
 
     gdk_monitor_get_workarea(
             gdk_display_get_monitor_at_window ( 
-                gdk_display_get_default(),
+                gdk_window_get_display(gtk_widget_get_window(wd->window)),
                 gtk_widget_get_window(wd->window)),
             &workarea);
 

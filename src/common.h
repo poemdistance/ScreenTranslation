@@ -76,6 +76,7 @@
 #define SEARCH_WINDOW_OPENED_FLAG (4)
 #define SELECT_EXCLUDE_FLAG (3)
 #define QUICK_SEARCH_NOTIFY (5)
+#define RECALL_PREVIOUS_TRAN (6)
 
 void tranSelect();
 void checkSelectionChanged();

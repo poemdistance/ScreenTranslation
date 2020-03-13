@@ -18,6 +18,8 @@
 #include "quickSearch.h"
 #include "detectMouse.h"
 #include "cleanup.h"
+#include "configControl.h"
+#include "windowData.h"
 
 #define TIMOUE_OUT (1000)
 
@@ -54,6 +56,8 @@ extern int SIGTERM_NOTIFY;
 void *DetectMouse(void *arg) {
 
     pbblue ( "启动线程DetectMouse" );
+
+    ConfigData *cd = ((struct Arg*)arg)->cd;
 
     struct sigaction sa;
     int retval ;
@@ -252,6 +256,25 @@ void *DetectMouse(void *arg) {
                 writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[1] );
                 writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[2] );
                 CanNewEntrance = 1;
+            }
+
+            if ( shmaddr_keyboard[RECALL_PREVIOUS_TRAN] == '1' ) {
+
+                pbcyan ( "打开上一次翻译内容" );
+
+                if ( text == NULL )
+                    if (( text = calloc(TEXTSIZE, 1)) == NULL)
+                        err_exit("malloc failed in notify.c");
+
+                shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = CLEAR;
+
+                if ( strlen ( text ) ) {
+                    writePipe ( text, fd_python[0] );
+                    writePipe ( text, fd_python[1] );
+                    writePipe ( text, fd_python[2] );
+                    CanNewWin = 1;
+                }
+                else { pbred ( "上一次翻译内容为空，此次不调出窗口" );}
             }
 
             /*超时*/
