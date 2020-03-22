@@ -9,24 +9,6 @@ extern pthread_t t1;
 extern pthread_t t2;
 extern pthread_t t3;
 
-void sendTerminate() {
-
-    /* 等待子进程退出*/
-    //while ( waitpid ( quickSearchProcess_pid, NULL, WNOHANG ) < 0);
-
-    pbcyan ( "发送SIGTERM信号到3个线程" );
-
-    /* 向线程发送信号*/
-    pthread_kill ( t1, SIGTERM );
-    pthread_kill ( t2, SIGTERM );
-    pthread_kill ( t3, SIGTERM );
-
-    kill( quickSearchProcess_pid, SIGTERM );
-
-    /* 父进程退出*/
-    exit(0);
-}
-
 static void readChild() {
     waitpid ( quickSearchProcess_pid, NULL, WNOHANG);
 }
@@ -45,16 +27,13 @@ int main(int argc, char **argv)
     void (*tranSelectProcess)(void);
     tranSelectProcess = tranSelect;
 
+    /* 由于是多线程，程序接收到SIGTERM信号只会发给其中
+     * 一个线程，主进程这里取消接收SIGTERM信号，改由
+     * transelect进程里的newNormalWindow线程接收，接收后
+     * 标记一个退出变量，其他线程轮询此变量，置1时各个线
+     * 程退出, 最终在下面的quit()里执行清理资源的事项，
+     * 顺便杀掉quick search 进程,至此整个翻译程序退出*/
     struct sigaction sa;
-    /* sa.sa_handler = sendTerminate; */
-    /* sigemptyset ( &sa.sa_mask ); */
-    /* if ( sigaction ( SIGTERM, &sa, NULL ) ) { */
-    /*     printf("\033[0;31msigaction exec failed (Main.c -> SIGTERM) \033[0m\n"); */
-    /*     perror("sigaction"); */
-    /*     exit(1); */
-    /* } */
-
-
     sa.sa_handler = readChild;
     sigemptyset ( &sa.sa_mask );
     if ( sigaction ( SIGCHLD, &sa, NULL ) == -1) {

@@ -235,7 +235,8 @@ GtkWidget * insertAudioIcon( GtkWidget *window, GtkWidget *layout, WinData *wd, 
     gtk_widget_set_opacity ( button, 0.7 );
 
     /* 一定要用这句, 不然新建的播放按钮不显示*/
-    gtk_widget_show_all ( window );
+    /* gtk_widget_show_all ( window ); */
+    gtk_widget_show ( button );
 
     return button;
 }

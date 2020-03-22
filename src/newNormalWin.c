@@ -32,6 +32,8 @@ extern int mouseNotRelease;
 extern int CanNewWin;
 static int focustimes = 0;
 int timeout_id = 0;
+int movewindow_timeout_id = 0;
+static int moveDone = 1;
 
 static inline int previousWindow ( int who ) {
     return who > 1 ? who -1 : 3;
@@ -83,9 +85,12 @@ int adjustTargetPosition(
     ConfigData *cd = wd->cd;
     GdkRectangle workarea = { '\0' };
 
+    gtk_widget_show_all ( wd->window );
+
     gdk_monitor_get_workarea(
             gdk_display_get_monitor_at_window ( 
                 gdk_window_get_display(gtk_widget_get_window(wd->window)),
+                /* gdk_display_get_default(), */
                 gtk_widget_get_window(wd->window)),
             &workarea);
 
@@ -101,41 +106,9 @@ int adjustTargetPosition(
     return 0;
 }
 
-/* 本函数代码借鉴自xdotool部分源码*/
-int focusOurWindow( WinData *wd ) {
+int moveWindow ( WinData *wd ) {
 
     ConfigData *cd = wd->cd;
-
-    /* Get window id of x11*/
-    GdkWindow *gw = gtk_widget_get_window ( GTK_WIDGET ( wd->window ) );
-    Window wid = gdk_x11_window_get_xid ( gw );
-
-    /* Get window's attributes*/
-    XWindowAttributes wattr;
-    Display *dpy = XOpenDisplay (NULL);
-    if ( !dpy ) 
-        return -1;
-
-    XGetWindowAttributes(dpy, wid, &wattr);
-
-    XEvent xev;
-    memset(&xev, 0, sizeof(xev));
-    xev.type = ClientMessage;
-    xev.xclient.display = dpy;
-    xev.xclient.window = wid;
-    xev.xclient.message_type = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
-    xev.xclient.format = 32;
-    xev.xclient.data.l[0] = 2L; /* 2 == Message from a window pager */
-    xev.xclient.data.l[1] = CurrentTime;
-
-    int ret = XSendEvent(dpy, wattr.screen->root, False,
-            SubstructureNotifyMask | SubstructureRedirectMask,
-            &xev);
-
-    if ( ret == 0 )
-        pred("窗口聚焦请求失败(focusOurWindow)");
-
-    XCloseDisplay(dpy);
 
     gint pointerX=100, pointerY=100;
     gint targetX = 100, targetY = 100;
@@ -168,13 +141,56 @@ int focusOurWindow( WinData *wd ) {
         if ( cd->allowAutoAdjust ) 
             adjustTargetPosition( &targetX, &targetY, pointerX, pointerY, wd );
 
+        pbcyan ( "Move window" );
+        gtk_widget_hide ( wd->window );
         gdk_window_move ( 
                 gtk_widget_get_window(wd->window),
                 targetX, targetY );
+
+        moveDone = 1;
     }
 
-    gtk_widget_show_all((wd->window));
 
+    return FALSE;
+}
+
+/* 本函数代码借鉴自xdotool部分源码*/
+int focusOurWindow( WinData *wd ) {
+
+    ConfigData *cd = wd->cd;
+
+    /* Get window id of x11*/
+    GdkWindow *gw = gtk_widget_get_window ( GTK_WIDGET ( wd->window ) );
+    if ( gw == NULL ) return 0;
+    Window wid = gdk_x11_window_get_xid ( gw );
+    if ( wid == 0 ) return 0;
+
+    /* Get window's attributes*/
+    XWindowAttributes wattr;
+    Display *dpy = XOpenDisplay (NULL);
+    if ( !dpy ) 
+        return -1;
+
+    XGetWindowAttributes(dpy, wid, &wattr);
+
+    XEvent xev;
+    memset(&xev, 0, sizeof(xev));
+    xev.type = ClientMessage;
+    xev.xclient.display = dpy;
+    xev.xclient.window = wid;
+    xev.xclient.message_type = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
+    xev.xclient.format = 32;
+    xev.xclient.data.l[0] = 2L; /* 2 == Message from a window pager */
+    xev.xclient.data.l[1] = CurrentTime;
+
+    int ret = XSendEvent(dpy, wattr.screen->root, False,
+            SubstructureNotifyMask | SubstructureRedirectMask,
+            &xev);
+
+    if ( ret == 0 )
+        pred("窗口聚焦请求失败(focusOurWindow)");
+
+    XCloseDisplay(dpy);
     return 0;
 }
 
@@ -233,6 +249,11 @@ gboolean on_button_press_cb (
 }
 
 int detect_outside_click_action ( void *data ) {
+
+    WinData *wd = data;
+
+    if ( moveDone )
+        gtk_widget_show_all ( wd->window );
 
     ConfigData *cd = WINDATA(data)->cd;
     static gboolean block = FALSE;
@@ -303,7 +324,7 @@ int detect_outside_click_action ( void *data ) {
 
     /* if ( ! condition && ! condition2 ) */
     if ( ! condition ) {
-    pbred("POINT52");
+        pbred("POINT52");
 
         destroyNormalWin ( NULL, WINDATA(data) );
         return FALSE;
@@ -314,7 +335,7 @@ int detect_outside_click_action ( void *data ) {
 
 int focus_request(void *data) {
 
-    /* GtkWidget *widget; */
+    WinData *wd = data;
 
     /* 每隔一定时间多次尝试重新聚焦窗口防止聚焦窗口被抢占*/
     if ( focustimes <= 5 ) {
@@ -363,6 +384,8 @@ int dataInit(WinData *wd) {
     wd->quickSearchFlag = FALSE;
     wd->mousePress = FALSE;
     wd->mouseRelease = FALSE;
+
+    moveDone = 0;
 
     return 0;
 }
@@ -417,8 +440,6 @@ void *newNormalWindow ( void *data ) {
     pbred("POINT6");
     gtk_widget_set_can_focus(newWin, TRUE);
     pbred("POINT7");
-    gtk_window_set_position ( GTK_WINDOW(newWin), GTK_WIN_POS_MOUSE );
-    pbred("POINT8");
 
     /* quickSearch快捷键标志位, changed in captureShortcutEvent.c <变量shmaddr>*/
     if ( shmaddr_keyboard[QUICK_SEARCH_NOTIFY] == '1') {
@@ -537,8 +558,8 @@ void *newNormalWindow ( void *data ) {
 
     pbred("POINT63");
     if ( cd->hideHeaderBar )
-    pbred("POINT64");
-        gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
+        pbred("POINT64");
+    gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
     pbred("POINT65");
 
     pbred("POINT66");
@@ -605,9 +626,10 @@ void *newNormalWindow ( void *data ) {
 
     pbred ( "聚焦请求" );
     timeout_id = g_timeout_add(10, focus_request, &wd);
+    movewindow_timeout_id = g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd);
 
     pbred ( "显示所有" );
-    gtk_widget_show_all(newWin);
+    /* gtk_widget_show_all(newWin); */
 
     /* GtkTextView 插入文本时的回调函数注册*/
     //g_signal_connect ( buf, "changed", G_CALLBACK(text_changed), (void*)&wd );
@@ -617,6 +639,7 @@ void *newNormalWindow ( void *data ) {
 
     pbred ( "主循环" );
     gtk_main();
+    pbred ( "after gtk_main" );
 
     pbcyan ( ">>>InNewWin 置零" );
     InNewWin = 0;
