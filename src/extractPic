@@ -10,7 +10,7 @@ import readline
 import pytesseract
 import setproctitle
 from termcolor import colored, cprint
-from PIL import Image, PILLOW_VERSION
+from PIL import Image
 
 class PicUtils(object):
 
