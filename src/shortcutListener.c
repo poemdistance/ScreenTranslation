@@ -197,7 +197,7 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
                     shmaddr_setting
                     );
 
-            pblue ( "Keypress:%s%s", modifierstr, keystrArray );
+            /* pblue ( "Keypress:%s%s", modifierstr, keystrArray ); */
             break;
 
         case KeyRelease: break;
