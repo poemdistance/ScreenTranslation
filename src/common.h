@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#include <bsd/unistd.h>
 
 /*for gdk_x11_window_get_xid()*/
 #include <gdk/gdkx.h> 
