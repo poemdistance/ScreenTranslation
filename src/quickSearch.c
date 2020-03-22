@@ -69,6 +69,8 @@ void quickSearch()
     /* 父进程*/
     if ( pid > 0 ) {
 
+        setproctitle ( "%s", "Quick Search" );
+
         captureShortcutEvent_pid = pid;
         searchWindowMonitor_pid = getpid();
 
@@ -117,6 +119,8 @@ void quickSearch()
 
         /* 这又是子进程里的，获取到的变量父进程是用不到的!!!!!!!*/
         //captureShortcutEvent_pid = getpid();
+
+        setproctitle ( "%s", "Listening Shortcut" );
 
         /* captureShortcutEvent(fd[0]); */
         listenShortcut();
