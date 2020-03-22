@@ -189,6 +189,8 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
             keystr = XKeysymToString(XKeycodeToKeysym(ctrl_display, keycode, 0));
             strcpy ( keystrArray, keystr );
 
+            mask &= ~ (numlock_mask | scrolllock_mask | capslock_mask );
+
             shortcutReceiveNotify ( 
                     mask2str(mask, modifierstr),
                     keystr,
