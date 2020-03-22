@@ -8,6 +8,7 @@ import sys
 import time
 import readline
 import pytesseract
+import setproctitle
 from termcolor import colored, cprint
 from PIL import Image, PILLOW_VERSION
 
@@ -77,6 +78,8 @@ def connectShm():
     return shm 
 
 def main():
+
+    setproctitle.setproctitle("extractPic: Extract Text From Pic")
 
     pu = PicUtils()
     actualStart = 10

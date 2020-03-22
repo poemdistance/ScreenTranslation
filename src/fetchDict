@@ -6,6 +6,7 @@ from termcolor import cprint
 import sysv_ipc as ipc
 import getpass
 import readline
+import setproctitle
 import warnings
 import string
 import signal
@@ -212,6 +213,8 @@ def exit(signo, frame):
     sys.exit(0)
 
 def main():
+
+    setproctitle.setproctitle("fetchDict: Offline Translation")
 
     global useShm
     #Connect to the shared memory
