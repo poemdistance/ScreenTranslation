@@ -27,7 +27,14 @@ done
 
 chmod +x ~/.stran/winSizeDataCtl.sh
 
-git submodule foreach git pull origin master
+cd ../baidu-translate
+git pull origin master
+cd ../google-translate
+git pull origin master
+cd ../gnome-screenshot
+git pull origin mainline
+
+#git submodule foreach git pull #origin master
 sudo pip3 install  mysql-connector-python
 
 sed -i "s/\$USER/$USER/g" Mstran.desktop
