@@ -21,7 +21,7 @@
 
 int PROCESS_EXIT_FLAG = 0;
 int CTRL_C_FLAG = 0;
-static int SIGTERM_NOTIFY = 0;
+volatile sig_atomic_t SIGTERM_NOTIFY = 0;
 static int RESTART_SIGNAL = 0;
 
 pid_t needWait = 0;

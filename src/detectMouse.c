@@ -20,6 +20,7 @@
 #include "cleanup.h"
 #include "configControl.h"
 #include "windowData.h"
+#include <bsd/unistd.h>
 
 #define TIMOUE_OUT (1000)
 
@@ -51,13 +52,12 @@ int mousefd;
 int mouseNotRelease;
 extern int action;
 
-extern int SIGTERM_NOTIFY;
+extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 void *DetectMouse(void *arg) {
 
     pbblue ( "启动线程DetectMouse" );
-
-    ConfigData *cd = ((struct Arg*)arg)->cd;
+    /* ConfigData *cd = ((struct Arg*)arg)->cd; */
 
     struct sigaction sa;
     int retval ;
@@ -119,6 +119,7 @@ void *DetectMouse(void *arg) {
         if ( retpid == 0) {
 
             pid_google = -1;
+            setproctitle ( "%s", "Check Selection Changed" );
             checkSelectionChanged();
         }
         else {
@@ -157,6 +158,8 @@ void *DetectMouse(void *arg) {
 
             pid_google = -1;
             detect_tran_pic_action_pid = 0;
+
+            setproctitle ( "%s", "Check Tran Pic Action" );
 
             /* 启动截图识别检测进程*/
             detectTranPicAction();
@@ -431,7 +434,7 @@ void *DetectMouse(void *arg) {
     }
 
     if ( pid_baidu == 0 ) {
-
+        
         close(fd_baidu[1]); /*关闭写端口*/
 
         /*重映射标准输入为管道读端口*/

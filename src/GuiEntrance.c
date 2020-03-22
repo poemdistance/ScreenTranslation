@@ -39,7 +39,7 @@ struct clickDate {
     GtkWidget *button;
 };
 
-extern int SIGTERM_NOTIFY;
+extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 void *GuiEntrance(void *arg) {
 
