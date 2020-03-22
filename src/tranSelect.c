@@ -35,8 +35,7 @@ pthread_t t2 = 0;
 pthread_t t3 = 0;
 pthread_t t4 = 0;
 
-
-int SIGTERM_NOTIFY = 0;
+volatile sig_atomic_t SIGTERM_NOTIFY = 0;
 
 extern int InNewWin;
 
