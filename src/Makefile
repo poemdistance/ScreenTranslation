@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS=-Wall -lm -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g -Wno-deprecated-declarations#-fsanitize=address 
-LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
+LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0 libbsd libbsd-ctor`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  notify.o detectMouse.o newNormalWin.o\
