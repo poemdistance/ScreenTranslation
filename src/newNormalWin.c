@@ -252,7 +252,7 @@ int detect_outside_click_action ( void *data ) {
 
     WinData *wd = data;
 
-    if ( moveDone )
+    if ( moveDone || wd->quickSearchFlag )
         gtk_widget_show_all ( wd->window );
 
     ConfigData *cd = WINDATA(data)->cd;
@@ -390,11 +390,18 @@ int dataInit(WinData *wd) {
     return 0;
 }
 
+void makeSegmentationFault (  ) {
+    char buf[1];
+    buf[9] = '0';
+}
+
 
 /*新建翻译结果窗口, 本文件入口函数*/
 void *newNormalWindow ( void *data ) {
 
     pbred ( "启动Normal Win" );
+
+    /* makeSegmentationFault(); */
 
     /* Storage the relative element or data in this window*/
     WinData wd;
@@ -626,7 +633,9 @@ void *newNormalWindow ( void *data ) {
 
     pbred ( "聚焦请求" );
     timeout_id = g_timeout_add(10, focus_request, &wd);
-    movewindow_timeout_id = g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd);
+
+    if ( ! wd.quickSearchFlag )
+        movewindow_timeout_id = g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd);
 
     pbred ( "显示所有" );
     /* gtk_widget_show_all(newWin); */
