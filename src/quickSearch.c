@@ -34,14 +34,12 @@ void kill_ourselves() {
     pbgreen ("Kill listenShortcut");
 
     kill ( captureShortcutEvent_pid, SIGTERM );
-    usleep(100000);
 
     SIGTERM_SIGNAL = 1;
 }
 
 void quickSearch()
 {
-
     pbyellow ( "启动 quick search" );
 
     pid_t pid;
