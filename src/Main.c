@@ -16,6 +16,8 @@ static void readChild() {
 int main(int argc, char **argv)
 {
 
+    setpgid ( getpid(), getpid() );
+
     pid_t pid;
 
     if ( (pid = fork()) < 0)
