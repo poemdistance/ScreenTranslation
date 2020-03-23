@@ -161,6 +161,7 @@ main(int argc, char **argv)
                 /* system ( "/usr/bin/stoptran" ); */
 
                 PROCESS_EXIT_FLAG = 0;
+                kill ( -needWait, SIGKILL );
                 pid_stran = fork();
 
                 if ( pid_stran > 0 )
