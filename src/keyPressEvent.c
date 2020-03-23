@@ -7,6 +7,7 @@
 #include "configControl.h"
 #include "useful.h"
 #include "configControl.h"
+#include "shortcutListener.h"
 
 /* 键值掩码在gdk/gdkkeysyms.h*/
 
@@ -20,9 +21,11 @@ gboolean on_key_press_cb (
         GdkEventKey *event,
         gpointer *data ) {
 
-    int mask = event->state;
+    int mask = event->state; 
     int keyval = event->keyval;
     int upperKeyval = gdk_keyval_to_upper ( keyval );
+
+    mask &= ~ ( unusedMask() );
 
     gboolean enableCtrlCToClose = FALSE;
     ConfigData *cd = WINDATA(data)->cd;
@@ -32,8 +35,8 @@ gboolean on_key_press_cb (
     pbblue ( "Key Press mask & keyval upperkeyval %d %d %d ",
             mask, keyval, upperKeyval );
 
-    if ( event->state ==  GDK_CONTROL_MASK ) {
-        if ( event->keyval == GDK_KEY_c && enableCtrlCToClose ) {
+    if ( mask ==  GDK_CONTROL_MASK ) {
+        if ( upperKeyval == GDK_KEY_C && enableCtrlCToClose ) {
 
             g_print ("Captured Control+C, destroying window\n");
             destroyNormalWin ( window, (WinData*)data );
