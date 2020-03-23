@@ -252,8 +252,10 @@ int detect_outside_click_action ( void *data ) {
 
     WinData *wd = data;
 
-    if ( moveDone || wd->quickSearchFlag )
+    if ( moveDone || wd->quickSearchFlag ) {
         gtk_widget_show_all ( wd->window );
+        focusOurWindow(wd);
+    }
 
     ConfigData *cd = WINDATA(data)->cd;
     static gboolean block = FALSE;
@@ -427,32 +429,20 @@ void *newNormalWindow ( void *data ) {
         return (void*)0;
     }
 
-    pbred ( "初始化窗口" );
-
     /*新建并设置窗口基本属性*/
     gtk_init(NULL, NULL);
 
-    pbred ( "窗口初始化完成" );
-
-    pbred("POINT1");
     GtkWidget *newWin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    pbred("POINT2");
     gtk_window_set_keep_above(GTK_WINDOW(newWin), TRUE);
-    pbred("POINT3");
     gtk_window_set_title(GTK_WINDOW(newWin), "");
-    pbred("POINT4");
     gtk_window_set_accept_focus ( GTK_WINDOW(newWin), TRUE );
-    pbred("POINT5");
     /* gtk_window_set_focus_on_map ( GTK_WINDOW(newWin), TRUE ); */
-    pbred("POINT6");
     gtk_widget_set_can_focus(newWin, TRUE);
-    pbred("POINT7");
 
     /* quickSearch快捷键标志位, changed in captureShortcutEvent.c <变量shmaddr>*/
     if ( shmaddr_keyboard[QUICK_SEARCH_NOTIFY] == '1') {
         shmaddr_keyboard[QUICK_SEARCH_NOTIFY] = '0';
 
-        pbred("POINT9");
         /* 快捷键调出的窗口放置于中央*/
         gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_CENTER);
         wd.quickSearchFlag = TRUE;
@@ -463,118 +453,71 @@ void *newNormalWindow ( void *data ) {
 
     //gtk_window_set_resizable(GTK_WINDOW(newWin), FALSE);
 
-    pbred("POINT10");
     g_signal_connect(newWin, "destroy", G_CALLBACK(destroyNormalWin), &wd);
-    pbred("POINT11");
 
     /*创建layout用于显示背景图片,以及放置文本*/
     GtkWidget * layout = gtk_layout_new(NULL, NULL);
-    pbred("POINT12");
 
     /*创建scrolled window*/
     GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
-    pbred("POINT13");
 
     /*建立文字显示区域*/
     GtkWidget *view;
     GtkTextBuffer *buf;
-    pbred("POINT14");
     GtkTextIter iter;
 
-    pbred("POINT15");
     /* 隐藏文字区域的光标并关闭可编辑属性*/
     view = gtk_text_view_new();
-    pbred("POINT16");
     gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
-    pbred("POINT17");
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
-    pbred("POINT18");
 
 
-    pbred("POINT23");
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
-    pbred("POINT24");
     gtk_text_view_set_buffer((GtkTextView*)view, buf);
-    pbred("POINT25");
 
-    pbred("POINT26");
 
-    pbred("POINT27");
     /*设置离左边以及顶部的距离*/
-    pbred("POINT28");
     gtk_text_view_set_left_margin ( (GtkTextView*)view, 10 );
-    pbred("POINT29");
     gtk_text_view_set_top_margin ( (GtkTextView*)view, 10 );
-    pbred("POINT30");
 
-    pbred("POINT31");
     /* window->layout->scroll->view*/
-    pbred("POINT32");
     gtk_container_add (GTK_CONTAINER(scroll), view);
-    pbred("POINT33");
     gtk_container_add (GTK_CONTAINER(layout), scroll);
-    pbred("POINT34");
     gtk_container_add (GTK_CONTAINER(newWin), layout);
-    pbred("POINT35");
 
-    pbred("POINT36");
     //gtk_container_add (GTK_CONTAINER(layout), view);
-    pbred("POINT37");
     //gtk_container_add (GTK_CONTAINER(scroll), layout);
-    pbred("POINT38");
     //gtk_container_add (GTK_CONTAINER(newWin), scroll);
-    pbred("POINT39");
 
-    pbred("POINT40");
     setFontProperties(buf, &iter);
-    pbred("POINT41");
 
-    pbred("POINT42");
 
-    pbred("POINT43");
     wd.view = view;
-    pbred("POINT44");
     wd.window = newWin;
-    pbred("POINT45");
     wd.layout = layout;
-    pbred("POINT46");
 
-    pbred("POINT47");
     /* Signals are used by everyone, but they are only created on a per class basis \
      * -- so you should not call call gtk_signal_new() unless you are writing a new \
      *  GtkObject type. However, if you want to make a new signal for an existing \
      *  type, you may use gtk_object_class_user_signal_new() to create a signal that\
      *  doesn't correspond to a class's builtin methods.
      * */
-    pbred("POINT53");
 
-    pbred("POINT54");
     /* 监听键盘事件的回调函数*/
-    pbred("POINT55");
     g_signal_connect ( newWin, "key-press-event", G_CALLBACK(on_key_press_cb), (void*)&wd );
-    pbred("POINT56");
 
-    pbred("POINT57");
     /* 这个获取背景图片并适应窗口的代码段放在分离翻译数据之前耗的时间才有
      * 意义，因为图片加载虽然花了一定时间，但总的还是会比翻译结果获取成功
      * 要少很多, 放在前面可以等到数据全部成功获取(一般来说百度的翻译结果会
      * 获取的比较慢)*/
-    pbred("POINT61");
     wd.image = syncImageSize ( newWin, wd.width, wd.height, (void*)&wd );
-    pbred("POINT62");
 
-    pbred("POINT63");
     if ( cd->hideHeaderBar )
-        pbred("POINT64");
     gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
-    pbred("POINT65");
 
-    pbred("POINT66");
     wd.exitButton = gtk_button_new_with_label ( "Exit" );
-    pbred("POINT67");
     gtk_layout_put ( GTK_LAYOUT(layout),
             wd.exitButton, bw.width-RIGHT_BORDER_OFFSET*6, bw.height-BOTTOM_OFFSET );
-    pbred("POINT68");
     g_signal_connect ( wd.exitButton, "clicked", G_CALLBACK(destroyNormalWin), &wd );
 
 
@@ -1393,8 +1336,8 @@ int setWinSizeForNormalWin (WinData *window, char *addr, int type) {
     width = calculateWidth ( maxlen );
     height = calculateHeight ( lines );
 
-    pbred("maxlen=%d lines=%d", maxlen, lines);
-    pbred("width=%d height=%d", (int)width, (int)height);
+    pbblue("maxlen=%d lines=%d", maxlen, lines);
+    pbblue("width=%d height=%d", (int)width, (int)height);
 
     limitSize ( &width, &height );
 
