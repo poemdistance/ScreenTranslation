@@ -484,8 +484,11 @@ void *DetectMouse(void *arg) {
         exit(1);
 
     }
-    pbcyan ( "DetectMouse 退出" );
+    pbcyan ( "Detect Mouse 退出: %d", getpid() );
     /* pthread_exit(NULL); */
+
+    /* SIGTERM_NOTIFY = 1; */
+    /* quit(); */
 
     return NULL;
 }

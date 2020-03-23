@@ -35,7 +35,7 @@ pthread_t t2 = 0;
 pthread_t t3 = 0;
 pthread_t t4 = 0;
 
-volatile sig_atomic_t SIGTERM_NOTIFY = 0;
+extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 extern int InNewWin;
 
@@ -75,20 +75,20 @@ void *newNormalWindowThread( void *data ) {
     pbblue ( "启动线程 newNormalWindowThread" );
 
     ConfigData *cd = data;
-    struct sigaction sa;
-    sa.sa_handler = sigterm_notify_cb;
-    sigemptyset ( &sa.sa_mask );
-    int ret = 0;
-    if ( (ret = sigaction ( SIGTERM, &sa, NULL )) == -1) {
-        pbred("sigaction exec failed (Main.c -> SIGTERM)");
-        perror("sigaction");
-        exit(1);
-    }
-    if ( (ret = sigaction ( SIGINT, &sa, NULL )) == -1) {
-        pbred("sigaction exec failed (Main.c -> SIGTERM)");
-        perror("sigaction");
-        exit(1);
-    }
+    /* struct sigaction sa; */
+    /* sa.sa_handler = sigterm_notify_cb; */
+    /* sigemptyset ( &sa.sa_mask ); */
+    /* int ret = 0; */
+    /* if ( (ret = sigaction ( SIGTERM, &sa, NULL )) == -1) { */
+    /*     pbred("sigaction exec failed (Main.c -> SIGTERM)"); */
+    /*     perror("sigaction"); */
+    /*     exit(1); */
+    /* } */
+    /* if ( (ret = sigaction ( SIGINT, &sa, NULL )) == -1) { */
+    /*     pbred("sigaction exec failed (Main.c -> SIGTERM)"); */
+    /*     perror("sigaction"); */
+    /*     exit(1); */
+    /* } */
 
     while ( 1 ) {
 
@@ -159,11 +159,8 @@ void tranSelect() {
         if ( SIGTERM_NOTIFY ) break;
     }
 
-    /*TODO:
-     * The following codes will never be executed,
-     * remember to handle it*/
-    pthread_join(t2, &thread_ret); 
     pthread_join(t3, &thread_ret); 
+    pthread_join(t2, &thread_ret); 
     pthread_join(t4, &thread_ret); 
 
     pbcyan ( "GuiEntrance 退出" );

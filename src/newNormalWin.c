@@ -157,7 +157,7 @@ int moveWindow ( WinData *wd ) {
 /* 本函数代码借鉴自xdotool部分源码*/
 int focusOurWindow( WinData *wd ) {
 
-    ConfigData *cd = wd->cd;
+    /* ConfigData *cd = wd->cd; */
 
     /* Get window id of x11*/
     GdkWindow *gw = gtk_widget_get_window ( GTK_WIDGET ( wd->window ) );
@@ -324,8 +324,7 @@ int detect_outside_click_action ( void *data ) {
 
     /* if ( ! condition && ! condition2 ) */
     if ( ! condition ) {
-        pbred("POINT52");
-
+        pbmag ( "区域外点击销毁窗口" );
         destroyNormalWin ( NULL, WINDATA(data) );
         return FALSE;
     }
@@ -350,7 +349,7 @@ int focus_request(void *data) {
         timeout_id = g_timeout_add (
                 100,
                 detect_outside_click_action,
-                WINDATA(data));
+                wd);
     }
 
     return TRUE;
@@ -392,7 +391,8 @@ int dataInit(WinData *wd) {
 
 void makeSegmentationFault (  ) {
     char buf[1];
-    buf[9] = '0';
+    if ( sizeof(buf) )  /* prevent anoying warning (set but not used)*/
+        buf[9] = '0';
 }
 
 

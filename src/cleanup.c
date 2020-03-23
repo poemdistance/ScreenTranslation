@@ -55,7 +55,7 @@ void quit() {
 
     hadCleanUp = 1;
 
-    pbgreen ( "启动清理程序" );
+    pbgreen ( "启动清理程序: %d", getpid() );
 
     if ( text != NULL )
         free(text);
@@ -80,13 +80,4 @@ void quit() {
     releaseMemoryTmp();
     releaseLink();
 
-    /* if ( BAIDU_TRANS_EXIT_FALG != 1 ) */
-    kill ( baidu_translate_pid, SIGTERM );
-    /* if ( GOOGLE_TRANS_EXIT_FLAG != 1 ) */
-    kill ( google_translate_pid, SIGTERM );
-    kill ( fetch_data_from_mysql_pid, SIGTERM );
-
-    kill ( check_selectionEvent_pid, SIGTERM );
-    kill ( quickSearchProcess_pid, SIGTERM );
-    kill ( detect_tran_pic_action_pid, SIGTERM );
 }

@@ -9,8 +9,15 @@ extern pthread_t t1;
 extern pthread_t t2;
 extern pthread_t t3;
 
+volatile sig_atomic_t SIGTERM_NOTIFY = 0;
+
 static void readChild() {
     waitpid ( quickSearchProcess_pid, NULL, WNOHANG);
+}
+
+static void sigterm() {
+    SIGTERM_NOTIFY = 1;
+    quit();
 }
 
 int main(int argc, char **argv)
@@ -47,17 +54,28 @@ int main(int argc, char **argv)
     /* 启动取词翻译进程和quickSearch进程*/
     if ( pid > 0 ) {
 
+        sa.sa_handler = sigterm;
+        if ( sigaction ( SIGTERM, &sa, NULL ) == -1) {
+            pbred("sigaction exec failed (Main.c -> SIGTERM)");
+            perror("sigaction");
+            exit(1);
+        }
+        sa.sa_handler = sigterm;
+        if ( sigaction ( SIGINT, &sa, NULL ) == -1) {
+            pbred("sigaction exec failed (Main.c -> SIGINT)");
+            perror("sigaction");
+            exit(1);
+        }
         quickSearchProcess_pid = pid;
         tranSelect_pid = getpid();
         tranSelectProcess();
-        quit();
     }
     else {
 
         quickSearchProcess();
     }
 
-    /* 处理函数不要放到这里，父子进程都可以执行到这*/
+    sleep(2);
 
-    pbcyan ( "主函数退出" );
+    /* 处理函数不要放到这里，父子进程都可以执行到这*/
 }

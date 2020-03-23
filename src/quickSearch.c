@@ -31,10 +31,7 @@ static void readChild() {
 
 void kill_ourselves() {
 
-    pbgreen ("Kill listenShortcut");
-
     kill ( captureShortcutEvent_pid, SIGTERM );
-
     SIGTERM_SIGNAL = 1;
 }
 
@@ -55,8 +52,6 @@ void quickSearch()
     if ( sigaction ( SIGCHLD, &sa, NULL) != 0 )
         err_exit_qs("Sigaction error in quickSearch 1");
 
-    /* socketpair ( AF_UNIX, SOCK_STREAM, 0, fd ); */
-
 
     shared_memory_for_keyboard_event(&shmaddr_keyboard);
     memset(shmaddr_keyboard, '0', 100);
@@ -71,8 +66,6 @@ void quickSearch()
 
         captureShortcutEvent_pid = pid;
         searchWindowMonitor_pid = getpid();
-
-        /* close ( fd[0] ); */
 
         while ( 1 ) {
 
@@ -113,16 +106,9 @@ void quickSearch()
     } 
     else {
 
-        /* close ( fd[1] ); */
-
-        /* 这又是子进程里的，获取到的变量父进程是用不到的!!!!!!!*/
-        //captureShortcutEvent_pid = getpid();
-
         setproctitle ( "%s", "Listening Shortcut" );
-
-        /* captureShortcutEvent(fd[0]); */
         listenShortcut();
     }
 
-    pbcyan ( "QuickSearch.c 程序退出" );
+    pbcyan ( "Quick Search 程序退出: %d", getpid() );
 }
