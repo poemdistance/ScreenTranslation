@@ -59,6 +59,8 @@ void *DetectMouse(void *arg) {
     pbblue ( "启动线程DetectMouse" );
     /* ConfigData *cd = ((struct Arg*)arg)->cd; */
 
+    setpgid ( getpid(), getppid() );
+
     struct sigaction sa;
     int retval ;
     char buf[3];
@@ -483,6 +485,8 @@ void *DetectMouse(void *arg) {
 
     }
     pbcyan ( "DetectMouse 退出" );
-    pthread_exit(NULL);
+    /* pthread_exit(NULL); */
+
+    return NULL;
 }
 
