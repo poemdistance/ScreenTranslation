@@ -30,9 +30,9 @@
 extern char modifier[7][10];
 extern int modifier2maskTable[7];
 
-extern char numlock_mask;
-extern char scrolllock_mask;
-extern char capslock_mask;
+extern int numlock_mask;
+extern int scrolllock_mask;
+extern int capslock_mask;
 
 static int SIGTERM_SIGNAL = 0;
 

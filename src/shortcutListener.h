@@ -11,5 +11,6 @@ int *extractShortcut ( Display *display );
 int listenShortcut();
 char *getKeyString ( char *str );
 char *getRawKeyString ( char *str );
+int unusedMask();
 
 #endif

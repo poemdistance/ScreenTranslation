@@ -18,14 +18,17 @@ char modifier[7][10] = {
 const char upperLetterKey[][20] = {
     "Left", "Right", "Up", "Down", "End", "Next", "Prior",
     "Home", "Delete", "Pause", "BackSpace", "Enter", "Tab",
+    "Return"
 };
 
 int modifier2maskTable[7] = { 0 };
 
 
-char numlock_mask = 0;
-char scrolllock_mask = 0;
-char capslock_mask = 0;
+int numlock_mask = 0;
+int scrolllock_mask = 0;
+int capslock_mask = 0;
+
+int isInUpperLetterKeys ( char *str );
 
 char *toStr( int mask ) {
 
@@ -106,7 +109,7 @@ char *findBlank ( char *p ) {
 }
 
 char *getRawKeyString ( char *str ) {
-    
+
     if ( !str ) return NULL;
 
     char *p = NULL;
@@ -127,8 +130,14 @@ char *getRawKeyString ( char *str ) {
     if ( *skipBlank(p+1) ) return NULL;
 
     p = tmp;
-    lowerCase(p);
-    *p = toupper(*p);
+    if ( ! isInUpperLetterKeys ( p ) )
+        lowerCase ( p );
+    else {
+        lowerCase ( p );
+        *p = toupper(*p);
+        if ( strcasecmp ( p, "BackSpace" ) == 0 )
+            p[4] = 'S';
+    }
 
     return strcpy ( str, p );
 }
@@ -355,6 +364,25 @@ getModifiersMapping (Display * dpy)
 
     if (modmap)
         XFreeModifiermap (modmap);
+}
+
+int unusedMask() {
+
+    static int mask = 0;
+    if ( mask ) return mask;
+
+    Display *display = NULL;
+    display = XOpenDisplay ( NULL );
+    if ( display == NULL ) return 0;
+    getModifiersMapping(display);
+    XCloseDisplay(display);
+
+    mask = numlock_mask | capslock_mask | scrolllock_mask;
+
+    pbblue ( "unused mask: %d numloc:%d capslock:%d scrolllock:%d", 
+            mask, numlock_mask, capslock_mask, scrolllock_mask );
+
+    return mask;
 }
 
 
