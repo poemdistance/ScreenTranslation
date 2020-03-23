@@ -89,7 +89,4 @@ void quit() {
     kill ( check_selectionEvent_pid, SIGTERM );
     kill ( quickSearchProcess_pid, SIGTERM );
     kill ( detect_tran_pic_action_pid, SIGTERM );
-
-    printf("\n");
-    /* exit(0); */
 }

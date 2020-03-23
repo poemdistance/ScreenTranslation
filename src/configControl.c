@@ -261,17 +261,17 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     cd->allowAutoAdjust = 
         str2bool ( readFromConfig ( "Allow-Auto-Adjust-Popup-Window-Pref" , buf ) );
 
-    printf("%d\n", cd->iconOffsetX);
-    printf("%d\n", cd->iconOffsetY);
-    printf("%d\n", cd->pointerOffsetX);
-    printf("%d\n", cd->pointerOffsetY);
-    printf("%d\n", cd->hideHeaderBar);
-    printf("%d\n", cd->alwaysDisplay);
-    printf("%d\n", cd->iconShowTime);
-    printf("%d\n", cd->ctrlCToClose);
-    printf("%d %d\n", cd->switchSourceMask, cd->switchSourceKeyval);
-    printf("%d %d\n", cd->playAudioMask, cd->playAudioKeyval);
-    printf("%d\n", cd->allowAutoAdjust);
+    printf("iconOffsetX:%d\n", cd->iconOffsetX);
+    printf("iconOffsetY:%d\n", cd->iconOffsetY);
+    printf("pointerOffsetX:%d\n", cd->pointerOffsetX);
+    printf("pointerOffsetY:%d\n", cd->pointerOffsetY);
+    printf("hideHeaderBar:%d\n", cd->hideHeaderBar);
+    printf("alwaysDisplay:%d\n", cd->alwaysDisplay);
+    printf("iconShowTime:%d\n", cd->iconShowTime);
+    printf("ctrlToClose:%d\n", cd->ctrlCToClose);
+    printf("switchSourceMask:%d %d\n", cd->switchSourceMask, cd->switchSourceKeyval);
+    printf("playAudioMask:%d keyval:%d\n", cd->playAudioMask, cd->playAudioKeyval);
+    printf("allowAutoAdjust:%d\n", cd->allowAutoAdjust);
 }
 
 /* int main(int argc, char **argv) */
