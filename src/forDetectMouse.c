@@ -31,10 +31,10 @@ const static char wantToIgnore[][20] = {
     "gimp-2.10"
 };
 
-int BAIDU_TRANS_EXIT_FALG  = 0;
-int GOOGLE_TRANS_EXIT_FLAG = 0;
+volatile sig_atomic_t BAIDU_TRANS_EXIT_FALG  = 0;
+volatile sig_atomic_t GOOGLE_TRANS_EXIT_FLAG = 0;
 
-extern int action;
+extern volatile sig_atomic_t action;
 
 extern char *lastText;
 

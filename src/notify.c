@@ -19,16 +19,16 @@ int fd_key = -1;
 FILE *fp = NULL;
 char *text = NULL;
 int NoneText = 0;
-int CanNewEntrance = 0;
+volatile sig_atomic_t CanNewEntrance = 0;
 
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 extern char *shmaddr_selection;
 extern char *shmaddr_keyboard;
-extern int action;
-extern int InNewWin;
+extern volatile sig_atomic_t action;
+extern volatile sig_atomic_t InNewWin;
 
-extern int HadDestroied;
+extern volatile sig_atomic_t HadDestroied;
 
 void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
 

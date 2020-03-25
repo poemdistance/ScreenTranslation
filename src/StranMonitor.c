@@ -166,7 +166,7 @@ main(int argc, char **argv)
     }
 
     /* Prevent no enough sleep time because of the interruption*/
-    while ( usleep(1000000) != 0 );
+    while ( usleep(500000) != 0 );
 
     /* Make sure all processes are cleaned up*/
     if ( needWait != -1 )

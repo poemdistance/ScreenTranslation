@@ -4,7 +4,7 @@
 #include "cleanup.h"
 
 extern char *shmaddr_selection;
-extern int action;
+extern volatile sig_atomic_t action;
 
 static int SIGTERM_SIGNAL = 0;
 

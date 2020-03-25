@@ -37,7 +37,7 @@ pthread_t t4 = 0;
 
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
-extern int InNewWin;
+extern volatile sig_atomic_t InNewWin;
 
 
 void sigterm_notify_cb() {

@@ -23,7 +23,7 @@ extern char **mysql_result[MYSQLSIZE];
 
 extern char *tmp;
 
-extern int InNewWin;
+extern volatile sig_atomic_t InNewWin;
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
 extern char *shmaddr_keyboard;

@@ -10,11 +10,11 @@
 
 extern char *shmaddr_google;
 extern char *shmaddr_searchWin;
-extern int action;
+extern volatile sig_atomic_t action;
 extern int timeout_id_1;
 extern int timeout_id_2;
-extern int CanNewWin;
-extern int CanNewEntrance;
+extern volatile sig_atomic_t CanNewWin;
+extern volatile sig_atomic_t CanNewEntrance;
 
 extern char *google_result[GOOGLESIZE];
 
@@ -24,7 +24,7 @@ extern char *shmaddr_baidu;
 extern char audioOnline_en[512];
 extern char audioOnline_uk[512];
 
-int HadDestroied = 1;
+volatile sig_atomic_t HadDestroied = 1;
 int quickSearchFlag = 0;
 static int aboveWindow = 0;
 

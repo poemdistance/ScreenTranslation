@@ -26,11 +26,11 @@
 
 extern char *shmaddr;
 extern char *shmaddr_selection;
-extern int InNewWin;
-extern int BAIDU_TRANS_EXIT_FALG;
-extern int GOOGLE_TRANS_EXIT_FLAG;
-extern int CanNewWin;
-extern int CanNewEntrance;
+extern volatile sig_atomic_t InNewWin;
+extern volatile sig_atomic_t BAIDU_TRANS_EXIT_FALG;
+extern volatile sig_atomic_t GOOGLE_TRANS_EXIT_FLAG;
+extern volatile sig_atomic_t CanNewWin;
+extern volatile sig_atomic_t CanNewEntrance;
 
 extern char *shmaddr_searchWin;
 extern char *shmaddr_keyboard;
@@ -49,9 +49,8 @@ pid_t fetch_data_from_mysql_pid;
 pid_t detect_tran_pic_action_pid;
 
 int mousefd;
-int mouseNotRelease;
-extern int action;
-
+volatile sig_atomic_t mouseNotRelease;
+extern volatile sig_atomic_t action;
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 void *DetectMouse(void *arg) {

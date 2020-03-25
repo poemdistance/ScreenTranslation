@@ -24,12 +24,12 @@ char *tmp;
 
 /* 用于和detectMouse通信，当已经新建翻译结果显示窗口时，
  * 不再检测鼠标动作*/
-int InNewWin = 0;
+volatile sig_atomic_t InNewWin = 0;
 
 /* 鼠标动作标志位*/
-extern int action;
-extern int mouseNotRelease;
-extern int CanNewWin;
+extern volatile sig_atomic_t action;
+extern volatile sig_atomic_t mouseNotRelease;
+extern volatile sig_atomic_t CanNewWin;
 static int focustimes = 0;
 int timeout_id = 0;
 int movewindow_timeout_id = 0;
@@ -242,6 +242,12 @@ gboolean on_button_press_cb (
                     event->y_root,
                     event->time);
         }
+        if ( event->button == 3 ) {
+            gtk_window_begin_resize_drag (GTK_WINDOW (gtk_widget_get_toplevel (widget)), 
+                    GDK_WINDOW_EDGE_EAST,
+                    event->button, event->x_root, event->y_root,
+                    event->time);
+        }
     }
 
     wd->mousePress = TRUE;
@@ -405,10 +411,8 @@ void *newNormalWindow ( void *data ) {
 
     /* makeSegmentationFault(); */
 
-    /* Storage the relative element or data in this window*/
     WinData wd;
     ConfigData *cd = data;
-
     wd.cd = cd;
 
     dataInit(&wd);
@@ -436,7 +440,6 @@ void *newNormalWindow ( void *data ) {
     gtk_window_set_keep_above(GTK_WINDOW(newWin), TRUE);
     gtk_window_set_title(GTK_WINDOW(newWin), "");
     gtk_window_set_accept_focus ( GTK_WINDOW(newWin), TRUE );
-    /* gtk_window_set_focus_on_map ( GTK_WINDOW(newWin), TRUE ); */
     gtk_widget_set_can_focus(newWin, TRUE);
 
     /* quickSearch快捷键标志位, changed in captureShortcutEvent.c <变量shmaddr>*/
@@ -450,8 +453,6 @@ void *newNormalWindow ( void *data ) {
     else
         /* 取词翻译的窗口跟随鼠标*/
         gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_MOUSE);
-
-    //gtk_window_set_resizable(GTK_WINDOW(newWin), FALSE);
 
     g_signal_connect(newWin, "destroy", G_CALLBACK(destroyNormalWin), &wd);
 
@@ -470,11 +471,9 @@ void *newNormalWindow ( void *data ) {
     view = gtk_text_view_new();
     gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
-
-
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
     gtk_text_view_set_buffer((GtkTextView*)view, buf);
-
+    setFontProperties(buf, &iter);
 
     /*设置离左边以及顶部的距离*/
     gtk_text_view_set_left_margin ( (GtkTextView*)view, 10 );
@@ -485,47 +484,32 @@ void *newNormalWindow ( void *data ) {
     gtk_container_add (GTK_CONTAINER(layout), scroll);
     gtk_container_add (GTK_CONTAINER(newWin), layout);
 
-    //gtk_container_add (GTK_CONTAINER(layout), view);
-    //gtk_container_add (GTK_CONTAINER(scroll), layout);
-    //gtk_container_add (GTK_CONTAINER(newWin), scroll);
-
-    setFontProperties(buf, &iter);
-
-
     wd.view = view;
     wd.window = newWin;
     wd.layout = layout;
 
-    /* Signals are used by everyone, but they are only created on a per class basis \
-     * -- so you should not call call gtk_signal_new() unless you are writing a new \
-     *  GtkObject type. However, if you want to make a new signal for an existing \
-     *  type, you may use gtk_object_class_user_signal_new() to create a signal that\
-     *  doesn't correspond to a class's builtin methods.
-     * */
+    wd.buf = buf;
+    wd.iter = &iter;
+    wd.audio = NULL;
+    wd.scroll = scroll;
 
     /* 监听键盘事件的回调函数*/
-    g_signal_connect ( newWin, "key-press-event", G_CALLBACK(on_key_press_cb), (void*)&wd );
+    g_signal_connect ( newWin, "key-press-event",
+            G_CALLBACK(on_key_press_cb), (void*)&wd );
 
-    /* 这个获取背景图片并适应窗口的代码段放在分离翻译数据之前耗的时间才有
-     * 意义，因为图片加载虽然花了一定时间，但总的还是会比翻译结果获取成功
-     * 要少很多, 放在前面可以等到数据全部成功获取(一般来说百度的翻译结果会
-     * 获取的比较慢)*/
     wd.image = syncImageSize ( newWin, wd.width, wd.height, (void*)&wd );
 
     if ( cd->hideHeaderBar )
-    gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
+        gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
 
+    /* 插入退出按钮*/
     wd.exitButton = gtk_button_new_with_label ( "Exit" );
     gtk_layout_put ( GTK_LAYOUT(layout),
             wd.exitButton, bw.width-RIGHT_BORDER_OFFSET*6, bw.height-BOTTOM_OFFSET );
     g_signal_connect ( wd.exitButton, "clicked", G_CALLBACK(destroyNormalWin), &wd );
 
+    /* printDebugInfo(); */
 
-    pbred ( "打印调试信息" );
-    printDebugInfo();
-
-
-    pbred ( "初始化存储空间" );
     /*初始化百度以及离线翻译结果存储空间*/
     initMemoryBaidu();
     initMemoryMysql();
@@ -538,32 +522,34 @@ void *newNormalWindow ( void *data ) {
     if ( google_result[0] == NULL )
         initMemoryGoogle();
 
-    /* 百度翻译结果显示按钮*/
+    /* 百度(必应)翻译结果显示按钮*/
     GtkWidget *baiduButton = newBaiduButton( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), baiduButton, bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET );
-    g_signal_connect(baiduButton, "clicked", G_CALLBACK(displayBaiduTrans), &wd);
+    gtk_layout_put ( GTK_LAYOUT(layout), baiduButton,
+            bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET );
+    g_signal_connect(baiduButton, "clicked",
+            G_CALLBACK(displayBaiduTrans), &wd);
 
     /* 谷歌翻译结果显示按钮*/
     GtkWidget *googleButton = newGoogleButton ( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), googleButton, bw.width-RIGHT_BORDER_OFFSET*2, bw.height-BOTTOM_OFFSET );
-    g_signal_connect ( googleButton, "clicked", G_CALLBACK(displayGoogleTrans), &wd );
+    gtk_layout_put ( GTK_LAYOUT(layout), googleButton,
+            bw.width-RIGHT_BORDER_OFFSET*2, bw.height-BOTTOM_OFFSET );
+    g_signal_connect ( googleButton, "clicked",
+            G_CALLBACK(displayGoogleTrans), &wd );
 
     /* 离线翻译结果切换按钮*/
     GtkWidget *mysqlButton = newOfflineButton ( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), mysqlButton, bw.width-RIGHT_BORDER_OFFSET*3, bw.height-BOTTOM_OFFSET );
-    g_signal_connect ( mysqlButton, "clicked", G_CALLBACK(displayOfflineTrans), &wd );
+    gtk_layout_put ( GTK_LAYOUT(layout), mysqlButton,
+            bw.width-RIGHT_BORDER_OFFSET*3, bw.height-BOTTOM_OFFSET );
+    g_signal_connect ( mysqlButton, "clicked",
+            G_CALLBACK(displayOfflineTrans), &wd );
 
     /* 校准按钮*/
     insertCalibrationButton(&wd);
 
     /* 指示当前翻译所属*/
     wd.indicateButton = newIndicateButton ( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), wd.indicateButton, bw.width-RIGHT_BORDER_OFFSET, bw.height-INDICATE_OFFSET );
-
-    wd.buf = buf;
-    wd.iter = &iter;
-    wd.audio = NULL;
-    wd.scroll = scroll;
+    gtk_layout_put ( GTK_LAYOUT(layout), wd.indicateButton,
+            bw.width-RIGHT_BORDER_OFFSET, bw.height-INDICATE_OFFSET );
 
     /*捕获resize window信号, 进行显示调整*/
     g_signal_connect (newWin, "configure-event", 
@@ -574,30 +560,19 @@ void *newNormalWindow ( void *data ) {
             G_CALLBACK(on_button_release_cb), &wd);
 
 
-    pbred ( "聚焦请求" );
     timeout_id = g_timeout_add(10, focus_request, &wd);
 
     if ( ! wd.quickSearchFlag )
-        movewindow_timeout_id = g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd);
+        movewindow_timeout_id = 
+            g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd);
 
-    pbred ( "显示所有" );
-    /* gtk_widget_show_all(newWin); */
-
-    /* GtkTextView 插入文本时的回调函数注册*/
-    //g_signal_connect ( buf, "changed", G_CALLBACK(text_changed), (void*)&wd );
-
-    pbred ( "选择显示界面" );
     selectDisplay ( &wd );
 
-    pbred ( "主循环" );
     gtk_main();
-    pbred ( "after gtk_main" );
 
-    pbcyan ( ">>>InNewWin 置零" );
     InNewWin = 0;
     shmaddr_keyboard[WINDOW_OPENED_FLAG] = '0';
 
-    pbred ( "关闭 Normal win" );
     pthread_exit(NULL);
 }
 
@@ -680,7 +655,8 @@ int waitForContinue(WinData *wd) {
     int time = 0;
 
     /*等待任意一方python端的翻译数据全部写入共享内存*/
-    while(/* (CanNewWin != 1) || */ ( shmaddr_google[0] != FINFLAG && shmaddr_baidu[0] != FINFLAG \
+    while( ( shmaddr_google[0] != FINFLAG 
+                && shmaddr_baidu[0] != FINFLAG
                 && shmaddr_mysql[0] != FINFLAG )) {
 
 
@@ -703,17 +679,13 @@ int waitForContinue(WinData *wd) {
             break;
         }
 
-        if ( shmaddr_google[0] == NULLCHAR || shmaddr_google[0] == EXITFLAG) {
+        if ( shmaddr_google[0] == NULLCHAR ) {
             if ( shmaddr_google[0] == NULLCHAR)
                 printf("空字符串\n");
-            else {
-                printf("Note: 翻译程序程序已退出,请不要再往下执行\n");
-                printf("退出程序...\n");
-                exit(0);
-            }
             action = 0;
             shmaddr_google[0] = CLEAR;
             shmaddr_baidu[0] = CLEAR;
+            shmaddr_mysql[0] = CLEAR;
             InNewWin = 0;
             return 1;
         }
@@ -727,7 +699,6 @@ int waitForContinue(WinData *wd) {
             shmaddr_baidu[0] = ERRCHAR;
             break;
         }
-
     }
 
     if ( text == NULL )

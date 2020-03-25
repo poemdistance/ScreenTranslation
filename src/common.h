@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <linux/input.h>
@@ -26,6 +25,7 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <bsd/unistd.h>
+#include <sys/types.h>
 
 /*for gdk_x11_window_get_xid()*/
 #include <gdk/gdkx.h> 

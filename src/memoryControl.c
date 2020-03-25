@@ -9,7 +9,7 @@ extern char audioOnline_uk[512];
 extern char audioOffline_en[512];
 extern char audioOffline_uk[512];
 
-extern int InNewWin;
+extern volatile sig_atomic_t InNewWin;
 
 /* 初始化离线翻译结果存储空间*/
 void initMemoryMysql() {
