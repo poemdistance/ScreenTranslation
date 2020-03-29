@@ -60,13 +60,13 @@
   <object class="GtkImage" id="image14">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-preferences</property>
+    <property name="pixbuf">gtk-preferences.png</property>
     <property name="icon_size">5</property>
   </object>
   <object class="GtkImage" id="image2">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-preferences</property>
+    <property name="pixbuf">gtk-preferences.png</property>
   </object>
   <object class="GtkImage" id="image3">
     <property name="visible">True</property>
