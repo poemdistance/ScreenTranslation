@@ -34,9 +34,9 @@ extern char *shmaddr_setting;
 #define WINDATA(addr) ((WinData*)addr)
 
 #define AUDIO_EN(type)  ( type == ONLINE ? ( audioOnline_en ) : ( audioOffline_en ))
-#define AUDIO_UK(type)  ( type == ONLINE ? ( audioOnline_uk ) : ( audioOffline_uk ))
+#define AUDIO_AM(type)  ( type == ONLINE ? ( audioOnline_am ) : ( audioOffline_am ))
 
-#define shmaddr_type(type) ( type == ONLINE ? ( shmaddr_baidu ) : ( shmaddr_mysql ))
+#define SHMADDR_TYPE(type) ( type == ONLINE ? ( shmaddr_baidu ) : ( shmaddr_mysql ))
 #define PhoneticFlag(type) ( type == ONLINE ? ( shmaddr_baidu[1] - '0' ) : ( shmaddr_mysql[1] - '0' ))
 #define NumZhTranFlag(type) ( type == ONLINE ? ( shmaddr_baidu[2] - '0' ) : ( shmaddr_mysql[2] - '0' ))
 #define NumEnTranFlag(type) ( type == ONLINE ? ( shmaddr_baidu[3] - '0' ) : ( shmaddr_mysql[3] - '0' ))
@@ -57,7 +57,7 @@ int getIndex(int *index, char *addr);
 void printDebugInfo();
 int  newScrolledWin();
 void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter);
-int changeDisplay(GtkWidget *button, gpointer *arg);
+int changeDisplay(GtkWidget *button, WinData *data);
 void displayGoogleTrans(GtkWidget *button, gpointer *arg);
 void displayBaiduTrans(GtkWidget *button,  void **arg );
 void displayOfflineTrans ( GtkWidget *button, gpointer *arg );
@@ -67,7 +67,7 @@ int adjustWinSize(GtkWidget *button, gpointer *arg, int which);
 int setWinSizeForNormalWin ( WinData *window, char *addr, int type);
 void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd);
 
-gboolean on_key_press_cb ( GtkWidget *window, GdkEventKey *event, gpointer *data );
+gboolean on_key_press_cb ( GtkWidget *window, GdkEventKey *event, WinData *wd );
 
 void *newNormalWindow ( void *data );
 void adjustStrForGoogle(char *p[3], int len, char *storage[3], int *enterNum);
