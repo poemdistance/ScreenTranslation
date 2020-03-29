@@ -153,7 +153,7 @@ static void on_entry_size_allocate_cb (
 
 /* Resize窗口时的回调函数，用于保存窗口大小，以及调整
  * GtkLayout部件位置*/
-static void on_configure_event_child_cb( 
+static gboolean on_configure_event_child_cb( 
         GtkWindow *window,
         GdkEvent *event,
         SettingWindowData *swd ) {
@@ -173,11 +173,13 @@ static void on_configure_event_child_cb(
     super ( window, event, swd );
 
     if ( width == previousWidth )
-        return;
+        return FALSE;
 
     previousWidth = width;
 
     adjustLayoutWidget ( swd );
+
+    return FALSE;
 }
 
 /* 用于移动icon */

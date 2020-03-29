@@ -143,7 +143,7 @@ static void adjustLayoutWidget ( SettingWindowData *swd ) {
     }
 }
 
-static void on_configure_event_child_cb ( 
+static gboolean on_configure_event_child_cb ( 
         GtkWidget *window, 
         GdkEvent *event,
         SettingWindowData *swd
@@ -154,11 +154,13 @@ static void on_configure_event_child_cb (
     gtk_window_get_size ( GTK_WINDOW(swd->window), &width, &height );
 
     if ( width == previousWidth )
-        return;
+        return FALSE;
 
     previousWidth = width;
 
     adjustLayoutWidget ( swd );
+
+    return FALSE;
 }
 
 static void on_layout_size_allocate_cb ( 
