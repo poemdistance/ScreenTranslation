@@ -1,15 +1,5 @@
 ## 离线功能若要正常使用，请将Python更新到3.8及以上
-# !!!注意：在虚拟机测试的时候发现有些子程序遇到了执行权限的问题，如果程序运行不正常，在终端输入mstran查看输出是否有perimission deny之类的字样，如果是的话，执行如下操作: 
 
-        sudo chmod -c 775 /usr/bin/bing
-        sudo chmod -c 775 /usr/bin/extractPic
-        sudo chmod -c 775 /usr/bin/fetchDict
-        sudo chmod -c 775 /usr/bin/tranen
-        sudo chmod -c 775 /usr/local/lib/<python-version>/dist-packages/bing -R #注意适当修改路径
-        ....
-
-        上面的python包路径可以到子模块google-translate 和 bingTran等目录下执行`sudo ./setup.py install` 指令后看输出确定
-        
 <br> 
 
 ### 注意安装后将 `/etc/gdm/custom.conf` 里的 `#WaylandEnable=false` 前面的 `#`号注释掉，使用Xorg服务，否则xdotool无法工作
