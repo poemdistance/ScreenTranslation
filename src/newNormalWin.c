@@ -347,15 +347,28 @@ int detect_outside_click_action ( void *data ) {
     GtkAllocation alloc;
     static gboolean block = FALSE;
     static int lock = 1;
+    static int count = 0;
+    static int reCheck = 0;
     int winx, winy;
 
-    if ( !wd->openSettingWindowAction && wd->shmaddr_setting[1] == '0' ) {
-        wd->openSettingWindowAction = FALSE;
+    /* 请先阅读下一块的注释.
+     * 重新检测设置窗口的关闭状态，如果设置窗口已经关闭，则重新使能
+     * 翻译窗口的置顶*/
+    if ( reCheck && wd->shmaddr_setting[1] == '0' ) {
+        pcyan ( "Set keep above: true" );
         gtk_window_set_keep_above ( GTK_WINDOW(wd->window), TRUE );
+        reCheck = 0;
     }
+
+    /* 设置窗口打开的时候禁止翻译窗口置顶，但是不能一直执行禁止置顶的语句
+     * 不然设置无效，所以通过将openSettingWindowAction赋值false实现只执行
+     * 一次取消置顶，取消以后使能reCheck, 当设置窗口关闭的时候再使能翻译
+     * 窗口的置顶.*/
     if ( wd->openSettingWindowAction ){
+        pcyan ( "Set keep above: false" );
         gtk_window_set_keep_above ( GTK_WINDOW(wd->window), FALSE );
         wd->openSettingWindowAction = FALSE;
+        reCheck = 1;
     }
 
     if ( wd->pinEnable ) return TRUE;
@@ -378,8 +391,8 @@ int detect_outside_click_action ( void *data ) {
 
         gdk_window_get_origin ( gtk_widget_get_window(wd->window), &winx, &winy);
 
-        /* 确认是否成功移动窗口到目标位置*/
-        if ( winx != wd->targetx || wd->moveWindowNotify ) 
+        /* 确认是否成功移动窗口到目标位置(超过200ms后不再检测)*/
+        if ( ++count <= 20 && (winx != wd->targetx || wd->moveWindowNotify) ) 
             moveWindow ( wd );
         else 
             moveDone = 0; /* 禁止继续调用前面的if(moveDone...)*/
@@ -977,6 +990,12 @@ void on_setting_button_clicked_cb (
         GtkWidget *button,
         WinData *wd
         ) {
+    
+    /* 设置窗口打开标志，在设置窗口的逻辑里会执行这个操作，但是由于
+     * 时间差，会导致本文件中检测设置窗口是否已经关闭时产生误判，所以
+     * 这里先行标记*/
+    wd->shmaddr_setting[1] = '1';
+
     wd->openSettingWindowAction = TRUE;
     wd->shmaddr_setting[0] = '1';
 }
