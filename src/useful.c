@@ -16,8 +16,10 @@ char *upperCase ( char *str ) {
 #pragma GCC diagnostic ignored "-Wsequence-point"
 
     char *p = str;
-    while ( p && *p ) 
-        *p++ = toupper(*p);
+    while ( p && *p ) {
+        *p = toupper(*p);
+        p++;
+    }
 
     return str;
 #pragma GCC diagnostic pop
@@ -29,8 +31,10 @@ char *lowerCase ( char *str ) {
 #pragma GCC diagnostic ignored "-Wsequence-point"
 
     char *p = str;
-    while ( p && *p )
-        *p++ = tolower(*p);
+    while ( p && *p ) {
+        *p = tolower(*p);
+        p++;
+    }
 
     return str;
 #pragma GCC diagnostic pop
