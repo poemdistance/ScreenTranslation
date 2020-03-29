@@ -323,7 +323,7 @@ void *DetectMouse(void *arg) {
             m = previous(i);
             n = previous(m);
 
-            /*LOG*/
+            /* LOG */
             /* int j = previous(n), x = previous(j); */
             /* printf("%d %d %d %d\n", history[m], history[n], history[j], history[x]); */
 
@@ -335,7 +335,6 @@ void *DetectMouse(void *arg) {
                  * 但是一般拖动窗口等操作之前都是移动鼠标，并且没有按下任何
                  * 按键，正好可以将剪贴板变化的事件标志给清空*/
                 shmaddr_selection[0] = '0';
-
                 action = 0;
             }
 
@@ -366,8 +365,6 @@ void *DetectMouse(void *arg) {
                         oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                         thirdClick = 0;
                         action = SINGLECLICK;
-
-                        //printf("\033[0;35m单击事件 \033[0m\n");
                     }
                     releaseButton = 0;
 
