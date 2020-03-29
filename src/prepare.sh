@@ -8,10 +8,14 @@ currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.p
     "../gif_pic/audio.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"\
     "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh"\
     "../gif_pic/calibration.jpg" "../data/audioButtonPosition.data" "buttonPositionDataCtl.sh"\
-    "winSizeDataCtl.sh" "../ui/cc-keyboard-shortcut-editor.ui" "../ui/enter-keyboard-shortcut.svg"\
+    "winSizeDataCtl.sh" "../ui/cc-keyboard-shortcut-editor.ui"
     "../ui/icon_position_setting.ui" "../ui/window-no-title-bar1.png"\
     "../ui/window-has-title-bar1.png" "../config/.configrc" "../ui/window-preference.ui" \
-    "../ui/enter-keyboard-shortcut.png");
+    "../ui/enter-keyboard-shortcut.png"\
+    "../ui/bing-25.png" "../ui/bing-selected.png" "../ui/exit-25.png" "../ui/find-location-symbolic.png" \
+    "../ui/google-25.png" "../ui/google-selected.png" "../ui/offline-25.png" "../ui/offline-selected.png"\
+    "../ui/pin-25.png" "../ui/pin-selected.png"\ "../ui/sure.ui"\ "../ui/audio-volume-medium.png"
+    );
 
 declare -i len
 len=${#currFile[*]}-1
