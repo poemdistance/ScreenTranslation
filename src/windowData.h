@@ -170,6 +170,7 @@ typedef struct WinData{
     GtkWidget *ctrl_grid;
     GtkWidget *headerbar;
     GtkWidget *setting_button;
+    GtkWidget *setting_button_bottom;
     GtkWidget *content_listbox;
     GtkWidget *src_label;
     GtkWidget *audio_button_en;
