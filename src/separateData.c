@@ -22,29 +22,24 @@ void separateDataForBaidu(int *index, int len, int type) {
 
     char ***result = NULL;
     char *tmpBuffer = NULL;
+    int enterNum = 0;
+    int k = 0;
+    tmpBuffer = tmp;
+    enterNum = 0;
 
     /* 根据类型设置操作地址*/
-    if ( type == ONLINE ) {
-
+    if ( type == ONLINE )
         result = baidu_result;
-        tmpBuffer = tmp;
-    }
-    else if ( type ==  OFFLINE ) {
-
+    else if ( type ==  OFFLINE )
         result = mysql_result;
-        tmpBuffer = tmp;
-    }
 
+    clearBaiduMysqlResultMemory();
 
-    if ( index[0] == 0)
-        return;
+    if ( index[0] == 0) return;
 
     if ( result[0] == NULL)
         err_exit("Doesn't init memory yet\n");
 
-    /* TODO:去除SourceInput(type)末尾的回车符后，比较新输入的字符串
-     * 是否与之相等，相等说明复制过了，取消本次复制 ( <130的判断
-     * 是因为>=130时, 原始字符是不显示的, 没必要复制)*/
     if ( strlen ( text ) < 130 ) {
 
         char tmp[130];
@@ -62,7 +57,7 @@ void separateDataForBaidu(int *index, int len, int type) {
         if ( strcmp ( tmp, SourceInput(type) ) != 0 ) {
 
             strcat ( SourceInput(type), tmp );
-            adjustStrForBaidu(len, SourceInput(type), 0, 0);
+            adjustStrForBaidu(len, SourceInput(type), 0, 0, &enterNum);
         }
     }
 
@@ -86,58 +81,45 @@ void separateDataForBaidu(int *index, int len, int type) {
             continue;
         }
 
-        int k=0;
+        k=0;
         count = 0;
         /* 从python端来的数据缺少回车符，将在这里加上*/
         while ( count <  tmpBuffer[n] - '0') 
         {
             strcat ( result[n][k],  &tmpBuffer[index[i++]]);
             strcat ( result[n][k], "\n");
-
-            /* 除去最后一条中文翻译，之前的字符串都再加上回车（形成空行,用于隔开各个句子）*/
-            if ( n == 2 && count + 1 < tmpBuffer[n] - '0') {
-                strcat ( ZhTrans(type, k), "\n");
-            }
-
             count++;
 
-            /* n为2,3分别对应中英文翻译，一条结果用单独一个空间存储，故i++,
-             * 除此外，其他结果只有一个存储空间，i不可超过0*/
-            if ( n == 2 || n == 3 )
-                k++;
+            /* n为2,3分别对应中英文翻译，一条结果用单独一个空间存储，故k++,
+             * 除此外，其他结果只有一个存储空间，k不可超过0*/
+            if ( n == 2 || n == 3 ) k++;
         }
 
-        /* ZhTrans(type)*/
-        if ( n == 2 ) {
-            /*单个翻译结果不能加空格前缀 addSpace=0*/
-            if ( PhoneticFlag(type) == 0 && NumZhTranFlag(type) == 1 &&\
-                    NumEnTranFlag(type) == 0 && OtherWordFormFlag(type) == 0 ) {
+        for ( int i=0; n==2 && i<ZH_EN_TRAN_SIZE && result[n][i][0]; i++ )
+            adjustStrForBaidu(len, result[n][i], 0, 1, &enterNum);
 
-                adjustStrForBaidu(len, result[n][0], 0, 1);
-            }
+        /* 处理英译英的结果*/
+        for ( int i=0; n==3 && i<ZH_EN_TRAN_SIZE && result[n][i][0]; i++ )
+            adjustStrForBaidu(len, result[n][i], 0, 1, &enterNum);
 
-            else {
-
-                for ( int i=0; i<ZH_EN_TRAN_SIZE; i++ )
-                    adjustStrForBaidu(len, result[n][i], 1, 1);
-            }
-        }
-
-        else if ( n == 3 ) {
-
-            for ( int i=0; i<ZH_EN_TRAN_SIZE; i++ )
-                adjustStrForBaidu(len, result[n][i], 0, 1);
-        }
-        else if ( n == 4 )
-            adjustStrForBaidu(len, result[n][0], 0, 1);
+        if ( n == 4 )
+            adjustStrForBaidu(len, result[n][0], 0, 1, &enterNum);
     }
+
+    /* 回车符太多的话会导致窗口高度过大，跟宽度不协调。
+     * 这里以8个回车符为界限，如果超过则适当增加每行
+     * 显示的计数长度以此减少行数降低窗口高度.*/
+    if ( enterNum > 8 ) 
+        separateDataForBaidu ( index, len+8, type );
 }
 
 
-void separateGoogleData ( int *index ) {
+void separateGoogleData ( int *index, int len ) {
+
+    int enterNum = 0;
 
     if ( index[0] == 0 ) {
-        printf("\033[0;31m索引首值为0，无数据(separateGoogleData) \033[0m\n");
+        pred("索引首值为0，无数据 (separateGoogleData)");
         return;
     }
 
@@ -149,11 +131,14 @@ void separateGoogleData ( int *index ) {
         p[1] = index[0] != 0 ? &tmp[index[0]] : NULL;
         p[2] = index[1] != 0 ? &tmp[index[1]] : NULL;
 
-        adjustStrForGoogle(p, 28, google_result);
+        adjustStrForGoogle(p, 28, google_result, &enterNum);
     }
     else  {
         shmaddr_google[0] = CLEAR;
         strcpy(google_result[0], "翻译超时或出现其他错误");
     }
+
+    if ( enterNum > 8 )
+        separateGoogleData ( index, len+8 );
 }
 
