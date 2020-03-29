@@ -1,6 +1,7 @@
 #!/bin/bash
 
 bash stop.sh
+echo "Use server for pip: "$specific
 
 #复制文件到家目录
 storage="$HOME/.stran"
@@ -11,7 +12,7 @@ currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.p
     "winSizeDataCtl.sh" "../ui/cc-keyboard-shortcut-editor.ui"
     "../ui/icon_position_setting.ui" "../ui/window-no-title-bar1.png"\
     "../ui/window-has-title-bar1.png" "../config/.configrc" "../ui/window-preference.ui" \
-    "../ui/enter-keyboard-shortcut.png"\
+    "../ui/enter-keyboard-shortcut.png" "../ui/gtk-preferences.png"\
     "../ui/bing-25.png" "../ui/bing-selected.png" "../ui/exit-25.png" "../ui/find-location-symbolic.png" \
     "../ui/google-25.png" "../ui/google-selected.png" "../ui/offline-25.png" "../ui/offline-selected.png"\
     "../ui/pin-25.png" "../ui/pin-selected.png"\ "../ui/sure.ui"\ "../ui/audio-volume-medium.png"
@@ -39,7 +40,7 @@ cd ../gnome-screenshot
 git pull origin mainline
 
 #git submodule foreach git pull #origin master
-sudo pip3 install  mysql-connector-python
+sudo pip3 install  mysql-connector-python $specific
 
 sed -i "s/\$USER/$USER/g" Mstran.desktop
 
@@ -71,17 +72,20 @@ echo 'Preparing to install submodules'
 echo
 
 cd ../baidu-translate
-sudo pip3 install -r requirements.txt
+sudo pip3 install -r requirements.txt $specific
 sudo ./setup.py install
+sudo chmod -c 775 /usr/bin/bdtran
 
 cd ../google-translate
-sudo pip3 install -r requirements.txt
+sudo pip3 install -r requirements.txt $specific
 sudo ./setup.py install
-sudo pip3 install  mysql-connector-python
+sudo pip3 install  mysql-connector-python $specific
+sudo chmod -c 775 /usr/bin/tranen
 
 cd ../BingTran
-sudo pip3 install -r requirements.txt
+sudo pip3 install -r requirements.txt $specific
 sudo ./setup.py install
+sudo chmod -c 775 /usr/bin/bing
 
 system=`uname -a`
 if [[ $system =~ .*"deepin".* ]]; then

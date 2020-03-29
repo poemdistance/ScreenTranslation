@@ -1,4 +1,7 @@
 CC = gcc
+
+specific ?= 
+
 CFLAGS= -fno-stack-protector -Wall -lm -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g -Wno-deprecated-declarations#-fsanitize=address 
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0 libbsd libbsd-ctor`
 
@@ -49,6 +52,10 @@ install:
 	sudo cp -v extractPic /usr/bin
 	sudo desktop-file-install /usr/share/applications/Mstran.desktop
 	sudo update-desktop-database
+	sudo chmod -c 775 /usr/bin/fetchDict
+	sudo chmod -c 775 /usr/bin/extractPic
+	sudo chmod -c 775 /usr/bin/mstran
+	sudo chmod -c 775 /usr/bin/stran
 
 qinstall:
 	cp -v stop.sh ~/.stran/
