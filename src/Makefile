@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS=-Wall -lm -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g -Wno-deprecated-declarations#-fsanitize=address 
+CFLAGS= -fno-stack-protector -Wall -lm -lX11 -lXtst -lXext -lpthread -lXfixes -ggdb -g -Wno-deprecated-declarations#-fsanitize=address 
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0 libbsd libbsd-ctor`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
@@ -9,7 +9,7 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
 		  keyPressEvent.o quickSearch.o findKeyboardDevice.o\
 		  shortcutListener.o  searchWindow.o tranSelect.o isEmpty.o \
-		  tranPicActionDetect.o memoryControl.o calibration.o fitting.o \
+		  tranPicActionDetect.o memoryControl.o  fitting.o \
 		  expanduser.o dataStatistics.o getPointerPosition.o strmask.o\
 		  useful.o configControl.o shmCreate.o
 
@@ -40,7 +40,7 @@ $(MONNITOR) : %.o : %.c
 	$(CC) $(LDLIBS) $(CFLAGS) -c  $< -o $@  -Wall
 
 install:
-	bash ./stop.sh
+	# bash ./stop.sh
 	sudo cp -v stran /usr/bin/
 	sudo cp -v stop.sh /usr/bin/stoptran
 	sudo cp -v mstran /usr/bin/
