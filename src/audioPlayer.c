@@ -3,18 +3,61 @@
 #include <glib.h>
 #include "newWindow.h"
 #include "audio.h"
-#include "calibration.h"
-#include "fitting.h"
 #include "expanduser.h"
 
-/* 用于切换英音和美音*/
-int audioShow = -1;
-
 extern char audioOnline_en[512];
-extern char audioOnline_uk[512];
+extern char audioOnline_am[512];
 
 extern char audioOffline_en[512];
-extern char audioOffline_uk[512];
+extern char audioOffline_am[512];
+
+char *getAudioSrcByButton ( GtkWidget *button, int *type, WinData *wd ) {
+
+    static int source = -1;
+    char *notEmptyEnSrc = NULL;
+    char *notEmptyAmSrc = NULL;
+
+    if ( strlen ( audioOffline_am )+strlen(audioOnline_en)
+            && ( (*type=OFFLINE) || 1 ) )  {
+        notEmptyAmSrc = audioOffline_am;
+        notEmptyEnSrc = audioOffline_en;
+    }
+    else if ( strlen ( audioOnline_am ) + strlen(audioOnline_am)
+            && ( (*type=ONLINE) || 1 )) {
+        notEmptyAmSrc = audioOnline_am;
+        notEmptyEnSrc = audioOnline_en;
+    }
+
+
+    if ( button == wd->audio_button_am ) {
+
+        if ( wd->who == GOOGLE ) return notEmptyAmSrc;
+
+        *type = ONLINE;
+        if ( wd->who == BAIDU ) return audioOnline_am;
+
+        *type = OFFLINE;
+        if ( wd->who == MYSQL ) return audioOffline_am;
+    }
+    else if ( button == wd->audio_button_en ) {
+
+        if ( wd->who == GOOGLE ) return notEmptyEnSrc;
+
+        *type = ONLINE;
+        if ( wd->who == BAIDU ) return audioOnline_en;
+
+        *type = OFFLINE;
+        if ( wd->who == MYSQL ) return audioOffline_en;
+    }
+
+    source = ~ source;
+
+    if ( source ) 
+        return notEmptyAmSrc;
+
+    return notEmptyEnSrc;
+}
+
 
     static gboolean
 bus_call (GstBus     *bus,
@@ -51,27 +94,15 @@ bus_call (GstBus     *bus,
     return TRUE;
 }
 
-gboolean mp3play (GtkWidget *button, gpointer *data)
+gboolean mp3play (GtkWidget *button, WinData *wd)
 {
-
-    int type = *(int *)data;
-
-    audioShow = ~audioShow;
-    char *url_online = NULL;
-    char *url_offline = NULL;
-
-    if ( audioShow ) {
-
-        url_online = bw.audio_online[0];
-        url_offline = mw.audio_offline[0];
-    }
-    else {
-
-        url_online = bw.audio_online[1];
-        url_offline = mw.audio_offline[1];
-    }
-
     GMainLoop *loop;
+    
+    int type = 0;
+    char *src = NULL;
+
+    src = getAudioSrcByButton ( button, &type, wd );
+    printf("Play Mp3: %s\n", src);
 
     GstElement *pipeline, *source, *parser, *decoder, *conv, *sink;
     GstBus *bus;
@@ -85,12 +116,11 @@ gboolean mp3play (GtkWidget *button, gpointer *data)
     /* Set up the pipeline */
     pipeline = gst_pipeline_new ("audio-player");
 
-    /* This works well*/
-    if ( type == BAIDU )
+    if ( type == ONLINE )
         source   = gst_element_factory_make ("souphttpsrc",       "file-source");
-    else if ( type == MYSQL )
+    else if ( type == OFFLINE )
         source   = gst_element_factory_make ("filesrc",       "file-source");
-    else
+    else 
         return FALSE;
 
     parser  = gst_element_factory_make ("mpegaudioparse", "mp3-parser");
@@ -106,7 +136,7 @@ gboolean mp3play (GtkWidget *button, gpointer *data)
     }
 
     /*This work well with souphttpsrc, we set the input url to the source element */
-    g_object_set (G_OBJECT (source), "location", AUDIO(TYPE(((WinData*)data)->who)), NULL);
+    g_object_set (G_OBJECT (source), "location", src, NULL);
 
     /* we add a message handler */
     bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
@@ -142,22 +172,4 @@ gboolean mp3play (GtkWidget *button, gpointer *data)
     g_main_loop_unref (loop);
 
     return TRUE;
-}
-
-void syncAudioBtn ( WinData *wd, int type ) {
-
-    /* 含音标，添加播放按钮*/
-    if ( strlen ( Phonetic(type) ) != 0) {
-
-        GtkWidget *audio =  ((WinData*)wd)->audio;
-
-        if ( audio == NULL ) {
-
-            bw.audio_online[0] = AUDIO_EN(ONLINE);
-            bw.audio_online[1] = AUDIO_UK(ONLINE);
-
-            mw.audio_offline[0] = AUDIO_EN(OFFLINE);
-            mw.audio_offline[1] = AUDIO_UK(OFFLINE);
-        }
-    } 
 }
