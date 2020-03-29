@@ -156,6 +156,8 @@ int focusOurWindow( WinData *wd ) {
 
     /* ConfigData *cd = wd->cd; */
 
+    pgreen ( "Focus request for translation window" );
+
     /* Get window id of x11*/
     GdkWindow *gw = gtk_widget_get_window ( GTK_WIDGET ( wd->window ) );
     if ( gw == NULL ) return 0;
@@ -317,6 +319,17 @@ int detect_outside_click_action ( void *data ) {
     GtkAllocation alloc;
     static gboolean block = FALSE;
 
+    if ( !wd->openSettingWindowAction && wd->shmaddr_setting[1] == '0' ) {
+        wd->openSettingWindowAction = FALSE;
+        gtk_window_set_keep_above ( GTK_WINDOW(wd->window), TRUE );
+    }
+    if ( wd->openSettingWindowAction ){
+        gtk_window_set_keep_above ( GTK_WINDOW(wd->window), FALSE );
+        wd->openSettingWindowAction = FALSE;
+    }
+
+    if ( wd->pinEnable ) return TRUE;
+
     if ( moveDone || wd->quickSearchFlag ) {
         gtk_widget_show_all ( wd->window );
         reHideWidget(wd->needToBeHiddenWidget, 
@@ -473,20 +486,22 @@ void on_pin_button_clicked_cb (
         WinData *wd
         ) {
 
-    static int mode = -1;
+    static int mode = 0;
+    mode = ~mode;
+    wd->pinEnable = !wd->pinEnable;
     if ( mode ) {
+        wd->pinEnable = TRUE;
         gtk_widget_show ( wd->selectedPin );
         dropFromHiddenArray( wd->selectedPin, wd );
     }
     else {
+        pgreen ( "Pin Disable" );
         gtk_widget_show ( wd->unselectedPin );
         dropFromHiddenArray(wd->unselectedPin, wd);
     }
 
     gtk_widget_hide ( button );
     addToHiddenArray ( button, wd );
-
-    mode = ~mode;
 }
 
 int getIdByButton ( WinData *wd, GtkWidget *button ) {
@@ -762,6 +777,8 @@ int dataInit(WinData *wd) {
     shared_memory_for_setting ( &shmaddr_setting );
 
     wd->shmaddr_setting = shmaddr_setting;
+    wd->pinEnable = FALSE;
+    wd->openSettingWindowAction = FALSE;
 
     return 0;
 }
@@ -901,7 +918,7 @@ void on_setting_button_clicked_cb (
         GtkWidget *button,
         WinData *wd
         ) {
-
+    wd->openSettingWindowAction = TRUE;
     wd->shmaddr_setting[0] = '1';
 }
 

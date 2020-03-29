@@ -194,6 +194,9 @@ typedef struct WinData{
     gint offsetX;
     gint offsetY;
 
+    gboolean pinEnable;
+    gboolean openSettingWindowAction;
+
     char *shmaddr_setting;
 
 }WinData;
