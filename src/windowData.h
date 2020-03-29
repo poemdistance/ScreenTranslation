@@ -15,9 +15,6 @@
 #define WHO(addr)     ( ( addr ) == shmaddr_mysql ? MYSQL : \
         (addr == shmaddr_google ? GOOGLE : BAIDU))
 
-#define AUDIO(type)  ( ( type ) == ONLINE ? ( url_online ) : ( url_offline ) )
-
-
 #define STORE_DISPLAY_LINES_NUM(win, who, value) \
     if ( who == BAIDU ) { \
         WINDATA(win)->bw->lines = value;\
@@ -88,7 +85,6 @@ typedef struct Baidu {
     double height;
     int lines;
     int maxlen;
-    char *audio_online[2];
 }Baidu;
 
 Baidu bw;
@@ -98,7 +94,6 @@ typedef struct Mysql {
     double height;
     int lines;
     int maxlen;
-    char *audio_offline[2];
 }Mysql;
 
 Mysql mw;
