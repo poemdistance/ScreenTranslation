@@ -70,12 +70,12 @@ void showGoogleScrolledWin(GtkTextBuffer *gtbuf, GtkTextIter *iter, WinData *wd)
 gboolean on_key_press_cb ( GtkWidget *window, GdkEventKey *event, gpointer *data );
 
 void *newNormalWindow ( void *data );
-void adjustStrForGoogle(char *p[3], int len, char *storage[3]);
+void adjustStrForGoogle(char *p[3], int len, char *storage[3], int *enterNum);
 
 void separateDataForBaidu(int *index, int len, int type);
-void adjustStrForBaidu(int len, char *source, int addSpace, int copy);
+void adjustStrForBaidu(int len, char *source, int addSpace, int copy, int *enterNum);
 int getLinesOfGoogleTrans ( int *index_google );
-void separateGoogleData ( int *index_google );
+void separateGoogleData ( int *index_google, int len );
 int countLines ( int len, char *source );
 int countCharNums ( char *source );
 int adjustStrForScrolledWin(int len, char *source);
