@@ -46,6 +46,7 @@ void on_tran_button_clicked_cb ( GtkWidget *button, WinData *wd);
 void reHideWidget ( GtkWidget **widgets, int len );
 gboolean on_motion_notify_event ( GtkWidget *widget, GdkEventButton *event, WinData *wd);
 GtkWidget *addUnderline ( GtkWidget *widget, const char *rgb, guint type);
+void on_win_size_allocate_cb ( GtkWidget *window, GdkRectangle *alloc, WinData *wd);
 
 static inline int previousWindow ( int who ) {
     return who > 1 ? who -1 : 3;
@@ -92,15 +93,36 @@ int adjustTargetPosition(
             &workarea);
 
     if ( cd->iconOffsetY < 0 && *targety < 0 ) {
-        *targety = pointery - cd->iconOffsetY + 30;
+        *targety = pointery - cd->iconOffsetY;
         pcyan ( "重新调整y轴位置 y=%d", *targety);
     }
     else if ( cd->iconOffsetY > 0 && *targety+wd->height > workarea.height ) {
-        *targety = pointery - wd->height - cd->iconOffsetY - 50;
+        *targety = pointery - wd->height - cd->iconOffsetY;
         pcyan ( "重新调整y轴位置 y=%d", *targety);
     }
 
     return 0;
+}
+
+void on_win_size_allocate_cb (
+        GtkWidget *window,
+        GdkRectangle *alloc,
+        WinData *wd
+        ) {
+
+    pcyan ( "Win Size Allocate: %d %d %d %d",
+            alloc->x, alloc->y, alloc->width, alloc->height );
+
+    wd->width = alloc->width;
+    wd->height = alloc->height;
+
+    if ( wd->width != wd->previousWidth
+            || wd->height != wd->previousHeight ) {
+        wd->moveWindowNotify = TRUE;
+    }
+
+    wd->previousWidth = alloc->width;
+    wd->previousHeight = alloc->height;
 }
 
 int moveWindow ( WinData *wd ) {
@@ -144,9 +166,15 @@ int moveWindow ( WinData *wd ) {
                 gtk_widget_get_window(wd->window),
                 targetX, targetY );
 
-        moveDone = 1;
-    }
+        wd->targetx = targetX;
+        wd->targety = targetY;
 
+        moveDone = 1;
+
+        /* gtk_widget_show_all ( wd->window ); */
+        /* reHideWidget(wd->needToBeHiddenWidget, */ 
+        /*         sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*)); */
+    }
 
     return FALSE;
 }
@@ -318,6 +346,8 @@ int detect_outside_click_action ( void *data ) {
     ConfigData *cd = WINDATA(data)->cd;
     GtkAllocation alloc;
     static gboolean block = FALSE;
+    static int lock = 1;
+    int winx, winy;
 
     if ( !wd->openSettingWindowAction && wd->shmaddr_setting[1] == '0' ) {
         wd->openSettingWindowAction = FALSE;
@@ -330,12 +360,32 @@ int detect_outside_click_action ( void *data ) {
 
     if ( wd->pinEnable ) return TRUE;
 
-    if ( moveDone || wd->quickSearchFlag ) {
+    if ( lock && (moveDone || wd->quickSearchFlag) ) {
         gtk_widget_show_all ( wd->window );
         reHideWidget(wd->needToBeHiddenWidget, 
                 sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
         int focus_request(void *data);
         focus_request((void*)wd);
+
+        /* Quick Search 弹出的窗口放到屏幕中央，
+         * 之后只进行一次聚焦请求，而且不移动窗口，
+         * 所以需要锁住这里的逻辑，防止不断调用
+         * gtk_wiget_show_all()*/
+        if ( wd->quickSearchFlag ) lock = 0;
+    }
+
+    if ( ! wd->quickSearchFlag ) {
+
+        gdk_window_get_origin ( gtk_widget_get_window(wd->window), &winx, &winy);
+
+        /* 确认是否成功移动窗口到目标位置*/
+        if ( winx != wd->targetx || wd->moveWindowNotify ) 
+            moveWindow ( wd );
+        else 
+            moveDone = 0; /* 禁止继续调用前面的if(moveDone...)*/
+
+        /* 禁止上一个if语句中重复调用moveWindow*/
+        wd->moveWindowNotify = FALSE;
     }
 
     if ( ! action ){ return TRUE; } 
@@ -424,7 +474,7 @@ int focus_request(void *data) {
         g_source_remove ( timeout_id );
 
         timeout_id = g_timeout_add (
-                100,
+                10,
                 detect_outside_click_action,
                 wd);
     }
@@ -709,6 +759,8 @@ void on_calibration_button_clicked_cb (
     int invisible_win_root_y;
     int visible_win_root_x;
     int visible_win_root_y;
+    int win_width;
+    int win_height;
 
     GdkWindow *win = gtk_widget_get_window ( wd->window );
 
@@ -724,6 +776,9 @@ void on_calibration_button_clicked_cb (
 
     pblue ( "Visible Window Root Position: %d %d",
             visible_win_root_x, visible_win_root_y);
+
+    gtk_window_get_size ( GTK_WINDOW(wd->window), &win_width, &win_height );
+    pblue ( "Win size: %d %d", win_width, win_height  );
 
     GList *children = gtk_container_get_children ( GTK_CONTAINER(wd->window) );
     for ( GList *child=children; child!=NULL; child=child->next ) {
@@ -780,6 +835,7 @@ int dataInit(WinData *wd) {
     wd->shmaddr_setting = shmaddr_setting;
     wd->pinEnable = FALSE;
     wd->openSettingWindowAction = FALSE;
+    wd->moveWindowNotify = FALSE;
 
     return 0;
 }
@@ -810,7 +866,7 @@ on_phonetic_button_clicked_cb (
 void initObjectFromFile ( WinData *wd ) {
 
     GtkBuilder *builder = gtk_builder_new_from_file(expanduser("/home/$USER/.stran/sure.ui"));
-    GtkWidget *window_src = (GtkWidget*)gtk_builder_get_object ( builder, "root" );
+    GtkWidget *window = (GtkWidget*)gtk_builder_get_object ( builder, "root" );
     GtkWidget *audio_button_en =  (GtkWidget*)gtk_builder_get_object ( builder, "audio_button_en" );
     GtkWidget *audio_button_am =  (GtkWidget*)gtk_builder_get_object ( builder, "audio_button_am" );
     GtkWidget *phonetic_en =  (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_en" );
@@ -837,7 +893,7 @@ void initObjectFromFile ( WinData *wd ) {
     setting_button = (GtkWidget*)gtk_builder_get_object ( builder, "setting_button" );
 
 
-    wd->window = window_src;
+    wd->window = window;
     wd->unselectedGoogle = wd->unselectedButton[0] = googlebutton;
     wd->unselectedOffline = wd->unselectedButton[1] = offlinebutton;
     wd->unselectedBing = wd->unselectedButton[2] = bingbutton;
@@ -888,6 +944,8 @@ void initObjectFromFile ( WinData *wd ) {
 
     g_signal_connect ( exitbutton, "clicked",
             G_CALLBACK(destroyNormalWin), wd );
+    g_signal_connect ( window, "size-allocate",
+            G_CALLBACK(on_win_size_allocate_cb), wd );
 
     g_signal_connect ( googlebutton, "clicked",
             G_CALLBACK(on_tran_button_clicked_cb), wd);
@@ -1050,8 +1108,8 @@ void *newNormalWindow ( void *data ) {
 
     timeout_id = g_timeout_add(10, focus_request, &wd);
 
-    /* if ( ! wd.quickSearchFlag ) */
-    /*     movewindow_timeout_id = g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd); */
+    if ( ! wd.quickSearchFlag )
+        movewindow_timeout_id = g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd);
 
     loadSelectedButton ( &wd );
 

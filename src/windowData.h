@@ -146,6 +146,8 @@ typedef struct WinData{
 
     gint width;
     gint height;
+    gint previousWidth;
+    gint previousHeight;
 
     gint hadRedirect;
     gint hadShowGoogleResult;
@@ -198,6 +200,10 @@ typedef struct WinData{
     gboolean openSettingWindowAction;
 
     char *shmaddr_setting;
+
+    gint targetx;
+    gint targety;
+    gboolean moveWindowNotify;
 
 }WinData;
 
