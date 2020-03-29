@@ -4,10 +4,10 @@
 #include <assert.h>
 
 extern char audioOnline_en[512];
-extern char audioOnline_uk[512];
+extern char audioOnline_am[512];
 
 extern char audioOffline_en[512];
-extern char audioOffline_uk[512];
+extern char audioOffline_am[512];
 
 extern volatile sig_atomic_t InNewWin;
 
@@ -193,9 +193,9 @@ void clearMemory () {
     memset(&shmaddr_pic[10], '\0', SHMSIZE-10);
 
     memset ( AUDIO_EN(ONLINE), '\0', 512 );
-    memset ( AUDIO_UK(ONLINE), '\0', 512 );
+    memset ( AUDIO_AM(ONLINE), '\0', 512 );
     memset ( AUDIO_EN(OFFLINE), '\0', 512 );
-    memset ( AUDIO_UK(OFFLINE), '\0', 512 );
+    memset ( AUDIO_AM(OFFLINE), '\0', 512 );
 
     clearBaiduMysqlResultMemory();
 
