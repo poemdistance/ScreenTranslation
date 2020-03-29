@@ -9,7 +9,7 @@ OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
 		  keyPressEvent.o quickSearch.o findKeyboardDevice.o\
 		  shortcutListener.o  searchWindow.o tranSelect.o isEmpty.o \
-		  tranPicActionDetect.o memoryControl.o  fitting.o \
+		  tranPicActionDetect.o memoryControl.o\
 		  expanduser.o dataStatistics.o getPointerPosition.o strmask.o\
 		  useful.o configControl.o shmCreate.o
 
