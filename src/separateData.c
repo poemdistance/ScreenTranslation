@@ -13,10 +13,10 @@ extern char **mysql_result[MYSQLSIZE] ;
 extern char *text;
 
 char audioOnline_en[512] = { '\0' };
-char audioOnline_uk[512] = { '\0' };
+char audioOnline_am[512] = { '\0' };
 
 char audioOffline_en[512] = { '\0' };
-char audioOffline_uk[512] = { '\0' };
+char audioOffline_am[512] = { '\0' };
 
 void separateDataForBaidu(int *index, int len, int type) {
 
@@ -74,9 +74,9 @@ void separateDataForBaidu(int *index, int len, int type) {
         /* 提取音频链接*/
         if ( n == 5 ) {
 
+            strcpy ( AUDIO_AM(type), &tmpBuffer[index[i++]] );
+            pbgreen("copy audio:%s", AUDIO_AM(type));
             strcpy ( AUDIO_EN(type), &tmpBuffer[index[i++]] );
-            pbgreen("copy audio:%s", AUDIO_EN(type));
-            strcpy ( AUDIO_UK(type), &tmpBuffer[index[i++]] );
             pbgreen("copy audio:%s", AUDIO_EN(type));
             continue;
         }
