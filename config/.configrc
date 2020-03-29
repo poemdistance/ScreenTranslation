@@ -7,9 +7,9 @@ Play-Audio-Shortcut: SPACE
 Switch-Translation-Source-Shortcut: RETURN
 Translate-Picture-Shortcut: Alt+d
 Open-Setting-Window-Shortcut: SHIFT+CTRL+M
-Recall-Previous-Translation-Shortcut: Disable
-Setting-Window-Height: 702
-Setting-Window-Width: 1092
+Recall-Previous-Translation-Shortcut: ALT+PERIOD
+Setting-Window-Height: 569
+Setting-Window-Width: 921
 Icon-Popup-Offset-X: -13
 Icon-Popup-Offset-Y: -51
 Icon-Absolute-X: 365
