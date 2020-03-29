@@ -7,7 +7,7 @@
 
 ### 2020-3-29更新说明：
 * #### 重新设计了翻译窗口界面，重构并简洁了这部分的代码，窗口不再出现空间无法容纳文本的情况.
-* #### 窗口位置的设置目前无效，待更新.
+* #### 新增依赖 libbsd, 安装详情见后面的编译安装部分
 
 ### 2020-3-11 更新说明：添加任务栏图标，右键图标后选择`Settings`可进入设置窗口，或者通过快捷键Shift+Control+M.
 #### 设置包含：
@@ -116,6 +116,7 @@
           $ sudo apt install  tesseract-ocr libtesseract-dev meson
           $ sudo pip3 install pytesseract tesseract pillow meson
           $ sudo apt install libcanberra-gtk3-0  libcanberra-gtk3-dev  libcanberra-gtk3-module
+          $ sudo apt install libbsd-dev  #03-29新增
 
 
    * For Arch Linux 
@@ -123,6 +124,7 @@
           $  sudo pacman -S gtk3  libxtst libx11  xdotool  python-pip  
           $  sudo pacman -S tesseract meson
           $  sudo pip3 install pytesseract tesseract pillow meson
+          $  sudo pacman -S libbsd #03-29新增
 
           #图像识别相关依赖作者安装太久了，不知道有没有漏掉什么...
 
