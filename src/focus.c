@@ -47,10 +47,5 @@ int focusRequest( SettingWindowData *swd ) {
 
     XCloseDisplay(dpy);
 
-    if ( swd->timeoutid ) {
-        g_source_remove ( swd->timeoutid );
-        swd->timeoutid = 0;
-    }
-
-    return FALSE;
+    return TRUE;
 }
