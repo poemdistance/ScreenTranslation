@@ -4,7 +4,6 @@
 #include "newWindow.h"
 #include "audio.h"
 #include "cleanup.h"
-#include "fitting.h"
 #include "expanduser.h"
 #include "dataStatistics.h"
 #include "memoryControl.h"
@@ -45,16 +44,8 @@ void clearContentListBox ( GtkWidget *listbox  );
 void getPosTran ( char *src, char **pos, char **tran, char split );
 void on_tran_button_clicked_cb ( GtkWidget *button, WinData *wd);
 void reHideWidget ( GtkWidget **widgets, int len );
-gboolean on_motion_notify_event (
-        GtkWidget *widget,
-        GdkEventButton *event,
-        WinData *wd);
-
-GtkWidget *addUnderline ( 
-        GtkWidget *widget,
-        const char *rgb,
-        guint type
-        );
+gboolean on_motion_notify_event ( GtkWidget *widget, GdkEventButton *event, WinData *wd);
+GtkWidget *addUnderline ( GtkWidget *widget, const char *rgb, guint type);
 
 static inline int previousWindow ( int who ) {
     return who > 1 ? who -1 : 3;
@@ -229,7 +220,6 @@ gboolean on_button_release_cb (
         GdkEventButton *event,
         WinData *wd) {
 
-    pyellow("Mouse Release");
     wd->mouseRelease = TRUE;
     wd->beginDrag = FALSE;
     return TRUE;
@@ -796,29 +786,24 @@ void on_icon_press_cb (
     printf("icon press\n");
 }
 gboolean 
-on_phonetic_am_button_clicked_cb ( 
+on_phonetic_button_clicked_cb ( 
         GtkWidget *button, 
-        WinData *win
+        WinData *wd
         ) {
 
-}
+    mp3play ( button, wd );
 
-gboolean 
-on_phonetic_en_button_clicked_cb ( 
-        GtkWidget *button, 
-        WinData *win
-        ) {
-
+    return TRUE;
 }
 
 void initObjectFromFile ( WinData *wd ) {
 
     GtkBuilder *builder = gtk_builder_new_from_file(expanduser("/home/$USER/.stran/sure.ui"));
     GtkWidget *window_src = (GtkWidget*)gtk_builder_get_object ( builder, "root" );
-    GtkWidget *phonetic_en =  (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_en" );
     GtkWidget *audio_button_en =  (GtkWidget*)gtk_builder_get_object ( builder, "audio_button_en" );
-    GtkWidget *phonetic_am =  (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_am" );
     GtkWidget *audio_button_am =  (GtkWidget*)gtk_builder_get_object ( builder, "audio_button_am" );
+    GtkWidget *phonetic_en =  (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_en" );
+    GtkWidget *phonetic_am =  (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_am" );
     GtkWidget *src_label =  (GtkWidget*)gtk_builder_get_object ( builder, "source_label" );
     GtkWidget *box =  (GtkWidget*)gtk_builder_get_object ( builder, "box" );
     GtkWidget *headerbar =  (GtkWidget*)gtk_builder_get_object ( builder, "headerbar" );
@@ -865,11 +850,8 @@ void initObjectFromFile ( WinData *wd ) {
     setWidgetProperties(src_label, 1.2, "#000000", BOLD_TYPE, NOT_TRANSPARENT);
     addUnderline (src_label, "#581880", PANGO_UNDERLINE_LOW);
 
-    setWidgetProperties(phonetic_am, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
     setWidgetProperties(phonetic_en, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
-
-    /* gtk_entry_set_text ( GTK_ENTRY(phonetic_am), "英: [ʃɔː(r)]" ); */
-    /* gtk_entry_set_text ( GTK_ENTRY(phonetic_en), "英: [ʃɔː(r)]" ); */
+    setWidgetProperties(phonetic_am, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
 
     gtk_window_set_default_size(GTK_WINDOW(wd->window), 400, 100);
     gtk_window_set_title(GTK_WINDOW(wd->window), "");
@@ -902,11 +884,11 @@ void initObjectFromFile ( WinData *wd ) {
     g_signal_connect ( src_label, "icon-press",
             G_CALLBACK(on_icon_press_cb), wd );
 
-    g_signal_connect ( phonetic_am, "clicked", 
-            G_CALLBACK(on_phonetic_am_button_clicked_cb), wd );
+    g_signal_connect ( audio_button_am, "clicked", 
+            G_CALLBACK(on_phonetic_button_clicked_cb), wd );
 
-    g_signal_connect ( phonetic_en, "clicked", 
-            G_CALLBACK(on_phonetic_en_button_clicked_cb), wd );
+    g_signal_connect ( audio_button_en, "clicked", 
+            G_CALLBACK(on_phonetic_button_clicked_cb), wd );
 }
 
 void initHeaderBar ( WinData *wd ) {
@@ -1209,13 +1191,9 @@ int reGetBaiduTrans (gpointer *data, int who ) {
     int index[INDEX_SIZE] = { 0 };
     int ret = 0;
     ret = getIndex(index, GET_SHMADDR(who) );
-    if ( ret ) {
-        return ret;
-    }
+    if ( ret ) return ret;
 
-    /* int len = GET_DISPLAY_LINES_NUM ( data, who ) > 15 ? 28 : 28; */
     int len = 30;
-    pbred ( "单行长度=%d", len );
     separateDataForBaidu(index, len, TYPE(who) );
 
     return 0;
@@ -1229,9 +1207,7 @@ int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     {
         int index[2] = { 0 };
         ret = getIndex(index, shmaddr_google);
-        if ( ret ) {
-            return ret;
-        }
+        if ( ret ) return ret;
 
         /* 找到分割符，数据分离提取才有意义*/
         if ( index[0] != 0 )
@@ -1241,15 +1217,9 @@ int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
     }
     else if ( who == BAIDU || who == MYSQL)
     {
-        /*还未获取到结果，应重新获取并设置窗口大小*/
-        //if ( strlen ( ZhTrans(TYPE(who), 0) ) == 0) {
         ret = reGetBaiduTrans ( data, who );
         if ( ret ) return ret;
-        //}
     }
-
-    /* ret = setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who)); */
-    /* if ( ret ) return ret; */
 
     return 0;
 }
@@ -1259,9 +1229,8 @@ static inline int nextWindow ( int who )  {
 }
 
 /* 切换各个翻译结果的显示*/
-int changeDisplay(GtkWidget *button, gpointer *data) {
+int changeDisplay(GtkWidget *button, WinData *wd) {
 
-    WinData *wd = WINDATA(data);
     wd->who = nextWindow((wd->who));
     button = GET_BUTTON ( wd, wd->who );
 
@@ -1316,8 +1285,6 @@ void displayTrans ( WinData *wd, char ***result  ) {
     gtk_label_set_text ( GTK_LABEL(wd->src_label), result[0][0] );
     setWidgetProperties ( wd->src_label, 1.3, "#000000", BOLD_TYPE, NOT_TRANSPARENT );
 
-    /* gtk_entry_set_text ( GTK_ENTRY(wd->phonetic_en), p1 ); */
-    /* gtk_entry_set_text ( GTK_ENTRY(wd->phonetic_am ), p2 ); */
     gtk_label_set_text ( GTK_LABEL(wd->phonetic_en), p1 );
     gtk_label_set_text ( GTK_LABEL(wd->phonetic_am ), p2 );
 
@@ -1418,11 +1385,9 @@ void getPosTran ( char *src, char **pos, char **tran, char split ) {
 
     strncpy ( posbuf, src, p-src+1 );
     posbuf[p-src] = '\0';
-    pbcyan ( "posbuf=%s", posbuf );
 
     *pos = posbuf;
     *tran = p+1;
-    pbcyan ( "tran:%s", *tran );
 }
 
 void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
