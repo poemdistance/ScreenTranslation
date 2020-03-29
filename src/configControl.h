@@ -2,9 +2,9 @@
 #define __CONFIG_CONTROL__
 
 #define SHORTCUT_CONTENT_LEN ( 64 )
-#define MAX_SHORTCUT_NUM ( 20 )
+#define MAX_SHORTCUT_NUM ( 120 )
 #define PREF_CONTENT_LEN ( 64 )
-#define MAX_PREF_NUM ( 20 )
+#define MAX_PREF_NUM ( 120 )
 #define BASE MAX_SHORTCUT_NUM
 
 
@@ -23,6 +23,9 @@ typedef struct ConfigData {
     int switchSourceMask;
     unsigned int switchSourceKeyval;
     int allowAutoAdjust;
+
+    int pointerx;
+    int pointery;
 
 }ConfigData;
 
