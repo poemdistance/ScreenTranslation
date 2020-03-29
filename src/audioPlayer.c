@@ -144,103 +144,6 @@ gboolean mp3play (GtkWidget *button, gpointer *data)
     return TRUE;
 }
 
-GtkWidget* newAudioButton () 
-{
-    GtkWidget *button = gtk_button_new ( );
-    GdkPixbuf *src = gdk_pixbuf_new_from_file ( expanduser("/home/$USER/.stran/audio.png") , NULL);
-    GdkPixbuf *dst = gdk_pixbuf_scale_simple ( src, 20, 20, GDK_INTERP_BILINEAR );
-
-    GtkWidget *image = gtk_image_new_from_pixbuf ( dst );
-
-    g_object_unref ( src );
-    g_object_unref ( dst );
-
-    gtk_button_set_image ( (GtkButton*)button, image );
-
-    return button;
-}
-
-int getAudioButtonPositionX ( int x ) {
-
-    char *file = expanduser("/home/$USER/.stran/"AUDIO_BASE_NAME".func");
-    double a, b, c, d;
-
-    genFitFunc ( AUDIO_BASE_NAME, FITTING_STATUS );
-    if ( notExist ( file ) ) {
-        pbred ( "Fitting function file not found (audioPlayer)" );
-    }
-    getFitFunc ( file, FOR_AUDIO_BUTTON, &a, &b, &c, &d, FITTING_STATUS);
-    return (int)(a * x*x*x  + b * x*x + c *x + d );
-}
-
-int getAudioButtonPositionY ( ) {
-
-#if FITTING_STATUS
-    char *file = expanduser("/home/$USER/.stran/"AUDIO_BASE_NAME".data");
-
-    char awkCmd[] = "awk '{sum+=$3} END {print sum/NR}'";
-    char cmd[1024] = { '\0' };
-    char buf[10] = { '\0' };
-
-    strcat ( cmd, "cat " );
-    strcat ( cmd, file );
-    strcat ( cmd, "|" );
-    strcat ( cmd, awkCmd );
-
-    FILE *fp = popen ( cmd , "r");
-    if ( ! fp ) {
-        pbred ( "Pipe open failed (getAudioButtonPositionY)" );
-    }
-
-    if ( fread ( buf, sizeof( buf ), sizeof(char), fp ) < 0 ) {
-        pbred ( "fread error (getAudioButtonPositionY)" );
-        return 43;
-    }
-
-    int yPostion = 0;
-    sscanf(buf, "%d", &yPostion);
-
-    pclose ( fp );
-
-    return yPostion == 0 ? 40 : yPostion;
-
-#else
-    return 43;
-
-#endif
-}
-
-GtkWidget * insertAudioIcon( GtkWidget *window, GtkWidget *layout, WinData *wd, int type ) 
-{
-    GtkWidget *button = newAudioButton();
-
-    int charNum = countCharNums ( Phonetic(type) );
-    pbgreen("Phonetic charNum = %d", charNum);
-
-
-    int posx = 0;
-
-    /* 三次函数拟合字符长度和按钮位置之间的关系*/
-    posx = getAudioButtonPositionX(charNum);
-    pbgreen("pos.x=%d", posx);
-
-    if ( charNum == 0 ) {
-        pbred("charNum == 0, set posx to (wd->width)-rightBorderOffset");
-        posx = wd->width - RIGHT_BORDER_OFFSET;
-    }
-
-    listenRelativeEvent ( button, wd );
-
-    gtk_layout_put ( (GtkLayout*)layout, button, posx,  getAudioButtonPositionY() );
-    gtk_widget_set_opacity ( button, 0.7 );
-
-    /* 一定要用这句, 不然新建的播放按钮不显示*/
-    /* gtk_widget_show_all ( window ); */
-    gtk_widget_show ( button );
-
-    return button;
-}
-
 void syncAudioBtn ( WinData *wd, int type ) {
 
     /* 含音标，添加播放按钮*/
@@ -255,26 +158,6 @@ void syncAudioBtn ( WinData *wd, int type ) {
 
             mw.audio_offline[0] = audio_en(OFFLINE);
             mw.audio_offline[1] = audio_uk(OFFLINE);
-
-            ((WinData*)wd)->audio = insertAudioIcon(((WinData*)wd)->window, ((WinData*)wd)->layout, ((WinData*)wd), type);
-
-            wd->ox = getAudioButtonPositionX( countCharNums ( Phonetic(type) ) );
-            wd->oy = getAudioButtonPositionY() ;
         }
-        else {
-
-            gtk_layout_move ( GTK_LAYOUT (wd->layout), wd->audio,\
-                    getAudioButtonPositionX( countCharNums ( Phonetic(type) ) ), \
-                    getAudioButtonPositionY() );
-
-            gtk_widget_show ( audio );
-        }
-
     } 
-    else {
-
-        if ( WINDATA(wd)->audio )
-            gtk_widget_hide ( WINDATA(wd)->audio   );
-    }
-
 }
