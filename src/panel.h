@@ -21,12 +21,12 @@ void iconPositionSetting ( SettingWindowData *settingWindow );
 void windowPrefSetting ( SettingWindowData *settingWindow );
 
 
-void on_configure_event_cb ( 
+gboolean on_configure_event_cb ( 
         GtkWindow *window,
         GdkEvent *event,
         SettingWindowData *settingWindowData );
 
-typedef void (*Super)(
+typedef gboolean (*Super)(
         GtkWindow *window,
         GdkEvent *event,
         SettingWindowData *settingWindowData );
