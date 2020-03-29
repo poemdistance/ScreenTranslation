@@ -1,8 +1,5 @@
 #include <gtk/gtk.h>
-
-/* 注意不要频繁调用gtk_widget_queue_draw(),
- * 否则越靠后的重绘指令越有可能不被成功执行*/
-
+#include <ctype.h>
 #include "common.h"
 #include "newWindow.h"
 #include "audio.h"
@@ -14,6 +11,11 @@
 #include "windowData.h"
 #include "pointer.h"
 #include "configControl.h"
+
+#define BOLD_TYPE (1)
+#define NOT_BOLD (0)
+#define TRANSPARENT (0)
+#define NOT_TRANSPARENT (1)
 
 typedef void (*Display_func)(GtkWidget *, gpointer *);
 
@@ -35,6 +37,25 @@ int timeout_id = 0;
 int movewindow_timeout_id = 0;
 static int moveDone = 1;
 
+GtkWidget *setWidgetProperties ( GtkWidget *widget, double fontSizeScale ,
+        const char *rgb, int bold, int alpha);
+GtkWidget *addUnderline ( GtkWidget *widget, const char *rgb, guint type);
+
+void clearContentListBox ( GtkWidget *listbox  );
+void getPosTran ( char *src, char **pos, char **tran, char split );
+void on_tran_button_clicked_cb ( GtkWidget *button, WinData *wd);
+void reHideWidget ( GtkWidget **widgets, int len );
+gboolean on_motion_notify_event (
+        GtkWidget *widget,
+        GdkEventButton *event,
+        WinData *wd);
+
+GtkWidget *addUnderline ( 
+        GtkWidget *widget,
+        const char *rgb,
+        guint type
+        );
+
 static inline int previousWindow ( int who ) {
     return who > 1 ? who -1 : 3;
 }
@@ -46,25 +67,6 @@ static inline Display_func choice_display( int who ) {
               displayOfflineTrans) );
 }
 
-int checkWindowSize ( gpointer *data ) {
-
-    gint cwidth = 0;
-    gint cheight = 0;
-    gint iwidth = WINDATA(data)->width;
-    gint iheight = WINDATA(data)->height;
-    gtk_window_get_size((GtkWindow*)WINDATA(data)->window, &cwidth, &cheight);
-
-    pbred ( "Indicate window size ?= Current window size, %d - %d   %d - %d" , iwidth, iheight, cwidth, cheight);
-
-    if ( iwidth != cwidth || iheight != cheight ) {
-        pbred ( "Indicate window size != Current window size,\
-                %d - %d   %d - %d" , iwidth, iheight, cwidth, cheight);
-        choice_display(WINDATA(data)->who) ( GET_BUTTON (data, WINDATA(data)->who), (void*)data );
-    }
-
-    return 0;
-}
-
 void selectDisplay( WinData *wd ) {
 
     if ( wd->gotBaiduTran )
@@ -74,7 +76,9 @@ void selectDisplay( WinData *wd ) {
     else
         wd->who = GOOGLE;
 
-    choice_display ( wd->who )(GET_BUTTON ( wd, wd->who ), (void*)wd);
+
+    GtkWidget *pressButton = GET_BUTTON ( wd, wd->who );
+    on_tran_button_clicked_cb ( pressButton, wd );
 }
 
 int adjustTargetPosition( 
@@ -86,6 +90,8 @@ int adjustTargetPosition(
     GdkRectangle workarea = { '\0' };
 
     gtk_widget_show_all ( wd->window );
+    reHideWidget(wd->needToBeHiddenWidget, 
+            sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
 
     gdk_monitor_get_workarea(
             gdk_display_get_monitor_at_window ( 
@@ -225,7 +231,29 @@ gboolean on_button_release_cb (
 
     pyellow("Mouse Release");
     wd->mouseRelease = TRUE;
+    wd->beginDrag = FALSE;
     return TRUE;
+}
+
+void setPointerOffset ( WinData *wd ) {
+
+    gint pointerX = 0;
+    gint pointerY = 0;
+    gint invisible_win_width = 0;
+    gint invisible_win_height = 0;
+    gint visible_win_width = 0;
+    gint visible_win_height = 0;
+
+    GdkWindow *win = gtk_widget_get_window ( wd->window );
+    gdk_window_get_pointer ( win, &pointerX, &pointerY, NULL );
+    gdk_window_get_geometry ( win, NULL, NULL,
+            &invisible_win_width, &invisible_win_height );
+    gtk_window_get_size ( GTK_WINDOW(wd->window), 
+            &visible_win_width, &visible_win_height );
+    wd->offsetX = pointerX - ( invisible_win_width-visible_win_width )/2;
+    wd->offsetY = pointerY - ( invisible_win_height-visible_win_height )/2+10;
+
+
 }
 
 gboolean on_button_press_cb ( 
@@ -233,38 +261,71 @@ gboolean on_button_press_cb (
         GdkEventButton *event,
         WinData *wd) {
 
-    if (event->type == GDK_BUTTON_PRESS)
+    pbred ( "Button press:%d %d", event->type, event->state );
+
+    int pointer_x = 0;
+    int pointer_y = 0;
+    int win_width = 0;
+    int win_height = 0;
+    int border_height = 0;
+    int border_width = 0;
+    int invisible_win_width = 0;
+    int invisible_win_height = 0;
+
+    GdkWindow *win = gtk_widget_get_window(wd->window);
+
+    if ( event->type == GDK_2BUTTON_PRESS ) {
+        if ( ! gtk_window_is_maximized ( GTK_WINDOW(wd->window) ) )
+            gtk_window_maximize ( GTK_WINDOW(wd->window) );
+        else
+            gtk_window_unmaximize ( GTK_WINDOW(wd->window) );
+    }
+
+    if (event->type == GDK_BUTTON_PRESS  && event->state == 16 )
     {
-        if (event->button == 1) {
-            gtk_window_begin_move_drag(GTK_WINDOW(gtk_widget_get_toplevel(widget)),
-                    event->button,
-                    event->x_root,
-                    event->y_root,
-                    event->time);
+
+        gdk_window_get_pointer ( win, &pointer_x, &pointer_y, NULL );
+        gtk_window_get_size ( GTK_WINDOW(wd->window), &win_width, &win_height );
+        invisible_win_width = gdk_window_get_width ( win );
+        invisible_win_height = gdk_window_get_height ( win );
+        border_width = (invisible_win_width - win_width)/2 - 5;
+        border_height = (invisible_win_height - win_height)/2 - 5;
+
+        /* 判断鼠标是否位于窗口四周的位置,如果是,则此时是调整窗口尺寸的动作
+         * 不应该进行拖拽,返回false，让信号继续传递*/
+        if ( 
+                pointer_x > border_width+win_width ||
+                pointer_x < border_width ||
+                pointer_y > border_height+win_height ||
+                pointer_y < border_height
+
+           ) {
+            pgreen ( "不满足条件，不进行拖拽" );
+            return FALSE;
         }
-        if ( event->button == 3 ) {
-            gtk_window_begin_resize_drag (GTK_WINDOW (gtk_widget_get_toplevel (widget)), 
-                    GDK_WINDOW_EDGE_EAST,
-                    event->button, event->x_root, event->y_root,
-                    event->time);
-        }
+
+        setPointerOffset ( wd );
+        wd->beginDrag = TRUE;
+        on_motion_notify_event ( widget, event, wd );
     }
 
     wd->mousePress = TRUE;
-    return TRUE;
+    return FALSE;
 }
 
 int detect_outside_click_action ( void *data ) {
 
     WinData *wd = data;
+    ConfigData *cd = WINDATA(data)->cd;
+    GtkAllocation alloc;
+    static gboolean block = FALSE;
 
     if ( moveDone || wd->quickSearchFlag ) {
         gtk_widget_show_all ( wd->window );
+        reHideWidget(wd->needToBeHiddenWidget, 
+                sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
         focusOurWindow(wd);
     }
-
-    ConfigData *cd = WINDATA(data)->cd;
-    static gboolean block = FALSE;
 
     if ( ! action ){ return TRUE; } 
 
@@ -293,18 +354,31 @@ int detect_outside_click_action ( void *data ) {
 
 
     gtk_window_get_position ( 
-            GTK_WINDOW(WINDATA(data)->window), &wx, &wy);
+            GTK_WINDOW(wd->window), &wx, &wy);
 
-#if 1
+    GdkWindow *win = gtk_widget_get_window(wd->window);
 
-    GdkWindow *win = gtk_widget_get_window(WINDATA(data)->window);
+    /* On the X11 platform the returned size is the size 
+     * reported in the most-recently-processed configure event,
+     * rather than the current size on the X server. 
+     * 
+     * 由于以上的原因,
+     * 如果将以下两行代码放到configure-event的回调函数中，获得的
+     * 窗口尺寸是包含了不可见边框的
+     * */
     gint w = gdk_window_get_width(win);
     gint h = gdk_window_get_height(win);
+
     gint pointerX = 0;
     gint pointerY = 0;
-    gtk_window_get_size ( GTK_WINDOW(WINDATA(data)->window), &w, &h );
+    gtk_window_get_size ( GTK_WINDOW(wd->window), &w, &h );
 
     getPointerPosition ( &pointerX, &pointerY );
+
+    if ( !cd->hideHeaderBar ) {
+        gtk_widget_get_allocation ( wd->headerbar, &alloc );
+        h += alloc.height;
+    }
 
     condition = 
         pointerX >= wx && pointerX <= wx+w &&
@@ -315,25 +389,9 @@ int detect_outside_click_action ( void *data ) {
     if ( condition && mouseNotRelease )
         block = TRUE;
 
-#endif
-
-#if 0
-    /* 这段代码会导致拖动翻译窗口的时候误关*/
-
-    getFocusWinPos( &focusWinX, &focusWinY );
-
-    /* 如果当前聚焦窗口坐标跟翻译窗口不同，则关闭翻译窗口
-     * 有很小几率聚焦的窗口不是翻译窗口但是坐标又相同
-     * 这里不予考虑*/
-    condition2 = 
-        wx == focusWinX && wy == focusWinY;
-
-#endif
-
-    /* if ( ! condition && ! condition2 ) */
-    if ( ! condition ) {
+    if ( 0 && ! condition ) {
         pbmag ( "区域外点击销毁窗口" );
-        destroyNormalWin ( NULL, WINDATA(data) );
+        destroyNormalWin ( NULL, wd );
         return FALSE;
     }
 
@@ -363,6 +421,324 @@ int focus_request(void *data) {
     return TRUE;
 }
 
+void addToHiddenArray( GtkWidget *widget, WinData *wd ) {
+
+    for ( int i=0; i<sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*); i++ ) {
+
+        if ( wd->needToBeHiddenWidget[i] == widget ) 
+            return;
+
+        if ( ! wd->needToBeHiddenWidget[i] ) {
+            wd->needToBeHiddenWidget[i] = widget;
+            return;
+        }
+    }
+}
+
+void dropFromHiddenArray ( GtkWidget *widget, WinData *wd ) {
+
+    int found = 0;
+    int i = 0;
+    int k = 0;
+
+    for ( i=0; i<sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*); i++ ) {
+
+        if ( wd->needToBeHiddenWidget[i] == widget ) {
+            found = 1;
+            wd->needToBeHiddenWidget[i] = (void*)-1;
+            break;
+        }
+    }
+    if ( ! found ) return;
+
+    for ( i=0, k=0; i<sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*); i++ ) {
+
+        if ( wd->needToBeHiddenWidget[i] != (void*)-1 ) {
+            wd->needToBeHiddenWidget[k++] = wd->needToBeHiddenWidget[i];
+            continue;
+        }
+
+        if ( !wd->needToBeHiddenWidget[i] ) break;
+    }
+
+    wd->needToBeHiddenWidget[i-1] = NULL;
+}
+
+void reHideWidget ( GtkWidget **widgets, int len ) {
+
+    int i=0;
+    for ( i=0; i<len && widgets[i]; i++ )
+        gtk_widget_hide ( widgets[i] );
+}
+
+void on_pin_button_clicked_cb (
+        GtkWidget *button,
+        WinData *wd
+        ) {
+
+    static int mode = -1;
+    if ( mode ) {
+        gtk_widget_show ( wd->selectedPin );
+        dropFromHiddenArray( wd->selectedPin, wd );
+    }
+    else {
+        gtk_widget_show ( wd->unselectedPin );
+        dropFromHiddenArray(wd->unselectedPin, wd);
+    }
+
+    gtk_widget_hide ( button );
+    addToHiddenArray ( button, wd );
+
+    mode = ~mode;
+}
+
+int getIdByButton ( WinData *wd, GtkWidget *button ) {
+
+    if ( button == wd->baiduButton || button == wd->selectedBing )
+        return BAIDU;
+    else if ( button == wd->mysqlButton || button == wd->selectedOffline )
+        return OFFLINE;
+    else if ( button == wd->googleButton || button == wd->selectedGoogle )
+        return GOOGLE;
+
+    return -1;
+}
+
+/* 点击翻译源等按钮时更换显示的图片以指示当前
+ * 点击的按钮和所在页面(点击后更换为左下角有点
+ * 的图片)*/
+void on_tran_button_clicked_cb (
+
+        GtkWidget *button,
+        WinData *wd) {
+
+    int i = 0;
+    int found = 0;
+    for ( i=0; i<sizeof(wd->unselectedButton)/sizeof(GtkWidget*); i++ ) {
+        if ( wd->unselectedButton[i] == wd->unselectedPin ) continue;
+        if ( button == wd->unselectedButton[i] ) {
+            found = 1; break;
+        }
+    }
+
+    for ( i=0; found && i<sizeof(wd->unselectedButton)/sizeof(GtkWidget*); i++ ) {
+
+        if ( wd->unselectedButton[i] == wd->unselectedPin ) continue;
+
+        if ( button == wd->unselectedButton[i] ) {
+
+            gtk_widget_show ( wd->selectedButton[i] );
+            gtk_widget_hide ( wd->unselectedButton[i] );
+
+            dropFromHiddenArray(wd->selectedButton[i], wd);
+            addToHiddenArray(wd->unselectedButton[i], wd);
+
+            continue;
+        }
+        gtk_widget_show ( wd->unselectedButton[i] );
+        gtk_widget_hide ( wd->selectedButton[i] );
+
+        dropFromHiddenArray(wd->unselectedButton[i], wd);
+        addToHiddenArray(wd->selectedButton[i], wd);
+    }
+
+    Display_func func = choice_display ( getIdByButton(wd,button) );
+    func ( button, (void*)wd );
+}
+
+
+void loadSelectedButton( WinData *wd ) {
+
+    GtkWidget *googleButtonSelected;
+    GtkWidget *bingButtonSelected;
+    GtkWidget *offlineButtonSelected;
+    GtkWidget *pinButtonSelected;
+
+    GtkBuilder *builder = gtk_builder_new_from_file(expanduser("/home/$USER/.stran/sure.ui"));
+
+    googleButtonSelected =
+        (GtkWidget*)gtk_builder_get_object(GTK_BUILDER(builder), "google_button_selected");
+    bingButtonSelected =
+        (GtkWidget*)gtk_builder_get_object(GTK_BUILDER(builder), "bing_button_selected");
+    offlineButtonSelected =
+        (GtkWidget*)gtk_builder_get_object(GTK_BUILDER(builder), "offline_button_selected");;
+    pinButtonSelected = 
+        (GtkWidget*)gtk_builder_get_object(GTK_BUILDER(builder), "pin_button_selected");;
+
+    wd->selectedGoogle = wd->selectedButton[0] = googleButtonSelected;
+    wd->selectedOffline = wd->selectedButton[1] = offlineButtonSelected;
+    wd->selectedBing = wd->selectedButton[2] = bingButtonSelected;
+    wd->selectedPin = wd->selectedButton[3] = pinButtonSelected;
+
+    gtk_grid_attach ( GTK_GRID(wd->ctrl_grid), googleButtonSelected, 2, 0, 1, 1 );
+    gtk_grid_attach ( GTK_GRID(wd->ctrl_grid), offlineButtonSelected, 3, 0, 1, 1 );
+    gtk_grid_attach ( GTK_GRID(wd->ctrl_grid), bingButtonSelected, 4, 0, 1, 1 );
+    gtk_grid_attach ( GTK_GRID(wd->ctrl_grid), pinButtonSelected, 5, 0, 1, 1 );
+
+    /* 上面按钮放置的位置跟初始加载到界面上的按钮是重合的, 所以需要进行
+     * 隐藏，否则按钮无法点击*/
+    for ( int i=0; i<sizeof(wd->selectedButton)/sizeof(GtkWidget*) && wd->selectedButton[i]; i++ )
+        gtk_widget_hide ( wd->selectedButton[i] );
+
+    g_signal_connect ( pinButtonSelected, "clicked", 
+            G_CALLBACK(on_pin_button_clicked_cb), wd );
+
+    for ( int i=0; i<3; i++ )
+        g_signal_connect ( wd->selectedButton[i], "clicked", 
+                G_CALLBACK(on_tran_button_clicked_cb), wd );
+}
+
+void disable_row_selectable_activatable ( GtkWidget *listbox ) {
+
+    inline void disable_selectable_activatable( GtkWidget *widget, gpointer data ) {
+        gtk_list_box_row_set_selectable ( GTK_LIST_BOX_ROW(widget), FALSE );
+        gtk_list_box_row_set_activatable ( GTK_LIST_BOX_ROW(widget), FALSE );
+    }
+
+    gtk_container_forall ( 
+            GTK_CONTAINER(listbox),
+            disable_selectable_activatable,
+            NULL
+            );
+}
+
+int noContentLeft ( char *str ) {
+
+    if ( !str ) return 1;
+
+    char *p = str;
+    while ( *p && ( *p == '\t' || *p == ' ' || *p == '\n' ) ) p++;
+
+    if ( *p != '\0' )
+        return 0;
+
+    return 1;
+}
+
+gboolean on_content_button_enter_cb (
+        GtkWidget *button,
+        GdkEventKey *event,
+        WinData *wd
+        ) {
+
+    return TRUE;
+}
+gboolean on_content_button_leave_cb (
+        GtkWidget *button,
+        WinData *wd
+        ) {
+
+    return FALSE;
+}
+gboolean on_content_button_release_cb (
+        GtkWidget *button,
+        GdkEventKey *event,
+        WinData *wd
+        ) {
+
+    wd->beginDrag = FALSE;
+    return FALSE;
+}
+
+gboolean on_content_button_press_cb (
+        GtkWidget *button,
+        GdkEventKey *event,
+        WinData *wd
+        ) {
+
+    wd->beginDrag = TRUE;
+    setPointerOffset ( wd );
+    return TRUE;
+
+
+    /* int x, y; */
+    /* gdk_window_get_position ( win, &x, &y ); */
+    /* pred ( "1：%d %d", x, y ); */
+    /* gdk_window_get_position ( win, &x, &y ); */
+    /* pred ( "2：%d %d", x, y ); */
+    /* gdk_window_get_origin ( win, &x, &y ); */
+    /* pred ( "3：%d %d", x, y ); */
+}
+
+void appendTranToItemListBox ( 
+        GtkWidget *item_listbox,
+        gchar *tran,
+        gchar *color,
+        WinData *wd ) {
+
+    gchar *p = tran;
+    gchar *s = tran;
+
+    void append ( GtkWidget *item_listbox, gchar *tran, gchar *color, WinData *wd ) {
+
+        GtkWidget *label = NULL;
+        gint INSERT_END = -1;
+        label = gtk_label_new ( NULL );
+        addUnderline ( label, "#00aaff" , PANGO_UNDERLINE_LOW );
+        setWidgetProperties ( label, 1.1, color, BOLD_TYPE, NOT_TRANSPARENT );
+        gtk_label_set_text ( GTK_LABEL(label), tran );
+        gtk_list_box_insert ( GTK_LIST_BOX(item_listbox), label, INSERT_END );
+        gtk_widget_set_halign ( label, GTK_ALIGN_START );
+        gtk_widget_set_valign ( label, GTK_ALIGN_FILL );
+    }
+
+
+    while ( 0 ) {
+        p = strchr ( s, '\n' );
+        if ( !p || noContentLeft(p) ) break;
+        *p = '\0';
+        append ( item_listbox, s, color, wd );
+        s = p+1;
+    }
+
+    /* 去除最末尾的所有可能存在的回车符*/
+    p = s;
+    while ( *(p+1) ) p++;
+    while ( p!=tran && (isblank(*p) || *p == '\n') ) *p--='\0';
+
+    append ( item_listbox, s, color,  wd );
+}
+
+void insertTextContentBox (  gchar *pos, gchar *tran, WinData *wd, gchar *color  ) {
+
+    GtkBuilder *builder = NULL;
+    GtkWidget *item_box = NULL;
+    GtkWidget *item_label = NULL;
+    GtkWidget *item_listbox = NULL;
+    gint INSERT_END = -1;
+
+    builder = gtk_builder_new_from_file ( expanduser("/home/$USER/.stran/sure.ui") );
+    item_box = (GtkWidget*)gtk_builder_get_object ( builder, "item_box" );
+    item_label = (GtkWidget*)gtk_builder_get_object ( builder, "item_label" );
+    item_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "item_listbox" );
+
+    gtk_label_set_text ( GTK_LABEL(item_label), pos );
+    setWidgetProperties ( item_label,  1.1, color,  BOLD_TYPE, NOT_TRANSPARENT );
+
+    /* gtk_widget_override_background_color ( item_label, 0, &wd->rgba ); */
+    /* gtk_entry_set_has_frame ( GTK_ENTRY(item_label), FALSE ); */
+
+    gtk_list_box_insert ( GTK_LIST_BOX(wd->content_listbox), item_box, INSERT_END );
+
+    appendTranToItemListBox ( item_listbox, tran, color, wd );
+
+    static int i = 0;
+    gtk_widget_set_size_request ( wd->window, 1, i++ ); /* 触发窗口重新调整大小*/
+    gtk_widget_show_all ( wd->window );
+    reHideWidget(wd->needToBeHiddenWidget, 
+            sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
+
+    disable_row_selectable_activatable ( wd->content_listbox );
+    disable_row_selectable_activatable ( item_listbox );
+}
+
+void on_calibration_button_clicked_cb (
+        GtkWidget *button,
+        WinData *wd
+        ) {
+}
+
+
 int dataInit(WinData *wd) {
 
     /*Important: Pay attention to clear the values the global variables*/
@@ -372,27 +748,37 @@ int dataInit(WinData *wd) {
 
     wd->bw = &bw; wd->gw = &gw; wd->mw = &mw;
 
-    wd->image =  NULL;
-    wd->oldImage = NULL;
-    wd->srcBackgroundImage = NULL;
     wd->gdkwin = NULL;
     wd->width = 400;
     wd->height = 100;
     wd->hadRedirect = 0;
-    wd->forceResize = 0;
     wd->calibrationButton = NULL;
-
-    wd->drag = 0;
-    wd->press = 0;
-    wd->enter = 0;
-    wd->ox = wd->oy = 0;
-    wd->cx = wd->cy = 0;
 
     wd->quickSearchFlag = FALSE;
     wd->mousePress = FALSE;
     wd->mouseRelease = FALSE;
 
     moveDone = 0;
+
+    memset ( wd->unselectedButton, '\0', sizeof(wd->unselectedButton) );
+    memset ( wd->selectedButton, '\0', sizeof(wd->selectedButton) );
+    memset ( wd->needToBeHiddenWidget, '\0', sizeof(wd->needToBeHiddenWidget) );
+
+    focustimes = 1;
+    InNewWin = 1;
+
+    /* 窗口打开标志位 changed in captureShortcutEvent.c <变量shmaddr>*/
+    shmaddr_keyboard[WINDOW_OPENED_FLAG] = '1';
+
+    wd->gotOfflineTran = 0;
+    wd->specific = 0;
+
+    wd->tran_max_len = 0;
+
+    char *shmaddr_setting = NULL;
+    shared_memory_for_setting ( &shmaddr_setting );
+
+    wd->shmaddr_setting = shmaddr_setting;
 
     return 0;
 }
@@ -403,110 +789,218 @@ void makeSegmentationFault (  ) {
         buf[9] = '0';
 }
 
+void on_icon_press_cb ( 
+        GtkWidget *widget,
+        gpointer data
+        ) {
+    printf("icon press\n");
+}
+
+void initObjectFromFile ( WinData *wd ) {
+
+    GtkBuilder *builder = gtk_builder_new_from_file(expanduser("/home/$USER/.stran/sure.ui"));
+    GtkWidget *window_src = (GtkWidget*)gtk_builder_get_object ( builder, "root" );
+    GtkWidget *phonetic_en =  (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_en" );
+    GtkWidget *audio_button_en =  (GtkWidget*)gtk_builder_get_object ( builder, "audio_button_en" );
+    GtkWidget *phonetic_am =  (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_am" );
+    GtkWidget *audio_button_am =  (GtkWidget*)gtk_builder_get_object ( builder, "audio_button_am" );
+    GtkWidget *src_label =  (GtkWidget*)gtk_builder_get_object ( builder, "source_label" );
+    GtkWidget *box =  (GtkWidget*)gtk_builder_get_object ( builder, "box" );
+    GtkWidget *headerbar =  (GtkWidget*)gtk_builder_get_object ( builder, "headerbar" );
+    GtkWidget *phon_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_listbox" );
+    GtkWidget *ctrl_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "control_listbox" );
+    GtkWidget *ctrl_grid_src = (GtkWidget*)gtk_builder_get_object ( builder, "control_grid" );
+    GtkWidget *content_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "content_listbox" );
+    GtkWidget *content_box = (GtkWidget*)gtk_builder_get_object ( builder, "content_box" );
+    GtkWidget *calibrationButton = (GtkWidget*)gtk_builder_get_object ( builder, "calibration_button" );
+    GtkWidget *exitbutton = (GtkWidget*)gtk_builder_get_object ( builder, "exit_button" );
+    GtkWidget *pinbutton = (GtkWidget*)gtk_builder_get_object ( builder, "pin_button" );
+    GtkWidget *bingbutton = (GtkWidget*)gtk_builder_get_object ( builder, "bing_button" );
+    GtkWidget *offlinebutton = (GtkWidget*)gtk_builder_get_object ( builder, "offline_button" );
+    GtkWidget *googlebutton = (GtkWidget*)gtk_builder_get_object ( builder, "google_button" );
+    GtkWidget *setting_button = (GtkWidget*)gtk_builder_get_object ( builder, "setting_button" );
+    GtkWidget *src_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "src_listbox" );
+
+    wd->window = window_src;
+    wd->unselectedGoogle = wd->unselectedButton[0] = googlebutton;
+    wd->unselectedOffline = wd->unselectedButton[1] = offlinebutton;
+    wd->unselectedBing = wd->unselectedButton[2] = bingbutton;
+    wd->unselectedPin = wd->unselectedButton[3] = pinbutton;
+    wd->unselectedPin = pinbutton;
+    wd->headerbar = headerbar;
+    wd->ctrl_grid = ctrl_grid_src;
+    wd->setting_button = setting_button;
+    wd->content_listbox = content_listbox;
+    wd->googleButton = googlebutton;
+    wd->baiduButton = bingbutton;
+    wd->mysqlButton = offlinebutton;
+    wd->src_label = src_label;
+    wd->audio_button_am = audio_button_am;
+    wd->audio_button_en = audio_button_en;
+    wd->phonetic_en = phonetic_en;
+    wd->phonetic_am = phonetic_am;
+    wd->phon_listbox = phon_listbox;
+    wd->box = box;
+    wd->ctrl_listbox = ctrl_listbox;
+    wd->content_box = content_box;
+    wd->src_listbox = src_listbox;
+    wd->exitButton = exitbutton;
+    wd->calibrationButton = calibrationButton;
+
+    setWidgetProperties(src_label, 1.2, "#000000", BOLD_TYPE, NOT_TRANSPARENT);
+    addUnderline (src_label, "#581880", PANGO_UNDERLINE_LOW);
+
+    setWidgetProperties(phonetic_am, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
+    setWidgetProperties(phonetic_en, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
+
+    /* gtk_entry_set_text ( GTK_ENTRY(phonetic_am), "英: [ʃɔː(r)]" ); */
+    /* gtk_entry_set_text ( GTK_ENTRY(phonetic_en), "英: [ʃɔː(r)]" ); */
+
+    gtk_window_set_default_size(GTK_WINDOW(wd->window), 400, 100);
+    gtk_window_set_title(GTK_WINDOW(wd->window), "");
+
+    g_signal_connect(G_OBJECT(wd->window), "destroy", \
+            G_CALLBACK(destroyNormalWin), wd);
+
+    g_signal_connect(G_OBJECT(wd->window), "key-press-event", \
+            G_CALLBACK(on_key_press_cb), wd);
+
+    /* g_signal_connect(G_OBJECT(wd->window), "configure-event", \ */
+    /* G_CALLBACK(syncNormalWinForConfigEvent), wd); */
+
+    g_signal_connect ( calibrationButton, "clicked",
+            G_CALLBACK(on_calibration_button_clicked_cb), wd );
+
+    g_signal_connect ( exitbutton, "clicked",
+            G_CALLBACK(destroyNormalWin), wd );
+
+    g_signal_connect ( googlebutton, "clicked",
+            G_CALLBACK(on_tran_button_clicked_cb), wd);
+    g_signal_connect ( bingbutton, "clicked",
+            G_CALLBACK(on_tran_button_clicked_cb), wd);
+    g_signal_connect ( offlinebutton, "clicked",
+            G_CALLBACK(on_tran_button_clicked_cb), wd);
+
+    g_signal_connect ( pinbutton, "clicked",
+            G_CALLBACK(on_pin_button_clicked_cb), wd);
+
+    g_signal_connect ( src_label, "icon-press",
+            G_CALLBACK(on_icon_press_cb), wd );
+}
+
+void initHeaderBar ( WinData *wd ) {
+
+    gtk_window_set_titlebar ( GTK_WINDOW(wd->window), wd->headerbar );
+    gtk_header_bar_set_show_close_button ( GTK_HEADER_BAR(wd->headerbar), TRUE );
+}
+
+void on_setting_button_clicked_cb (
+        GtkWidget *button,
+        WinData *wd
+        ) {
+
+    wd->shmaddr_setting[0] = '1';
+}
+
+void initSettingButton ( WinData *wd ) {
+
+
+    g_signal_connect ( wd->setting_button, "clicked", 
+            G_CALLBACK(on_setting_button_clicked_cb), wd );
+
+    gtk_widget_show ( wd->setting_button );
+}
+
+void setBackground( WinData *wd ) {
+
+    GdkRGBA rgba;
+    gdk_rgba_parse ( &rgba, "#fafafa" );
+    wd->rgba = rgba;
+    gtk_widget_override_background_color ( wd->box, 0, &rgba );
+    gtk_widget_override_background_color ( wd->window, 0, &rgba );
+    gtk_widget_override_background_color ( wd->src_label, 0, &rgba );
+    gtk_widget_override_background_color ( wd->phonetic_en, 0, &rgba );
+    gtk_widget_override_background_color ( wd->phonetic_am, 0, &rgba );
+    gtk_widget_override_background_color ( wd->src_listbox, 0, &rgba );
+    gtk_widget_override_background_color ( wd->item_label, 0, &rgba );
+    gtk_widget_override_background_color ( wd->phon_listbox, 0, &rgba );
+    gtk_widget_override_background_color ( wd->ctrl_listbox, 0, &rgba );
+    gtk_widget_override_background_color ( wd->content_listbox, 0, &rgba );
+    gtk_widget_override_background_color ( wd->selectedPin, 0, &rgba );
+    gtk_widget_override_background_color ( wd->unselectedPin, 0, &rgba );
+    gtk_widget_override_background_color ( wd->unselectedBing, 0, &rgba );
+    gtk_widget_override_background_color ( wd->selectedBing, 0, &rgba );
+    gtk_widget_override_background_color ( wd->selectedGoogle, 0, &rgba );
+    gtk_widget_override_background_color ( wd->unselectedGoogle, 0, &rgba );
+    gtk_widget_override_background_color ( wd->unselectedOffline, 0, &rgba );
+    gtk_widget_override_background_color ( wd->selectedOffline, 0, &rgba );
+    gtk_widget_override_background_color ( wd->exitButton, 0, &rgba );
+    gtk_widget_override_background_color ( wd->calibrationButton, 0, &rgba );
+    gtk_widget_override_background_color ( wd->audio_button_am, 0, &rgba );
+    gtk_widget_override_background_color ( wd->audio_button_en, 0, &rgba );
+}
+
+gboolean 
+on_motion_notify_event (
+        GtkWidget *widget,
+        GdkEventButton *event,
+        WinData *wd) {
+    printf("motion\n");
+
+    gint targetX = event->x_root - wd->offsetX;
+    gint targetY = event->y_root - wd->offsetY;
+
+    gint pointerX = 0;
+    gint pointerY = 0;
+
+    GdkWindow *win = gtk_widget_get_window ( wd->window );
+    gdk_window_get_pointer ( win, &pointerX, &pointerY, NULL );
+
+    if ( wd->beginDrag )
+        gtk_window_move ( GTK_WINDOW(wd->window), targetX, targetY );
+
+    return TRUE;
+}
 
 /*新建翻译结果窗口, 本文件入口函数*/
 void *newNormalWindow ( void *data ) {
 
-    pbred ( "启动Normal Win" );
-
     /* makeSegmentationFault(); */
 
-    WinData wd;
     ConfigData *cd = data;
+    static WinData wd;
     wd.cd = cd;
 
     dataInit(&wd);
 
-    focustimes = 1;
-    InNewWin = 1;
-
-    /* 窗口打开标志位 changed in captureShortcutEvent.c <变量shmaddr>*/
-    shmaddr_keyboard[WINDOW_OPENED_FLAG] = '1';
-
-    wd.gotOfflineTran = 0;
-    wd.specific = 0;
-
     int ret = waitForContinue( &wd );
 
-    if (ret ) {
+    if ( ret ) {
         InNewWin = 0;
         return (void*)0;
     }
 
-    /*新建并设置窗口基本属性*/
     gtk_init(NULL, NULL);
 
-    GtkWidget *newWin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_keep_above(GTK_WINDOW(newWin), TRUE);
-    gtk_window_set_title(GTK_WINDOW(newWin), "");
-    gtk_window_set_accept_focus ( GTK_WINDOW(newWin), TRUE );
-    gtk_widget_set_can_focus(newWin, TRUE);
+    initObjectFromFile(&wd);
+    initHeaderBar(&wd);
+    initSettingButton(&wd);
+    /* setBackground( &wd ); */
 
-    /* quickSearch快捷键标志位, changed in captureShortcutEvent.c <变量shmaddr>*/
+    /* quickSearch快捷键标志位, 在shortcutListener中置位*/
     if ( shmaddr_keyboard[QUICK_SEARCH_NOTIFY] == '1') {
-        shmaddr_keyboard[QUICK_SEARCH_NOTIFY] = '0';
 
-        /* 快捷键调出的窗口放置于中央*/
-        gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_CENTER);
+        shmaddr_keyboard[QUICK_SEARCH_NOTIFY] = '0';
+        gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_CENTER);
         wd.quickSearchFlag = TRUE;
     }
-    else
-        /* 取词翻译的窗口跟随鼠标*/
-        gtk_window_set_position(GTK_WINDOW(newWin), GTK_WIN_POS_MOUSE);
+    else 
+    {
+        gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_MOUSE);
+    }
 
-    g_signal_connect(newWin, "destroy", G_CALLBACK(destroyNormalWin), &wd);
-
-    /*创建layout用于显示背景图片,以及放置文本*/
-    GtkWidget * layout = gtk_layout_new(NULL, NULL);
-
-    /*创建scrolled window*/
-    GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
-
-    /*建立文字显示区域*/
-    GtkWidget *view;
-    GtkTextBuffer *buf;
-    GtkTextIter iter;
-
-    /* 隐藏文字区域的光标并关闭可编辑属性*/
-    view = gtk_text_view_new();
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
-    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
-    buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
-    gtk_text_view_set_buffer((GtkTextView*)view, buf);
-    setFontProperties(buf, &iter);
-
-    /*设置离左边以及顶部的距离*/
-    gtk_text_view_set_left_margin ( (GtkTextView*)view, 10 );
-    gtk_text_view_set_top_margin ( (GtkTextView*)view, 10 );
-
-    /* window->layout->scroll->view*/
-    gtk_container_add (GTK_CONTAINER(scroll), view);
-    gtk_container_add (GTK_CONTAINER(layout), scroll);
-    gtk_container_add (GTK_CONTAINER(newWin), layout);
-
-    wd.view = view;
-    wd.window = newWin;
-    wd.layout = layout;
-
-    wd.buf = buf;
-    wd.iter = &iter;
-    wd.audio = NULL;
-    wd.scroll = scroll;
-
-    /* 监听键盘事件的回调函数*/
-    g_signal_connect ( newWin, "key-press-event",
-            G_CALLBACK(on_key_press_cb), (void*)&wd );
-
-    wd.image = syncImageSize ( newWin, wd.width, wd.height, (void*)&wd );
-
-    if ( cd->hideHeaderBar )
-        gtk_window_set_decorated ( GTK_WINDOW(newWin), FALSE );
-
-    /* 插入退出按钮*/
-    wd.exitButton = gtk_button_new_with_label ( "Exit" );
-    gtk_layout_put ( GTK_LAYOUT(layout),
-            wd.exitButton, bw.width-RIGHT_BORDER_OFFSET*6, bw.height-BOTTOM_OFFSET );
-    g_signal_connect ( wd.exitButton, "clicked", G_CALLBACK(destroyNormalWin), &wd );
+    /* if ( cd->hideHeaderBar ) */
+    /*     gtk_window_set_decorated ( GTK_WINDOW(wd.window), FALSE ); */
 
     /* printDebugInfo(); */
 
@@ -515,63 +1009,29 @@ void *newNormalWindow ( void *data ) {
     initMemoryMysql();
     initMemoryTmp();
 
-    gtk_window_set_default_size (GTK_WINDOW(newWin), bw.width, bw.height);
-    gtk_widget_set_size_request ( layout, bw.width, bw.height );
-    gtk_widget_set_size_request (scroll, bw.width, bw.height);
-
     if ( google_result[0] == NULL )
         initMemoryGoogle();
 
-    /* 百度(必应)翻译结果显示按钮*/
-    GtkWidget *baiduButton = newBaiduButton( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), baiduButton,
-            bw.width-RIGHT_BORDER_OFFSET, bw.height-BOTTOM_OFFSET );
-    g_signal_connect(baiduButton, "clicked",
-            G_CALLBACK(displayBaiduTrans), &wd);
-
-    /* 谷歌翻译结果显示按钮*/
-    GtkWidget *googleButton = newGoogleButton ( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), googleButton,
-            bw.width-RIGHT_BORDER_OFFSET*2, bw.height-BOTTOM_OFFSET );
-    g_signal_connect ( googleButton, "clicked",
-            G_CALLBACK(displayGoogleTrans), &wd );
-
-    /* 离线翻译结果切换按钮*/
-    GtkWidget *mysqlButton = newOfflineButton ( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), mysqlButton,
-            bw.width-RIGHT_BORDER_OFFSET*3, bw.height-BOTTOM_OFFSET );
-    g_signal_connect ( mysqlButton, "clicked",
-            G_CALLBACK(displayOfflineTrans), &wd );
-
-    /* 校准按钮*/
-    insertCalibrationButton(&wd);
-
-    /* 指示当前翻译所属*/
-    wd.indicateButton = newIndicateButton ( &wd );
-    gtk_layout_put ( GTK_LAYOUT(layout), wd.indicateButton,
-            bw.width-RIGHT_BORDER_OFFSET, bw.height-INDICATE_OFFSET );
-
-    /*捕获resize window信号, 进行显示调整*/
-    g_signal_connect (newWin, "configure-event", 
-            G_CALLBACK(syncNormalWinForConfigEvent), &wd);
-    g_signal_connect (newWin, "button-press-event", 
+    g_signal_connect (wd.window, "button-press-event", 
             G_CALLBACK(on_button_press_cb), &wd);
-    g_signal_connect (newWin, "button-release-event", 
+    g_signal_connect (wd.window, "button-release-event", 
             G_CALLBACK(on_button_release_cb), &wd);
-
+    g_signal_connect ( wd.window, "motion-notify-event", 
+            G_CALLBACK(on_motion_notify_event ), &wd );
 
     timeout_id = g_timeout_add(10, focus_request, &wd);
 
-    if ( ! wd.quickSearchFlag )
-        movewindow_timeout_id = 
-            g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd);
+    /* if ( ! wd.quickSearchFlag ) */
+    /*     movewindow_timeout_id = g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd); */
+
+    loadSelectedButton ( &wd );
+
+    if ( cd->hideHeaderBar )
+        addToHiddenArray ( wd.headerbar, &wd );
 
     selectDisplay ( &wd );
 
     gtk_main();
-
-    InNewWin = 0;
-    shmaddr_keyboard[WINDOW_OPENED_FLAG] = '0';
 
     pthread_exit(NULL);
 }
@@ -733,7 +1193,8 @@ int reGetBaiduTrans (gpointer *data, int who ) {
         return ret;
     }
 
-    int len = GET_DISPLAY_LINES_NUM ( data, who ) > 15 ? 28 : 28;
+    /* int len = GET_DISPLAY_LINES_NUM ( data, who ) > 15 ? 28 : 28; */
+    int len = 30;
     pbred ( "单行长度=%d", len );
     separateDataForBaidu(index, len, TYPE(who) );
 
@@ -754,7 +1215,7 @@ int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
 
         /* 找到分割符，数据分离提取才有意义*/
         if ( index[0] != 0 )
-            separateGoogleData ( index );
+            separateGoogleData ( index, 28 );
         else
             pred("未找到分隔符(adjustWinSize)");
     }
@@ -767,8 +1228,8 @@ int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
         //}
     }
 
-    ret = setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who));
-    if ( ret ) return ret;
+    /* ret = setWinSizeForNormalWin (WINDATA(data), GET_SHMADDR(who), TYPE(who)); */
+    /* if ( ret ) return ret; */
 
     return 0;
 }
@@ -780,363 +1241,266 @@ static inline int nextWindow ( int who )  {
 /* 切换各个翻译结果的显示*/
 int changeDisplay(GtkWidget *button, gpointer *data) {
 
-    WINDATA(data)->who = nextWindow((WINDATA(data)->who));
+    WinData *wd = WINDATA(data);
+    wd->who = nextWindow((wd->who));
+    button = GET_BUTTON ( wd, wd->who );
 
-    if ( WINDATA(data)->who == BAIDU )
-        displayBaiduTrans( button, data );
-    else if ( WINDATA(data)->who == GOOGLE )
-        displayGoogleTrans(button, data);
-    else if ( WINDATA(data)->who == OFFLINE )
-        displayOfflineTrans(button, data);
+    on_tran_button_clicked_cb ( button, wd );
 
     return 0;
 }
 
 void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 
-    pyellow("\n显示谷歌翻译结果:\n\n");
+    pyellow("显示谷歌翻译结果:\n");
 
-    WINDATA(data)->who = GOOGLE;
-    WINDATA(data)->specific = 1;
+    WinData *wd = WINDATA(data);
+    char **result = google_result;
+    char *p1 = NULL;
+    char *p2 = NULL;
 
-    /* 调整窗口大小*/
+    wd->who = GOOGLE;
+    wd->specific = 1;
+
     adjustWinSize ( button, data, GOOGLE );
 
-    gint width = WINDATA(data)->width;
-    gint height = WINDATA(data)->height;
+    clearContentListBox ( wd->content_listbox );
 
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,(WINDATA(data))->indicateButton,\
-            width-(200-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who)), height-INDICATE_OFFSET );
-    gtk_widget_queue_draw( WINDATA(data)->window );
+    if ( strlen( text )  < 30 ) 
+        gtk_label_set_text ( GTK_LABEL(wd->src_label), text );
 
-    if ( WINDATA(data)->audio != NULL )
-        gtk_widget_hide ( WINDATA(data)->audio  );
+    if ( result[0][0] ) 
+        insertTextContentBox ( "翻译", result[0], wd, "#216459");
 
-    GtkTextIter *iter, start, end;
-    iter = WINDATA(data)->iter;
-    GtkTextBuffer *buf = WINDATA(data)->buf;
 
-    gtk_text_buffer_get_start_iter(buf, &start);
-    gtk_text_buffer_get_end_iter(buf, &end);
-
-    gtk_text_buffer_delete(buf, &start, &end);
-    gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
-
-    WINDATA(data)->iter = iter ;
-
-    syncImageSize ( WINDATA(data)->window,\
-            WINDATA(data)->width,WINDATA(data)->height,  data) ;
-
-    char enter[] = "\n";
-
-    /*插入输入原文*/
-    if ( strlen( text )  < 30 ) {
-
-        gtk_text_buffer_insert_with_tags_by_name(buf, iter, text, -1, 
-                "black-font",  "bold-style",  "font-size-15", "underline", NULL);
-
-        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-        //gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+    if ( result[1][0] ) {
+        p1 = "英译英";
+        p2 = result[1];
+        insertTextContentBox ( p1, p2, wd , "#606415");
     }
 
-    /*插入翻译结果*/
-    for ( int i=0; i<3; i++ ) {
-
-        if ( google_result[i][0] != '\0') {
-
-            if ( i == 0 ) {
-
-                if ( google_result[1][0] == '\0'  || google_result[2][0] == '\0') {
-
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                }
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
-                        "brown-font",  "bold-style",  "font-size-11", NULL);
-
-                if ( google_result[1][0] != '\0'  || google_result[2][0] != '\0') {
-
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                }
-            }
-            else if ( i == 1 ) {
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
-                        "green-font",  "bold-style",  "font-size-11", NULL);
-            }
-            else if ( i == 2 )
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, google_result[i], -1, 
-                        "brown-font",  "bold-style",  "font-size-11", NULL);
-
-            gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-        }
+    if ( result[2][0] ) {
+        getPosTran ( result[2], &p1, &p2, ':' );
+        insertTextContentBox ( p1, p2, wd, "#242783" );
     }
 }
 
-/* 离线翻译结果展示窗口, 跟displayBaiduTrans重复较多*/
+void displayTrans ( WinData *wd, char ***result  ) {
+
+    char *p1 = NULL;
+    char *p2 = NULL;
+
+    void getPhonetic ( char *src, char **phonetic_en, char **phonetic_am );
+    getPhonetic ( result[1][0], &p1, &p2 );
+
+    gtk_label_set_text ( GTK_LABEL(wd->src_label), result[0][0] );
+    setWidgetProperties ( wd->src_label, 1.3, "#000000", BOLD_TYPE, NOT_TRANSPARENT );
+
+    /* gtk_entry_set_text ( GTK_ENTRY(wd->phonetic_en), p1 ); */
+    /* gtk_entry_set_text ( GTK_ENTRY(wd->phonetic_am ), p2 ); */
+    gtk_label_set_text ( GTK_LABEL(wd->phonetic_en), p1 );
+    gtk_label_set_text ( GTK_LABEL(wd->phonetic_am ), p2 );
+
+    void clearContentListBox ( GtkWidget *listbox  );
+    clearContentListBox ( wd->content_listbox );
+
+    for ( int i=0; i<ZH_EN_TRAN_SIZE && result[2][i][0]; i++ ) {
+
+        getPosTran ( result[2][i], &p1, &p2, '.' );
+        insertTextContentBox ( p1, p2, wd, "#216459" );
+    }
+
+
+    for ( int i=0; i<ZH_EN_TRAN_SIZE && result[3][i][0]; i++ ) {
+        insertTextContentBox ( "英译", result[3][i], wd , "#606415");
+    }
+
+    if ( result[4][0][0] )
+        insertTextContentBox ( "其它形式", result[4][0], wd , "#242783");
+
+    gtk_widget_set_size_request ( wd->window, wd->tran_max_len*10, -1 );
+    gtk_widget_show_all ( wd->window );
+    reHideWidget(wd->needToBeHiddenWidget, 
+            sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
+
+    setWidgetProperties(wd->phonetic_en, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
+    setWidgetProperties(wd->phonetic_am, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
+}
+
 void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 
     pmag("显示离线翻译:\n");
 
-    WINDATA(data)->who = MYSQL;
-    WINDATA(data)->specific = 1;
+    WinData *wd = WINDATA(data);
+    char ***result = mysql_result;
+
+    wd->who = MYSQL;
+    wd->specific = 1;
 
     adjustWinSize ( button, data, MYSQL );
 
-    gint width = WINDATA(data)->width;
-    gint height = WINDATA(data)->height;
-
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,(WINDATA(data))->indicateButton,\
-            width-(200-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who)), height-INDICATE_OFFSET );
-    gtk_widget_queue_draw( WINDATA(data)->window );
-
-    GtkTextIter *iter, start, end;
-    iter = WINDATA(data)->iter;
-    GtkTextBuffer *buf = WINDATA(data)->buf;
-
-    gtk_text_buffer_get_start_iter(buf, &start);
-    gtk_text_buffer_get_end_iter(buf, &end);
-
-    gtk_text_buffer_delete(buf, &start, &end);
-    gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
-
-    WINDATA(data)->iter = iter ;
-
-    if ( ! WINDATA(data)->gotOfflineTran && strlen ( ZhTrans(OFFLINE, 0) ) == 0 )
-        gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n  NOT FOUND ANYTHING",\
-                -1, "yellow-font",  "heavy-font", \
-                "font-size-11", "letter-spacing", NULL);
-
-    syncAudioBtn ( WINDATA(data), OFFLINE );
-
-    char enter[] = "\n";
-
-    /*根据得到的相关结果进行翻译内容输出*/
-    for ( int i=0; i<BAIDUSIZE-1; i++ ) {
-
-        /* 翻译结果不为空*/
-        if ( mysql_result[i][0][0] != '\0') {
-
-            /* 翻译结果输出控制代码段*/
-            if ( i == 0 && strlen(mysql_result[i][0]) < 30 ) {
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][0], \
-                        -1,"black-font",  "bold-style", \
-                        "font-size-15", "letter-spacing","underline", NULL);
-            }
-            else if ( i == 1 ) {
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][0],\
-                        -1, "blue-font",  "heavy-font", \
-                        "font-size-11", "letter-spacing", NULL);
-
-            }
-            else if ( i == 4 ) {
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][0],\
-                        -1, "brown-font",  "heavy-font", \
-                        "font-size-11","letter-spacing", NULL);
-            }
-            else if ( i != 0 ) {
-
-                if ( strlen(Phonetic(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE, 0)) != 0\
-                        && strlen(EnTrans(OFFLINE)) == 0 && strlen(OtherWordForm(OFFLINE)) == 0){
-
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][0],\
-                            -1, "brown-font",  "heavy-font", \
-                            "font-size-11", "letter-spacing", NULL);
-
-                } else {
-
-                    for ( int j=0; j<ZH_EN_TRAN_SIZE && mysql_result[i][j][0]; j++ )
-                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, mysql_result[i][j],\
-                                -1, "green-font",  "heavy-font", \
-                                "font-size-11", "letter-spacing", NULL);
-                }
-
-            }
-
-            /* 回车符控制输出代码段*/
-            if ( i == 0 )  {
-
-                /* 只有源输入而之后没结果了，插入一个回车符*/
-                if (( strlen(mysql_result[3][0]) ==0 && strlen(mysql_result[4][0]) == 0\
-                            && strlen(mysql_result[2][0]) == 0 && strlen(mysql_result[1][0]) == 0)) 
-                {
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                }
-
-                else  
-                {   
-                    if (!(strlen(Phonetic(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE,0)) != 0 && strlen(EnTrans(OFFLINE)) == 0\
-                                && strlen(OtherWordForm(OFFLINE)) == 0 && strlen(ZhTrans(OFFLINE,0)) != 0) ){
-                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                    }
-                    else
-                    {
-                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                    }
-                }
-            }
-
-            else if ( i == 1 && strlen(mysql_result[1][0]) != 0 && ( strlen(mysql_result[2][0]) != 0\
-                        || strlen(mysql_result[3][0]) != 0 || strlen(mysql_result[4][0]) != 0))
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-
-            else if ( i == 2 && ( strlen(mysql_result[3][0]) != 0 || strlen(mysql_result[4][0]) != 0 ) )
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-
-
-            else if ( i == 3 && ( strlen(mysql_result[4][0]) != 0) )
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-        } 
-    }
+    displayTrans ( wd, result );
 }
 
+void getPhonetic ( char *src, char **phonetic_en, char **phonetic_am ) {
 
-/* Baidu online translation display window */
+    static char empty_en[] = "英: 无";
+    static char empty_am[] = "美: 无";
+    static char buf[512] = { '\0' };
+
+    *phonetic_en = empty_en;
+    *phonetic_am = empty_am;
+    if ( !src[0] ) return;
+
+    strcpy ( buf, src );
+
+    char *p = strstr ( buf, "英" );
+
+    if ( !p ) return;
+
+    /* *( p-2 ) = '\n'; */
+    *( p-1 ) = '\0'; 
+    *phonetic_en = buf;
+    *phonetic_am = p;
+
+    while ( *p && *p != '\n') p++;
+    if ( *p == '\n' ) *p = '\0';
+}
+
+void clearContentListBox ( GtkWidget *listbox  ) {
+
+    inline void destroy_widget ( GtkWidget *widget, gpointer data ) {
+        gtk_widget_destroy ( widget );
+    }
+
+    gtk_container_forall ( 
+            GTK_CONTAINER(listbox),
+            destroy_widget,
+            NULL
+            );
+}
+
+/* Get part of speech and translation*/
+void getPosTran ( char *src, char **pos, char **tran, char split ) {
+
+    static char default_pos[] = "NaN.";
+    static char default_tran[] = "NaN.";
+    static char posbuf[32] = "\0";
+    char *p = NULL;
+
+    *pos = default_pos;
+    *tran = default_tran;
+
+    if ( !src[0] ) return;
+
+    p = strchr ( src, split );
+    if ( !p || p-src>15) return;
+
+    strncpy ( posbuf, src, p-src+1 );
+    posbuf[p-src] = '\0';
+    pbcyan ( "posbuf=%s", posbuf );
+
+    *pos = posbuf;
+    *tran = p+1;
+    pbcyan ( "tran:%s", *tran );
+}
+
 void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
-    pgreen("显示百度翻译:");
+    WinData *wd = WINDATA(data);
+    char ***result = baidu_result;
 
-    WINDATA(data)->who = BAIDU;
-    WINDATA(data)->specific = 1;
+    wd->who = BAIDU;
+    wd->specific = 1;
 
     adjustWinSize ( button, data, BAIDU );
 
-    gint width = WINDATA(data)->width;
-    gint height = WINDATA(data)->height;
+    displayTrans ( wd, result );
+}
 
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,(WINDATA(data))->indicateButton,\
-            width-(200-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who)), height-INDICATE_OFFSET );
+GtkWidget *addUnderline ( 
+        GtkWidget *widget,
+        const char *rgb,
+        guint type
+        ) {
 
-    gtk_widget_queue_draw( WINDATA(data)->window );
+    PangoColor color;
+    pango_color_parse ( &color, rgb );
+    guint red = color.red;
+    guint green = color.green;
+    guint blue = color.blue;
 
-    GtkTextBuffer *buf = WINDATA(data)->buf;
+    PangoAttrList *pangoAttrList = NULL;
 
-    if ( strlen (ZhTrans(ONLINE,0)) == 0 && strlen ( EnTrans(ONLINE) ) == 0 ) {
+    if ( GTK_IS_LABEL(widget) ) {
+        pangoAttrList = gtk_label_get_attributes(GTK_LABEL(widget));
+        if ( ! pangoAttrList ) pangoAttrList = pango_attr_list_new();
+    }
+    else if ( GTK_IS_ENTRY(widget) ) {
 
-        pred("ZhTrans(ONLINE,0) & EnTrans(ONLINE)长度皆为0 \n");
-        reGetBaiduTrans ( data, BAIDU );
+        pangoAttrList = gtk_entry_get_attributes(GTK_ENTRY(widget));
+        if ( ! pangoAttrList ) pangoAttrList = pango_attr_list_new();
     }
 
-    GtkTextIter start, end, *iter;
-    iter = WINDATA(data)->iter;
+    PangoAttribute *pangoAttribute;
+    pangoAttribute = pango_attr_underline_new(PANGO_UNDERLINE_LOW);
+    pango_attr_list_insert ( pangoAttrList, pangoAttribute ); 
 
-    /*找到开头和结尾并删除，重新定位到初始为位置0*/
-    gtk_text_buffer_get_end_iter(buf, &end);
-    gtk_text_buffer_get_start_iter(buf, &start);
-    gtk_text_buffer_delete(buf, &start, &end);
-    gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
-
-    WINDATA(data)->iter = iter ;
-
-    syncImageSize ( WINDATA(data)->window,WINDATA(data)->width,WINDATA(data)->height, data) ;
-    syncAudioBtn ( WINDATA(data), ONLINE );
-
-    char enter[] = "\n";
-
-    /*根据得到的相关结果进行翻译内容输出*/
-    for ( int i=0; i<BAIDUSIZE-1; i++ ) {
-
-        /* 翻译结果不为空*/
-        if ( baidu_result[i][0][0] != '\0') {
-
-            /* 翻译结果输出控制代码段*/
-            if ( i == 0 && strlen(baidu_result[i][0]) < 30 ) {
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][0], \
-                        -1,"black-font",  "bold-style", \
-                        "font-size-15", "letter-spacing","underline", NULL);
-            }
-            else if ( i == 1 ) {
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][0],\
-                        -1, "blue-font",  "heavy-font", \
-                        "font-size-11", "letter-spacing", NULL);
-            }
-            else if ( i == 4 ) {
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][0],\
-                        -1, "brown-font",  "heavy-font", \
-                        "font-size-11","letter-spacing", NULL);
-            }
-            else if ( i != 0 ) { /* i==2 || i == 3*/
-
-                /* 翻译结果只有一句(如短句翻译会出现这种情况),显示设置为棕色*/
-                if ( strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0)) != 0\
-                        && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
-
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][0],\
-                            -1, "brown-font",  "heavy-font", \
-                            "font-size-11", "letter-spacing", NULL);
-
-                } else {
-
-                    for ( int j=0; j<ZH_EN_TRAN_SIZE && baidu_result[i][j][0]; j++ )
-                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, baidu_result[i][j],\
-                                -1, "green-font",  "heavy-font", \
-                                "font-size-11", "letter-spacing", NULL);
-                }
-
-            }
-
-            /* 回车符控制输出代码段*/
-            if ( i == 0 )  {
-
-                /* 只有源输入而之后没结果了，插入一个回车符*/
-                if (( strlen(baidu_result[3][0]) ==0 && strlen(baidu_result[4][0]) == 0\
-                            && strlen(baidu_result[2][0]) == 0 && strlen(baidu_result[1][0]) == 0)) 
-                {
-                    gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                }
-
-                else  
-                {   
-                    if (!(strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0)) != 0 && strlen(EnTrans(ONLINE)) == 0\
-                                && strlen(OtherWordForm(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0)) != 0) ){
-                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                    }
-                    else
-                    {
-                        gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-                    }
-                }
-            }
-
-            else if ( i == 1 && strlen(baidu_result[1][0]) != 0 && ( strlen(baidu_result[2][0]) != 0\
-                        || strlen(baidu_result[3][0]) != 0 || strlen(baidu_result[4][0]) != 0))
-
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-
-            else if ( i == 2 && ( strlen(baidu_result[3][0]) != 0 || strlen(baidu_result[4][0]) != 0 ) )
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
+    pangoAttribute = pango_attr_underline_color_new(red, green, blue); /* Color Cyan*/
+    pango_attr_list_insert ( pangoAttrList, pangoAttribute ); 
 
 
-            else if ( i == 3 && ( strlen(baidu_result[4][0]) != 0) )
-                gtk_text_buffer_insert_with_tags_by_name(buf, iter, enter, -1, NULL, NULL);
-        } 
+    if ( GTK_IS_LABEL(widget) )
+        gtk_label_set_attributes ( GTK_LABEL(widget), pangoAttrList ) ;
 
-        /* 翻译结果检测为空*/
-        //else if ( i == 0  && Phonetic(ONLINE)Flag == 0 && NumZhTranFlag==0
-        /*&& NumEnTranFlag == 0 && OtherWordForm(ONLINE)Flag == 0) */
+    else if ( GTK_IS_ENTRY(widget) ) 
+        gtk_entry_set_attributes ( GTK_ENTRY(widget), pangoAttrList ) ;
 
-        /* 这里不要再用上面的用标志位检测，存在一种情况，翻译结果没复制过来，上面的结果插入语句无法执行
-         * 刚好到这里的时候标志位又被刚好翻译结果写入完成的python端修改，导致重定向失败，这里的所有逻辑
-         * 都不要用标志位判断*/
-        else if ( i == 0  && strlen(Phonetic(ONLINE)) == 0 && strlen(ZhTrans(ONLINE,0))==0 \
-                && strlen(EnTrans(ONLINE)) == 0 && strlen(OtherWordForm(ONLINE)) == 0){
+    return widget;
+}
 
-            gtk_text_buffer_insert_with_tags_by_name(buf, iter, "\n\n   必应翻译尚未获取成功,或输入内容不支持\n   (只允许翻译单词)",\
-                    -1, "brown-font",  "heavy-font", \
-                    "font-size-11","letter-spacing", NULL);
-        }
+GtkWidget *setWidgetProperties ( 
+
+        GtkWidget *widget, 
+        double fontSizeScale,
+        const char *rgb,
+        int bold,
+        int alpha
+        ) {
+
+    GdkRGBA color;
+    gdk_rgba_parse ( &color, rgb );
+
+    PangoAttrList *pangoAttrList = NULL;
+
+    if ( GTK_IS_LABEL(widget) ) {
+        pangoAttrList = gtk_label_get_attributes(GTK_LABEL(widget));
+        if ( ! pangoAttrList ) pangoAttrList = pango_attr_list_new();
     }
+    else if ( GTK_IS_ENTRY(widget) ) {
+
+        pangoAttrList = gtk_entry_get_attributes(GTK_ENTRY(widget));
+        if ( ! pangoAttrList ) pangoAttrList = pango_attr_list_new();
+    }
+    PangoAttribute *pangoAttribute ;
+    if ( bold ) {
+        pangoAttribute = pango_attr_weight_new ( PANGO_WEIGHT_BOLD );
+        pango_attr_list_insert ( pangoAttrList, pangoAttribute ); 
+    }
+
+    pangoAttribute = pango_attr_scale_new( fontSizeScale ); 
+    pango_attr_list_insert ( pangoAttrList, pangoAttribute ); 
+
+    gtk_widget_override_color( widget, 0,  &color);
+
+    if ( GTK_IS_LABEL(widget) )
+        gtk_label_set_attributes ( GTK_LABEL(widget), pangoAttrList ) ;
+
+    else if ( GTK_IS_ENTRY(widget) ) 
+        gtk_entry_set_attributes ( GTK_ENTRY(widget), pangoAttrList ) ;
+
+    return widget;
+
 }
 
 void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter) {
@@ -1188,146 +1552,4 @@ void printDebugInfo() {
 
 /*当窗口大小被鼠标改变时进行窗口重绘以及自动调整switch button位置*/
 void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer data ) {
-
-    gint width, height;
-    static unsigned int lastwidth = 0, lastheight = 0;
-
-    gtk_window_get_size ( (GtkWindow*)window, &width, &height );
-
-    if (WINDATA(data)->width <= width &&  WINDATA(data)->height <= height)
-        WINDATA(data)->specific = 0;
-
-    /* 窗口大小未改变不用重新调整布局,直接返回*/
-    if ( lastwidth == width && lastheight == height && !WINDATA(data)->specific){
-        return;
-    }
-
-    /* 指定窗口大小时*/
-    if ( WINDATA(data)->specific ) {
-        width = WINDATA(data)->width;
-        height = WINDATA(data)->height;
-#if 0
-        gtk_widget_set_size_request ( (GtkWidget*)(WINDATA(data))->layout,  width, height);
-#endif
-
-    }
-
-    lastwidth = width;
-    lastheight = height;
-    syncImageSize ( (WINDATA(data))->window,width,height, data );
-
-    gtk_window_resize ( GTK_WINDOW((WINDATA(data))->window), width, height );
-    gtk_widget_set_size_request ( (GtkWidget*)(WINDATA(data))->scroll,  width, height);
-
-    /* layout不要在这重设大小，否则将造成无法在缩小窗口*/
-    //gtk_widget_set_size_request ( (GtkWidget*)(WINDATA(data))->layout,  width, height);
-
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout, \
-            (WINDATA(data))->baiduButton, width-RIGHT_BORDER_OFFSET, height-BOTTOM_OFFSET );
-
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
-            (WINDATA(data))->googleButton, width-RIGHT_BORDER_OFFSET*2, height-BOTTOM_OFFSET );
-
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
-            (WINDATA(data))->mysqlButton, width-RIGHT_BORDER_OFFSET*3, height-BOTTOM_OFFSET );
-
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
-            (WINDATA(data))->calibrationButton, width-RIGHT_BORDER_OFFSET*4, height-BOTTOM_OFFSET );
-
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,\
-            (WINDATA(data))->exitButton, width-RIGHT_BORDER_OFFSET*5-20, height-BOTTOM_OFFSET );
-
-    gtk_layout_move ( (GtkLayout*)(WINDATA(data))->layout,(WINDATA(data))->indicateButton,\
-            width-(200-(RIGHT_BORDER_OFFSET*(WINDATA(data))->who)), height-INDICATE_OFFSET );
-
-    WINDATA(data)->width = width;
-    WINDATA(data)->height = height;
-
-    WINDATA(data)->lastwidth = width;
-    WINDATA(data)->lastheight = height;
-
-    gtk_widget_queue_draw ( window );
-}
-
-int calculateWidth ( int x ) {
-
-    double wa, wb, wc, wd; /* For width*/
-    genFitFunc ( "winSizeInfo_part1", FITTING_STATUS );
-    getFitFunc ( expanduser("/home/$USER/.stran/winSizeInfo_part1.func"),\
-            FOR_WIN_WIDTH, &wa, &wb, &wc, &wd, FITTING_STATUS );
-
-    return  (int) ( wa*x*x*x + wb*x*x +wc*x +wd + 0.5 );
-}
-
-int calculateHeight ( int x ) {
-
-    double ha, hb, hc, hd; /* For height*/
-    genFitFunc ( "winSizeInfo_part2", FITTING_STATUS );
-    getFitFunc ( expanduser("/home/$USER/.stran/winSizeInfo_part2.func"),\
-            FOR_WIN_HEIGHT, &ha, &hb, &hc, &hd, FITTING_STATUS );
-
-    return  (int) ( ha*x*x*x + hb*x*x +hc*x +hd + 0.5 );
-}
-
-int limitSize ( double *width, double *height ) {
-
-    /*别让窗口过小,或过大*/
-    //if ( *width < 400 ) *width = 400;
-    if ( *height < 100 ) *height = 100;
-    if ( *width > 1000 ) *width = 1000;
-    if ( *height > 900 ) *height = 900;
-
-    return 0;
-}
-
-/* 设置NormalWin的窗口大小, type: ONLINE / OFFLINE*/
-int setWinSizeForNormalWin (WinData *window, char *addr, int type) {
-
-    int maxlen = 0;
-    int lines = 0;
-
-    if ( addr == shmaddr_baidu || addr == shmaddr_mysql) {
-
-        maxlen = getMaxLenOfBaiduTrans ( type );
-        lines = getLinesNumOfBaiduTrans ( type );
-    }
-    else if ( addr == shmaddr_google ) {
-
-        lines = getLinesNumOfGoogleTrans();
-        maxlen = getMaxLenOfGoogleTrans();
-    }
-
-    if ( maxlen <= 0 || lines <= 0 )
-        return -1;
-
-    STORE_DISPLAY_MAX_LEN ( window, WHO(addr), maxlen );
-    STORE_DISPLAY_LINES_NUM ( window, WHO(addr), lines );
-
-    double width, height;
-    width = calculateWidth ( maxlen );
-    height = calculateHeight ( lines );
-
-    pbblue("maxlen=%d lines=%d", maxlen, lines);
-    pbblue("width=%d height=%d", (int)width, (int)height);
-
-    limitSize ( &width, &height );
-
-    /*Update the window size only when the new size is larger than older's*/
-    STORE_DISPLAY_WIDTH(WHO(addr), width);
-    STORE_DISPLAY_HEIGHT(WHO(addr), height);
-
-    if ( WINDATA(window)->width < GET_DISPLAY_WIDTH(WHO(addr)) )
-        WINDATA(window)->width = GET_DISPLAY_WIDTH(WHO(addr));
-
-    if (WINDATA(window)->height < GET_DISPLAY_HEIGHT(WHO(addr)))
-        WINDATA(window)->height = GET_DISPLAY_HEIGHT(WHO(addr));
-
-    if ( WINDATA(window)->lastheight <= WINDATA(window)->height 
-            || WINDATA(window)->width <= WINDATA(window)->lastwidth )
-        WINDATA(window)->specific = 1;
-
-    if ( WINDATA(window)->specific == 1 )
-        syncNormalWinForConfigEvent ( WINDATA(window)->window, NULL, window );
-
-    return 0;
 }
