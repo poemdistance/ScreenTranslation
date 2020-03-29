@@ -795,6 +795,21 @@ void on_icon_press_cb (
         ) {
     printf("icon press\n");
 }
+gboolean 
+on_phonetic_am_button_clicked_cb ( 
+        GtkWidget *button, 
+        WinData *win
+        ) {
+
+}
+
+gboolean 
+on_phonetic_en_button_clicked_cb ( 
+        GtkWidget *button, 
+        WinData *win
+        ) {
+
+}
 
 void initObjectFromFile ( WinData *wd ) {
 
@@ -886,6 +901,12 @@ void initObjectFromFile ( WinData *wd ) {
 
     g_signal_connect ( src_label, "icon-press",
             G_CALLBACK(on_icon_press_cb), wd );
+
+    g_signal_connect ( phonetic_am, "clicked", 
+            G_CALLBACK(on_phonetic_am_button_clicked_cb), wd );
+
+    g_signal_connect ( phonetic_en, "clicked", 
+            G_CALLBACK(on_phonetic_en_button_clicked_cb), wd );
 }
 
 void initHeaderBar ( WinData *wd ) {
@@ -945,7 +966,6 @@ on_motion_notify_event (
         GtkWidget *widget,
         GdkEventButton *event,
         WinData *wd) {
-    printf("motion\n");
 
     gint targetX = event->x_root - wd->offsetX;
     gint targetY = event->y_root - wd->offsetY;

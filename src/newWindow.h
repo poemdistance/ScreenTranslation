@@ -33,8 +33,8 @@ extern char *shmaddr_setting;
 
 #define WINDATA(addr) ((WinData*)addr)
 
-#define audio_en(type)  ( type == ONLINE ? ( audioOnline_en ) : ( audioOffline_en ))
-#define audio_uk(type)  ( type == ONLINE ? ( audioOnline_uk ) : ( audioOffline_uk ))
+#define AUDIO_EN(type)  ( type == ONLINE ? ( audioOnline_en ) : ( audioOffline_en ))
+#define AUDIO_UK(type)  ( type == ONLINE ? ( audioOnline_uk ) : ( audioOffline_uk ))
 
 #define shmaddr_type(type) ( type == ONLINE ? ( shmaddr_baidu ) : ( shmaddr_mysql ))
 #define PhoneticFlag(type) ( type == ONLINE ? ( shmaddr_baidu[1] - '0' ) : ( shmaddr_mysql[1] - '0' ))

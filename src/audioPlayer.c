@@ -153,11 +153,11 @@ void syncAudioBtn ( WinData *wd, int type ) {
 
         if ( audio == NULL ) {
 
-            bw.audio_online[0] = audio_en(ONLINE);
-            bw.audio_online[1] = audio_uk(ONLINE);
+            bw.audio_online[0] = AUDIO_EN(ONLINE);
+            bw.audio_online[1] = AUDIO_UK(ONLINE);
 
-            mw.audio_offline[0] = audio_en(OFFLINE);
-            mw.audio_offline[1] = audio_uk(OFFLINE);
+            mw.audio_offline[0] = AUDIO_EN(OFFLINE);
+            mw.audio_offline[1] = AUDIO_UK(OFFLINE);
         }
     } 
 }

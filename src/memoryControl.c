@@ -192,10 +192,10 @@ void clearMemory () {
     memset(&shmaddr_mysql[10], '\0', SHMSIZE-10);
     memset(&shmaddr_pic[10], '\0', SHMSIZE-10);
 
-    memset ( audio_en(ONLINE), '\0', 512 );
-    memset ( audio_uk(ONLINE), '\0', 512 );
-    memset ( audio_en(OFFLINE), '\0', 512 );
-    memset ( audio_uk(OFFLINE), '\0', 512 );
+    memset ( AUDIO_EN(ONLINE), '\0', 512 );
+    memset ( AUDIO_UK(ONLINE), '\0', 512 );
+    memset ( AUDIO_EN(OFFLINE), '\0', 512 );
+    memset ( AUDIO_UK(OFFLINE), '\0', 512 );
 
     clearBaiduMysqlResultMemory();
 
