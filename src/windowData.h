@@ -143,34 +143,62 @@ typedef struct WinData{
     GtkWidget *baiduButton;
     GtkWidget *mysqlButton;
     GtkWidget *googleButton;
-    GtkWidget *indicateButton;
     GtkWidget *switchButton;
-    GtkWidget *calibrationButton;
     GtkWidget *exitButton;
+    GtkWidget *calibrationButton;
 
     GdkPixbuf *srcBackgroundImage;
 
     gint width;
     gint height;
-    gint lastwidth;
-    gint lastheight;
-    gint forceResize;
 
     gint hadRedirect;
     gint hadShowGoogleResult;
-
-    /*used for calibration*/
-    gint press;
-    gint drag;
-    gint enter;
-    gint ox, oy; /* current x,y position of button*/
-    gdouble cx, cy; /* current x,y position relative to the up left corner of button*/
 
     gboolean quickSearchFlag;
 
     ConfigData *cd;
     gboolean mousePress;;
     gboolean mouseRelease;
+
+    GtkWidget *unselectedButton[4];
+    GtkWidget *selectedButton[4];
+    GtkWidget *selectedPin;
+    GtkWidget *unselectedPin;
+    GtkWidget *selectedBing;
+    GtkWidget *unselectedBing;
+    GtkWidget *selectedGoogle;
+    GtkWidget *unselectedGoogle;
+    GtkWidget *selectedOffline;
+    GtkWidget *unselectedOffline;
+    GtkWidget *needToBeHiddenWidget[10];
+    GtkWidget *ctrl_grid;
+    GtkWidget *headerbar;
+    GtkWidget *setting_button;
+    GtkWidget *content_listbox;
+    GtkWidget *src_label;
+    GtkWidget *audio_button_en;
+    GtkWidget *audio_button_am;
+    GtkWidget *phonetic_en;
+    GtkWidget *phonetic_am;
+    GtkWidget *item_scroll;
+    GtkWidget *item_view;
+    GtkWidget *item_label;
+    GtkWidget *box;
+    GtkWidget *ctrl_listbox;
+    GtkWidget *phon_listbox;
+    GtkWidget *content_box;
+    GtkWidget *src_listbox;
+    guint16 tran_max_len;
+    GdkRGBA rgba;
+
+    gboolean buttonPress;
+    gboolean beginDrag;
+
+    gint offsetX;
+    gint offsetY;
+
+    char *shmaddr_setting;
 
 }WinData;
 
