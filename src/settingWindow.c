@@ -201,6 +201,23 @@ gboolean on_key_press_cb (
     return false;
 }
 
+int focusProxy(void *data) {
+
+    static int times = 0;
+    
+    pgreen ( "Focus Proxy" );
+
+    if ( ++times <= 5 ) {
+        focusRequest ( data );
+        return TRUE;
+    }
+
+    pgreen ( "Canceled keep above" );
+    SettingWindowData *swd = data;
+    gtk_window_set_keep_above ( GTK_WINDOW(swd->window), FALSE );
+    return FALSE;
+}
+
 void settingWindow(
         GtkWidget  *menuItemSetting,
         SettingWindowData *settingWindowData) {
@@ -231,6 +248,7 @@ void settingWindow(
     GtkWidget *contentScrollWindow;
     GtkWidget *listBox;
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_keep_above ( GTK_WINDOW(window), TRUE );
     settingWindowData->window = window;
     gtk_window_set_icon ( GTK_WINDOW(window), gdk_pixbuf_new_from_file(
                 expanduser("/home/$USER/.stran/tran.png"), 0) );
@@ -303,7 +321,7 @@ void settingWindow(
     gtk_widget_show_all(window);
 
     swd->timeoutid = 
-        g_timeout_add ( 100, (int(*)(void*))focusRequest, swd);
+        g_timeout_add ( 100, focusProxy, swd);
 
     /* TEST CODE*/
     /* gtk_list_box_select_row ( GTK_LIST_BOX(listBox),
