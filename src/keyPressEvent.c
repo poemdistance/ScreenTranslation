@@ -12,14 +12,14 @@
 /* 键值掩码在gdk/gdkkeysyms.h*/
 
 extern char audioOnline_en[512];
-extern char audioOnline_uk[512];
+extern char audioOnline_am[512];
 extern char audioOffline_en[512];
-extern char audioOffline_uk[512];
+extern char audioOffline_am[512];
 
 gboolean on_key_press_cb ( 
         GtkWidget *window,
         GdkEventKey *event,
-        gpointer *data ) {
+        WinData *wd ) {
 
     int mask = event->state; 
     int keyval = event->keyval;
@@ -28,7 +28,7 @@ gboolean on_key_press_cb (
     mask &= ~ ( unusedMask() );
 
     gboolean enableCtrlCToClose = FALSE;
-    ConfigData *cd = WINDATA(data)->cd;
+    ConfigData *cd = wd->cd;
 
     enableCtrlCToClose = cd->ctrlCToClose;
 
@@ -39,33 +39,27 @@ gboolean on_key_press_cb (
         if ( upperKeyval == GDK_KEY_C && enableCtrlCToClose ) {
 
             g_print ("Captured Control+C, destroying window\n");
-            destroyNormalWin ( window, (WinData*)data );
+            destroyNormalWin ( window, wd );
         }
     }
 
     if ( ((cd->switchSourceMask & mask) || cd->switchSourceMask == mask ) && 
             (cd->switchSourceKeyval == keyval || cd->switchSourceKeyval == upperKeyval) ) {
 
-        changeDisplay(GET_BUTTON(data, WINDATA(data)->who), data);
+        changeDisplay(GET_BUTTON(wd, wd->who), wd);
     }
 
     if ( (cd->playAudioKeyval == keyval || cd->playAudioKeyval == upperKeyval  ) &&
             ((cd->playAudioKeyval & mask) || mask == cd->playAudioMask) ) {
 
-        if ( (strlen(audioOnline_en)==0 && strlen(audioOnline_uk)==0) \
-                && (strlen(audioOffline_en)==0 && strlen(audioOffline_uk)==0) ) {
+        if ( (strlen(audioOnline_en)==0 && strlen(audioOnline_am)==0) \
+                && (strlen(audioOffline_en)==0 && strlen(audioOffline_am)==0) ) {
 
             g_print ("No audio (keyPress.c)\n");
             return TRUE;
         }
 
-        bw.audio_online[0] = audioOnline_en;
-        bw.audio_online[1] = audioOnline_uk;
-
-        mw.audio_offline[0] = audioOffline_en;
-        mw.audio_offline[1] = audioOffline_uk;
-
-        mp3play (NULL, data);
+        mp3play (NULL, wd);
     }
 
     return TRUE;
