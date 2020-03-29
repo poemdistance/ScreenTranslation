@@ -47,12 +47,12 @@ int detectTranPicAction () {
     tranPicActionDetect_pid = getpid();
 
     int retpid = -1;
-    if ( ( retpid  = fork() ) == 0 ) {
+    //if ( ( retpid  = fork() ) == 0 ) {
 
-        char *const cmd[2] = { "extractPic", (char*)0 };
-        if ( execv("/usr/bin/extractPic", cmd) < 0 )
-            err_exit("execv extractPic error");
-    }
+    //    char *const cmd[2] = { "extractPic", (char*)0 };
+    //    if ( execv("/usr/bin/extractPic", cmd) < 0 )
+    //        err_exit("execv extractPic error");
+    //}
 
     char *shmaddr_pic = NULL;
     shared_memory_for_pic ( & shmaddr_pic );
