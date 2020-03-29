@@ -242,8 +242,6 @@ void setPointerOffset ( WinData *wd ) {
             &visible_win_width, &visible_win_height );
     wd->offsetX = pointerX - ( invisible_win_width-visible_win_width )/2;
     wd->offsetY = pointerY - ( invisible_win_height-visible_win_height )/2+10;
-
-
 }
 
 gboolean on_button_press_cb ( 
@@ -293,6 +291,15 @@ gboolean on_button_press_cb (
             pgreen ( "不满足条件，不进行拖拽" );
             return FALSE;
         }
+
+        if (event->button == 1) {
+            gtk_window_begin_move_drag(GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+                    event->button,
+                    event->x_root,
+                    event->y_root,
+                    event->time);
+        }
+        return TRUE;
 
         setPointerOffset ( wd );
         wd->beginDrag = TRUE;
@@ -379,7 +386,7 @@ int detect_outside_click_action ( void *data ) {
     if ( condition && mouseNotRelease )
         block = TRUE;
 
-    if ( 0 && ! condition ) {
+    if ( ! condition ) {
         pbmag ( "区域外点击销毁窗口" );
         destroyNormalWin ( NULL, wd );
         return FALSE;
@@ -394,7 +401,7 @@ int focus_request(void *data) {
 
     /* 每隔一定时间多次尝试重新聚焦窗口防止聚焦窗口被抢占*/
     if ( focustimes <= 5 ) {
-        focusOurWindow ( WINDATA(data) );
+        focusOurWindow ( wd );
         focustimes++;
     }
 
@@ -605,51 +612,6 @@ int noContentLeft ( char *str ) {
     return 1;
 }
 
-gboolean on_content_button_enter_cb (
-        GtkWidget *button,
-        GdkEventKey *event,
-        WinData *wd
-        ) {
-
-    return TRUE;
-}
-gboolean on_content_button_leave_cb (
-        GtkWidget *button,
-        WinData *wd
-        ) {
-
-    return FALSE;
-}
-gboolean on_content_button_release_cb (
-        GtkWidget *button,
-        GdkEventKey *event,
-        WinData *wd
-        ) {
-
-    wd->beginDrag = FALSE;
-    return FALSE;
-}
-
-gboolean on_content_button_press_cb (
-        GtkWidget *button,
-        GdkEventKey *event,
-        WinData *wd
-        ) {
-
-    wd->beginDrag = TRUE;
-    setPointerOffset ( wd );
-    return TRUE;
-
-
-    /* int x, y; */
-    /* gdk_window_get_position ( win, &x, &y ); */
-    /* pred ( "1：%d %d", x, y ); */
-    /* gdk_window_get_position ( win, &x, &y ); */
-    /* pred ( "2：%d %d", x, y ); */
-    /* gdk_window_get_origin ( win, &x, &y ); */
-    /* pred ( "3：%d %d", x, y ); */
-}
-
 void appendTranToItemListBox ( 
         GtkWidget *item_listbox,
         gchar *tran,
@@ -726,6 +688,37 @@ void on_calibration_button_clicked_cb (
         GtkWidget *button,
         WinData *wd
         ) {
+
+    int invisible_win_root_x;
+    int invisible_win_root_y;
+    int visible_win_root_x;
+    int visible_win_root_y;
+
+    GdkWindow *win = gtk_widget_get_window ( wd->window );
+
+    gdk_window_get_geometry ( win,
+            &invisible_win_root_x, &invisible_win_root_y,
+            NULL, NULL );
+
+    gdk_window_get_origin ( win,
+            &visible_win_root_x, &visible_win_root_y );
+
+    pblue ( "Invisible Window Root Position: %d %d",
+            invisible_win_root_x, invisible_win_root_y);
+
+    pblue ( "Visible Window Root Position: %d %d",
+            visible_win_root_x, visible_win_root_y);
+
+    GList *children = gtk_container_get_children ( GTK_CONTAINER(wd->window) );
+    for ( GList *child=children; child!=NULL; child=child->next ) {
+        if ( GTK_IS_DRAWING_AREA(child->data) ) {
+            printf("Found area\n");
+        }
+        else if ( GTK_IS_HEADER_BAR(child->data) )
+            printf("Is Header Bar\n");
+        else if ( GTK_IS_BOX(child->data) )
+            printf("Is Box\n");
+    }
 }
 
 
@@ -818,8 +811,13 @@ void initObjectFromFile ( WinData *wd ) {
     GtkWidget *bingbutton = (GtkWidget*)gtk_builder_get_object ( builder, "bing_button" );
     GtkWidget *offlinebutton = (GtkWidget*)gtk_builder_get_object ( builder, "offline_button" );
     GtkWidget *googlebutton = (GtkWidget*)gtk_builder_get_object ( builder, "google_button" );
-    GtkWidget *setting_button = (GtkWidget*)gtk_builder_get_object ( builder, "setting_button" );
     GtkWidget *src_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "src_listbox" );
+
+    GtkWidget *setting_button = NULL;
+    GtkWidget *setting_button_bottom = NULL;
+    setting_button_bottom = (GtkWidget*)gtk_builder_get_object ( builder, "setting_button_bottom" );
+    setting_button = (GtkWidget*)gtk_builder_get_object ( builder, "setting_button" );
+
 
     wd->window = window_src;
     wd->unselectedGoogle = wd->unselectedButton[0] = googlebutton;
@@ -830,6 +828,7 @@ void initObjectFromFile ( WinData *wd ) {
     wd->headerbar = headerbar;
     wd->ctrl_grid = ctrl_grid_src;
     wd->setting_button = setting_button;
+    wd->setting_button_bottom = setting_button_bottom;
     wd->content_listbox = content_listbox;
     wd->googleButton = googlebutton;
     wd->baiduButton = bingbutton;
@@ -854,6 +853,7 @@ void initObjectFromFile ( WinData *wd ) {
     setWidgetProperties(phonetic_am, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
 
     gtk_window_set_default_size(GTK_WINDOW(wd->window), 400, 100);
+    gtk_window_set_keep_above ( GTK_WINDOW(wd->window), TRUE );
     gtk_window_set_title(GTK_WINDOW(wd->window), "");
 
     g_signal_connect(G_OBJECT(wd->window), "destroy", \
@@ -907,11 +907,18 @@ void on_setting_button_clicked_cb (
 
 void initSettingButton ( WinData *wd ) {
 
+    ConfigData *cd = wd->cd;
+    GtkWidget *button = NULL;
 
-    g_signal_connect ( wd->setting_button, "clicked", 
+    if ( ! cd->hideHeaderBar ) {
+        button = wd->setting_button;
+        addToHiddenArray ( wd->setting_button_bottom, wd );
+    }
+    else
+        button = wd->setting_button_bottom;
+
+    g_signal_connect ( button, "clicked", 
             G_CALLBACK(on_setting_button_clicked_cb), wd );
-
-    gtk_widget_show ( wd->setting_button );
 }
 
 void setBackground( WinData *wd ) {
@@ -1018,8 +1025,10 @@ void *newNormalWindow ( void *data ) {
             G_CALLBACK(on_button_press_cb), &wd);
     g_signal_connect (wd.window, "button-release-event", 
             G_CALLBACK(on_button_release_cb), &wd);
-    g_signal_connect ( wd.window, "motion-notify-event", 
-            G_CALLBACK(on_motion_notify_event ), &wd );
+    /* g_signal_connect ( wd.window, "motion-notify-event", */ 
+    /*         G_CALLBACK(on_motion_notify_event ), &wd ); */
+    /* g_signal_connect ( wd.window, "contigure-event", */ 
+    /*         G_CALLBACK(on_button_press_cb), &wd ); */
 
     timeout_id = g_timeout_add(10, focus_request, &wd);
 
