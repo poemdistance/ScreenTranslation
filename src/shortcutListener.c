@@ -72,7 +72,6 @@ char *getShortcutName ( char *shortcut ) {
     for ( int i=0; i<MAX_SHORTCUT_NUM; i++ ) {
         if ( ! *shortcutValue[i] ) return NULL;
         if ( strcmp ( shortcutValue[i], shortcut ) == 0 ) {
-            pbgreen ( "Found match shortcut: %s", shortcutName[i] );
             return shortcutName[i];
         }
     }
@@ -96,8 +95,6 @@ void shortcutReceiveNotify (
     shortcutName = getShortcutName ( upperCase(shortcutValue) );
     if ( !shortcutName )
         return;
-
-    pbcyan ( "Got shortcut name:%s", shortcutName );
 
     if ( strstr ( shortcutName, "Quick-Search" ) ) {
         if ( shmaddr_keyboard[WINDOW_OPENED_FLAG] == '1' ) {
