@@ -57,7 +57,7 @@ void gtk_window_destroy ( GtkWidget *window, SettingWindowData *settingWindowDat
 /*     ipswd->iconEnter = TRUE; */
 /* } */
 
-void on_configure_event_cb ( 
+gboolean on_configure_event_cb ( 
         GtkWindow *window,
         GdkEvent *event,
         SettingWindowData *settingWindowData ) {
@@ -83,8 +83,10 @@ void on_configure_event_cb (
     settingWindowData->previousHeight = height;
     settingWindowData->previousWidth = width;
     /* gtk_widget_queue_draw ( (GtkWidget*)window ); */
-}
 
+    /* FALSE to propagate the event further.*/
+    return FALSE;
+}
 
 void updateContentScrollWindow ( 
         int row,
