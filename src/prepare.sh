@@ -73,19 +73,22 @@ echo
 
 cd ../baidu-translate
 sudo pip3 install -r requirements.txt $specific
-sudo ./setup.py install
+sudo ./setup.py install --record files.txt
 sudo chmod -c 775 /usr/bin/bdtran
+cat files.txt |xargs sudo chmod -c 775
 
 cd ../google-translate
 sudo pip3 install -r requirements.txt $specific
-sudo ./setup.py install
+sudo ./setup.py install --record files.txt
 sudo pip3 install  mysql-connector-python $specific
 sudo chmod -c 775 /usr/bin/tranen
+cat files.txt |xargs sudo chmod -c 775
 
 cd ../BingTran
 sudo pip3 install -r requirements.txt $specific
-sudo ./setup.py install
+sudo ./setup.py install --record files.txt
 sudo chmod -c 775 /usr/bin/bing
+cat files.txt |xargs sudo chmod -c 775
 
 system=`uname -a`
 if [[ $system =~ .*"deepin".* ]]; then
