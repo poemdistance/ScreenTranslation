@@ -334,7 +334,8 @@ int detect_outside_click_action ( void *data ) {
         gtk_widget_show_all ( wd->window );
         reHideWidget(wd->needToBeHiddenWidget, 
                 sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
-        focusOurWindow(wd);
+        int focus_request(void *data);
+        focus_request((void*)wd);
     }
 
     if ( ! action ){ return TRUE; } 
