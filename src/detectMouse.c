@@ -202,7 +202,7 @@ void *DetectMouse(void *arg) {
         int history[4] = { 0 };
         int i = 0, n = 0, m = 0;
         struct pollfd pfd;
-        int timeout = 20;
+        int timeout = 200;
         pfd.fd = mousefd;
         pfd.events = POLLIN|POLLPRI;
 
@@ -294,6 +294,7 @@ void *DetectMouse(void *arg) {
                         releaseButton = 1;
                         action = 0;
                     }
+                /* pred ( "retval==0, 超时" ); */
 
                 continue;
             }
@@ -343,7 +344,6 @@ void *DetectMouse(void *arg) {
              * 详见newNormalWindow*/
             if ( isAction(history, i, ALLONE) ) mouseNotRelease = 1;
 
-
             /*按下左键*/
             /* 此处不要改变1 0的顺序，因为m n下标出现0 1可能是区域选择
              * 事件(SLIDE),这将导致SLIDE被一直误判*/
@@ -365,6 +365,7 @@ void *DetectMouse(void *arg) {
                         oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                         thirdClick = 0;
                         action = SINGLECLICK;
+                        mouseNotRelease = 0;
                     }
                     releaseButton = 0;
 
@@ -432,7 +433,7 @@ void *DetectMouse(void *arg) {
     }
 
     if ( pid_baidu == 0 ) {
-        
+
         close(fd_baidu[1]); /*关闭写端口*/
 
         /*重映射标准输入为管道读端口*/
