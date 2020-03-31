@@ -5,14 +5,21 @@
 #include <stdio.h>
 #include <malloc.h>
 #include "pointer.h"
+#include "configControl.h"
+#include "windowData.h"
+#include "printWithColor.h"
 
 static int _XlibErrorHandler(Display *display, XErrorEvent *event) {
     fprintf(stderr, "An error occured detecting the mouse position\n");
     return True;
 }
 
+extern volatile sig_atomic_t SIGTERM_NOTIFY;
+
 /* FROM:https://stackoverflow.com/questions/3585871/how-can-i-get-the-current-mouse-pointer-position-co-ordinates-in-x*/
-int getPointerPosition( int *x, int *y ) {
+void *detectPointerPosition ( void *arg ) {
+
+    ConfigData *cd = arg;
 
     int number_of_screens;
     int i;
@@ -26,36 +33,54 @@ int getPointerPosition( int *x, int *y ) {
     /* XInitThreads(); */ //不要启用这句，程序会崩溃
     Display *display = XOpenDisplay(NULL);
 
-    if ( !display ) 
-        return FALSE;
+    if ( !display ) return (void*)0;
 
     XSetErrorHandler(_XlibErrorHandler);
     number_of_screens = XScreenCount(display);
-    /* fprintf(stderr, "There are %d screens available in this X session\n", number_of_screens); */
+
     root_windows = malloc(sizeof(Window) * number_of_screens);
+
     for (i = 0; i < number_of_screens; i++) {
         root_windows[i] = XRootWindow(display, i);
     }
-    for (i = 0; i < number_of_screens; i++) {
-        result = XQueryPointer(display, root_windows[i], &window_returned,
-                &window_returned, &root_x, &root_y, &win_x, &win_y,
-                &mask_return);
-        if (result == True) {
-            break;
-        }
-    }
-    if (result != True) {
-        fprintf(stderr, "No mouse found.\n");
-        XCloseDisplay(display);
-        return -1;
-    }
-    *x = root_x;
-    *y = root_y;
+    while ( 1 ) {
 
-    /* printf("Mouse is at (%d,%d)\n", root_x, root_y); */
+        usleep(1000);
+
+        if ( SIGTERM_NOTIFY ) break;
+
+        for (i = 0; i < number_of_screens; i++) {
+
+            result = XQueryPointer(display, root_windows[i], &window_returned,
+                    &window_returned, &root_x, &root_y, &win_x, &win_y,
+                    &mask_return);
+
+            if (result == True) {
+                break;
+            }
+        }
+
+        if (result != True) {
+            fprintf(stderr, "No mouse found.\n");
+            free(root_windows);
+            XCloseDisplay(display);
+            return NULL;
+        }
+
+        cd->pointerx = root_x;
+        cd->pointery = root_y;
+    }
+
+    pbred ( "detectPointerPosition 退出" );
 
     free(root_windows);
     XCloseDisplay(display);
 
-    return 0;
+    return NULL;
 }
+
+/* int main() { */
+
+/*     int x, y; */
+/*     detectPointerPosition( NULL ); */
+/* } */
