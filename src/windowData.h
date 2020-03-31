@@ -146,6 +146,8 @@ typedef struct WinData{
 
     gint width;
     gint height;
+    gint headerBarHeight;
+    gint headerBarWidth;
     gint previousWidth;
     gint previousHeight;
 
@@ -204,6 +206,31 @@ typedef struct WinData{
     gint targetx;
     gint targety;
     gboolean moveWindowNotify;
+    gboolean doubleClickAction;
+    gboolean showLock;
+
+    GtkWidget *bottomBox;
+    GtkWidget *topBox;
+    GtkWidget *leftBox;
+    GtkWidget *rightBox;
+    GtkWidget *headerBox;
+
+    GtkWidget *areaWest;
+    GtkWidget *areaEast;
+    GtkWidget *areaSouth;
+    GtkWidget *areaNorth;
+    GtkWidget *areaNorthWest;
+    GtkWidget *areaNorthEast;
+    GtkWidget *areaSouthEast;
+    GtkWidget *areaSouthWest;
+
+    GtkWidget *maximizeButton;
+    GtkWidget *minimizeButton;
+    GtkWidget *destroyButton;
+
+    GtkWidget *mainBox;
+
+    gint time;
 
 }WinData;
 
