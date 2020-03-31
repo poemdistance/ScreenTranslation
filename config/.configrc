@@ -8,8 +8,8 @@ Switch-Translation-Source-Shortcut: RETURN
 Translate-Picture-Shortcut: Alt+d
 Open-Setting-Window-Shortcut: SHIFT+CTRL+M
 Recall-Previous-Translation-Shortcut: ALT+PERIOD
-Setting-Window-Height: 569
-Setting-Window-Width: 921
+Setting-Window-Height: 663
+Setting-Window-Width: 1002
 Icon-Popup-Offset-X: -13
 Icon-Popup-Offset-Y: -51
 Icon-Absolute-X: 365
@@ -17,8 +17,8 @@ Icon-Absolute-Y: 264
 Hide-Header-Bar-Pref: TRUE
 Click-Outside-To-Close-Window-Pref: TRUE
 Control+C-To-Close-Window-Pref: TRUE
-Pointer-Offset-X: 215
-Pointer-Offset-Y: 246
-Pointer-Absolute-X: 378
-Pointer-Absolute-Y: 316
+Pointer-Offset-X: 212
+Pointer-Offset-Y: 258
+Pointer-Absolute-X: 332
+Pointer-Absolute-Y: 328
 Allow-Auto-Adjust-Popup-Window-Pref: TRUE
