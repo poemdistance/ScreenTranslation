@@ -30,7 +30,7 @@ void stop_search (  GtkSearchEntry *entry, gpointer *data  ) {
     shmaddr[CTRL_C_PRESSED_FLAG] = '0';
 
     /* quick search 快捷键标志位清零*/
-    shmaddr[QuickSearchShortcutPressed_FLAG] = '0';
+    shmaddr[QUICK_SEARCH_FLAG] = '0';
 
     /* 清空搜索窗口打开标志位*/
     shmaddr[SEARCH_WINDOW_OPENED_FLAG] = '0';
