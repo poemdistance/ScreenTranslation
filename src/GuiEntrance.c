@@ -191,9 +191,9 @@ int quit_test(void *arg) {
 
     /*不在窗口上的单击定义为销毁窗口命令*/
     if (!HadDestroied && !aboveWindow && \
-            (action == SINGLECLICK || action == DOUBLECLICK) ) {
+            (action == SINGLE_CLICK || action == DOUBLE_CLICK) ) {
 
-        if ( action == SINGLECLICK  && !aboveWindow) {
+        if ( action == SINGLE_CLICK  && !aboveWindow) {
             printf("GuiEntrance: 单击销毁\n");
 
             clearMemory();
@@ -202,9 +202,9 @@ int quit_test(void *arg) {
 
             /*单击销毁action置0
              * 双击销毁则可能新选中了文本，再新建一个入口*/
-            if ( action == SINGLECLICK )
+            if ( action == SINGLE_CLICK )
                 action = 0;
-            else if (action == DOUBLECLICK)
+            else if (action == DOUBLE_CLICK)
                 CanNewEntrance = 1;
 
             HadDestroied = 1;
@@ -240,7 +240,7 @@ int quit_entry(void *arg) {
 
         /*如果超时销毁的时候恰好又遇到双击选中文本
          * 也应该新建入口图标*/
-        if ( action == DOUBLECLICK)
+        if ( action == DOUBLE_CLICK)
             CanNewEntrance = 1;
 
         clearMemory();
