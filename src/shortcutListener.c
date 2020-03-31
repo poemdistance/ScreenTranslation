@@ -103,7 +103,7 @@ void shortcutReceiveNotify (
         }
 
         pcyan ( "Quick-Search-Shortcut" );
-        shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] = '1';
+        shmaddr_keyboard[QUICK_SEARCH_FLAG] = '1';
         shmaddr_keyboard[QUICK_SEARCH_NOTIFY] = '1';
 
     } else if ( strstr ( shortcutName, "Translate-Picture" ) ) {
