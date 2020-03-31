@@ -17,4 +17,6 @@ src/tags
 src/updateTran
 src/overview.c
 src/test*
-
+./google-translate/files.txt
+./BingTran/files.txt
+./baidu-translate/files.txt

@@ -1,14 +1,18 @@
 [submodule "google-translate"]
 	path = google-translate
 	url = https://github.com/poemdistance/google-translate
+    ignore = dirty
 [submodule "baidu-translate"]
 	path = baidu-translate
 	url = https://github.com/poemdistance/baidu-translate
+    ignore = dirty
 [submodule "bar1"]
 	branch = master
 [submodule "BingTran"]
 	path = BingTran
 	url = https://github.com/poemdistance/BingTran.git
+    ignore = dirty
 [submodule "gnome-screenshot"]
 	path = gnome-screenshot
 	url = https://github.com/poemdistance/gnome-screenshot.git
+    ignore = dirty
