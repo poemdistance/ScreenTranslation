@@ -6,6 +6,7 @@
 #include "detectMouse.h"
 #include "configControl.h"
 #include "expanduser.h"
+#include "pointer.h"
 
 char *shmaddr_google;
 char *shmaddr_baidu;
@@ -29,11 +30,6 @@ int shmid_keyboard;
 int shmid_mysql;
 int shmid_pic;
 int shmid_setting;
-
-pthread_t t1 = 0;
-pthread_t t2 = 0;
-pthread_t t3 = 0;
-pthread_t t4 = 0;
 
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
@@ -75,20 +71,7 @@ void *newNormalWindowThread( void *data ) {
     pbblue ( "启动线程 newNormalWindowThread" );
 
     ConfigData *cd = data;
-    /* struct sigaction sa; */
-    /* sa.sa_handler = sigterm_notify_cb; */
-    /* sigemptyset ( &sa.sa_mask ); */
-    /* int ret = 0; */
-    /* if ( (ret = sigaction ( SIGTERM, &sa, NULL )) == -1) { */
-    /*     pbred("sigaction exec failed (Main.c -> SIGTERM)"); */
-    /*     perror("sigaction"); */
-    /*     exit(1); */
-    /* } */
-    /* if ( (ret = sigaction ( SIGINT, &sa, NULL )) == -1) { */
-    /*     pbred("sigaction exec failed (Main.c -> SIGTERM)"); */
-    /*     perror("sigaction"); */
-    /*     exit(1); */
-    /* } */
+    pthread_t t3;
 
     while ( 1 ) {
 
@@ -113,6 +96,13 @@ void tranSelect() {
     struct Arg arg;
     ConfigData cd;
     arg.cd = &cd;
+
+    pthread_t t1 = 0;
+    pthread_t t2 = 0;
+    pthread_t t3 = 0;
+    pthread_t t4 = 0;
+    pthread_t t5 = 0;
+
 
     char *addr_google;
     char *addr_baidu;
@@ -148,6 +138,7 @@ void tranSelect() {
     pthread_create(&t2, NULL, DetectMouse, (void*)&arg);
     pthread_create( &t3, NULL, newNormalWindowThread, (void*)&cd );
     pthread_create( &t4, NULL, updateConfigData, (void*)&cd );
+    pthread_create( &t5, NULL, detectPointerPosition, (void*)&cd );
 
     void *thread_ret;
 
