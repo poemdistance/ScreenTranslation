@@ -1,22 +1,19 @@
 #!/bin/bash
 
+
+YELLOW='\033[0;33m'
+GREEN='\033[0;34m'
+END='\033[0m'
+
 bash stop.sh
 echo "Use server for pip: "$specific
 
 #复制文件到家目录
 storage="$HOME/.stran"
 currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.png"\ 
-    "../gif_pic/audio.png" "./startup.sh" "./errNotification.sh" "../gif_pic/offline.png"\
-    "../gif_pic/baidu.png" "../gif_pic/google.png" "../gif_pic/indicate.png" "stop.sh"\
-    "../gif_pic/calibration.jpg" "../data/audioButtonPosition.data" "buttonPositionDataCtl.sh"\
-    "winSizeDataCtl.sh" "../ui/cc-keyboard-shortcut-editor.ui"
-    "../ui/icon_position_setting.ui" "../ui/window-no-title-bar1.png"\
-    "../ui/window-has-title-bar1.png" "../config/.configrc" "../ui/window-preference.ui" \
-    "../ui/enter-keyboard-shortcut.png" "../ui/gtk-preferences.png"\
-    "../ui/bing-25.png" "../ui/bing-selected.png" "../ui/exit-25.png" "../ui/find-location-symbolic.png" \
-    "../ui/google-25.png" "../ui/google-selected.png" "../ui/offline-25.png" "../ui/offline-selected.png"\
-    "../ui/pin-25.png" "../ui/pin-selected.png"\ "../ui/sure.ui"\ "../ui/audio-volume-medium.png"
-    );
+    "./startup.sh" "./errNotification.sh" "../gif_pic/google.png" "stop.sh");
+
+resourcesDir=("../ui/" "../config/")
 
 declare -i len
 len=${#currFile[*]}-1
@@ -27,10 +24,24 @@ mkdir $storage/pic
 echo
 for i in $(seq 0 $len)
 do
-    cp ${currFile[i]} $storage -v
+    out=`cp ${currFile[i]} $storage -v`
+    echo -e ${YELLOW}"Copying file: "${out}${END}
 done
 
-chmod +x ~/.stran/winSizeDataCtl.sh
+len=${#resourcesDir[*]}-1
+for i in `seq 0 $len`
+do
+    echo
+    echo -e ${GREEN}"Entering dir: "${resourcesDir[i]}${END}
+    for f in `ls ${resourcesDir[i]} -a`
+    do
+        if [[ "$f" != "." && "$f" != ".." ]]; then
+            out=`cp  "${resourcesDir[i]}""$f" $storage -v`
+            echo -e ${YELLOW}"Copying file "$out${END}
+        fi
+    done
+    echo
+done
 
 cd ../baidu-translate
 git pull origin master
