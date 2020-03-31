@@ -19,7 +19,7 @@
 #define EXIT (1)
 #define RESTART (2)
 
-int PROCESS_EXIT_FLAG = 0;
+volatile sig_atomic_t PROCESS_EXIT_FLAG = 0;
 volatile sig_atomic_t SIGTERM_NOTIFY = 0;
 static int RESTART_SIGNAL = 0;
 
