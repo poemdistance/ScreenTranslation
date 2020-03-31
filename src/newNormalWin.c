@@ -15,6 +15,10 @@
 #define NOT_BOLD (0)
 #define TRANSPARENT (0)
 #define NOT_TRANSPARENT (1)
+#define SHADOW_BORDER_WIDTH (17)
+#define SHADOW_BORDER_HEIGTH (17)
+
+#define UI_SRC ("/home/$USER/.stran/sure.ui")
 
 typedef void (*Display_func)(GtkWidget *, gpointer *);
 
@@ -29,12 +33,12 @@ volatile sig_atomic_t InNewWin = 0;
 
 /* 鼠标动作标志位*/
 extern volatile sig_atomic_t action;
-extern volatile sig_atomic_t mouseNotRelease;
 extern volatile sig_atomic_t CanNewWin;
 static int focustimes = 0;
 int timeout_id = 0;
 int movewindow_timeout_id = 0;
 static int moveDone = 1;
+gboolean resizeAction = FALSE;
 
 GtkWidget *setWidgetProperties ( GtkWidget *widget, double fontSizeScale ,
         const char *rgb, int bold, int alpha);
@@ -47,6 +51,20 @@ void reHideWidget ( GtkWidget **widgets, int len );
 gboolean on_motion_notify_event ( GtkWidget *widget, GdkEventButton *event, WinData *wd);
 GtkWidget *addUnderline ( GtkWidget *widget, const char *rgb, guint type);
 void on_win_size_allocate_cb ( GtkWidget *window, GdkRectangle *alloc, WinData *wd);
+static gboolean expose_draw(GtkWidget *widget, GdkEventExpose *event, WinData *wd );
+void on_maximize_button_clicked_cb ( GtkWidget *button, WinData *wd);
+int focus_request(void *data);
+
+enum {
+    NORTH_AREA,
+    NORTH_EAST_AREA,
+    EAST_AREA,
+    SOUTH_EAST_AREA,
+    SOUTH_AREA,
+    SOUTH_WEST_AREA,
+    WEST_AREA,
+    NORTH_WEST_AREA,
+};
 
 static inline int previousWindow ( int who ) {
     return who > 1 ? who -1 : 3;
@@ -73,6 +91,13 @@ void selectDisplay( WinData *wd ) {
     on_tran_button_clicked_cb ( pressButton, wd );
 }
 
+void show_all_visible_widget ( WinData *wd ) {
+
+    gtk_widget_show_all ( wd->window );
+    reHideWidget(wd->needToBeHiddenWidget, 
+            sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
+}
+
 int adjustTargetPosition( 
         int *targetx, int *targety,
         int pointerx, int pointery,
@@ -81,9 +106,7 @@ int adjustTargetPosition(
     ConfigData *cd = wd->cd;
     GdkRectangle workarea = { '\0' };
 
-    gtk_widget_show_all ( wd->window );
-    reHideWidget(wd->needToBeHiddenWidget, 
-            sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
+    show_all_visible_widget ( wd );
 
     gdk_monitor_get_workarea(
             gdk_display_get_monitor_at_window ( 
@@ -110,74 +133,168 @@ void on_win_size_allocate_cb (
         WinData *wd
         ) {
 
+    void handleShadowBorder ( WinData *wd );
+    handleShadowBorder ( wd );
+
+    if ( wd->time >= 100 )  {
+        /* pred ( "超时不再检测窗口大小变化" ); */
+        return;
+    }
+
     pcyan ( "Win Size Allocate: %d %d %d %d",
             alloc->x, alloc->y, alloc->width, alloc->height );
+
+    if ( wd->doubleClickAction ) {
+        pred ( "Double click action , will not send notify to move window" );
+        return;
+    }
 
     wd->width = alloc->width;
     wd->height = alloc->height;
 
-    if ( wd->width != wd->previousWidth
-            || wd->height != wd->previousHeight ) {
+    if ( wd->width > wd->previousWidth || wd->height > wd->previousHeight ) {
+        pcyan ( "Move window notify" );
         wd->moveWindowNotify = TRUE;
     }
 
-    wd->previousWidth = alloc->width;
-    wd->previousHeight = alloc->height;
+    wd->previousWidth = wd->width;
+    wd->previousHeight = wd->height;
 }
 
-int moveWindow ( WinData *wd ) {
+/* 
+ * (x0, y0): 窗口左上角坐标(不可见部分)
+ * (x1, y1): 窗口右下角坐标(亦不可见)
+ * */
 
+static inline gboolean isPointerInOurWin 
+( int x0, int y0, int x1, int y1, WinData *wd ) {
+
+    return 
+            wd->cd->pointerx >= x0 && 
+            wd->cd->pointery >= y0 &&
+            wd->cd->pointerx <= x1 &&
+            wd->cd->pointery <= y1;
+}
+
+/* 
+ * (x0, y0): 窗口左上角坐标(可见部分)
+ * (x1, y1): 窗口右下角坐标(可见部分)
+ * */
+static inline gboolean isPointerInOurVisibleWin
+( int x0, int y0, int x1, int y1, WinData *wd ) {
+
+    return isPointerInOurWin ( x0, y0, x1, y1, wd );
+}
+
+int check_pointer_and_window_position ( void *data ) {
+
+
+    WinData *wd = data;
     ConfigData *cd = wd->cd;
 
-    gint pointerX=100, pointerY=100;
-    gint targetX = 100, targetY = 100;
-    gint winWidth = 0, winHeight = 0;
-    getPointerPosition ( &pointerX, &pointerY );
-    /* gtk_window_get_size ( GTK_WINDOW(wd->window), */ 
-    /*         &winWidth, &winHeight); */
+    int invisible_win_root_x = 0;
+    int invisible_win_root_y = 0;
+    int invisible_win_width = 0;
+    int invisible_win_height = 0;
+    int invisible_right_down_x = 0;
+    int invisible_right_down_y = 0;
+    int border_width = 0;
+    int border_height = 0;
+    int visible_win_root_x = 0;
+    int visible_win_root_y = 0;
+    int visible_right_down_x = 0;
+    int visible_right_down_y = 0;
+    int visible_win_width = 0;
+    int visible_win_height = 0;
 
-    winWidth = wd->width;
-    winHeight = wd->height;
+    GdkWindow *win = gtk_widget_get_window ( wd->window );
 
-    targetX  =  pointerX -
-        ( cd->pointerOffsetX *1.0 / 400 ) * winWidth;
+    /* 此函数获取真实窗口大小, 比如使用了decoration，其返回的
+     * 窗口坐标和宽高包含了不可见部分, 当前窗口设计屏蔽了默认
+     * 的装饰，标题栏，周围的阴影效果，以及Resize功能皆有项目
+     * 代替完成*/
+    gdk_window_get_geometry ( win,
+            &invisible_win_root_x, &invisible_win_root_y,
+            &invisible_win_width, &invisible_win_height );
 
-    targetY  = pointerY - 
-        ( cd->pointerOffsetY *1.0 / 252 ) * winHeight;
+    /* 由于禁用了decoration, 代替以项目完成，所以这里获取的窗口大小值也会
+     * 包含不可见部分, 因为不可见部分现在来说本就是实际窗口控制的一部分，
+     * 只是被我们隐藏了,而原来使用decoration时，周围不可见部分不是由我们完成的.*/
+    /* int win_width = 0; */
+    /* int win_height = 0; */
+    /* gtk_window_get_size ( GTK_WINDOW(wd->window), &win_width, &win_height ); */
 
-    if ( cd->pointerOffsetY < 0 )
-        targetY = pointerY - cd->pointerOffsetY;
+    border_width = SHADOW_BORDER_WIDTH;
+    border_height = SHADOW_BORDER_HEIGTH;
 
-    if ( cd->pointerOffsetY > 0 && targetY > pointerY + wd->height )
-        targetY = pointerY + wd->height + cd->pointerOffsetY;
+    visible_win_root_x = invisible_win_root_x + border_width;
+    visible_win_root_y = invisible_win_root_y + border_height;
+    visible_win_width = invisible_win_width - 2 * border_width;
+    visible_win_height = invisible_win_height - 2 * border_height;
 
-    pmag ( "Target window position %d %d, Original offset %d %d ",
-            targetX, targetY, cd->pointerOffsetX, cd->pointerOffsetY );
-    pmag ( "Win size: %d %d", winWidth, winHeight );
+    visible_right_down_x = visible_win_root_x + visible_win_height  ;
+    visible_right_down_y = visible_win_root_y + visible_win_width  ;
+
+    invisible_right_down_x = invisible_win_root_x + invisible_win_width;
+    invisible_right_down_y = invisible_win_root_y + invisible_win_height;
+
+    if ( ! isPointerInOurWin ( 
+                invisible_win_root_x, invisible_win_root_y,
+                invisible_right_down_x, invisible_right_down_y, 
+                wd )) {
+
+        /* resizeAction = FALSE; */
+    }
+
+    if ( isPointerInOurVisibleWin (
+                visible_win_root_x, visible_win_root_y,
+                visible_right_down_x, visible_right_down_y, 
+                wd
+
+                ) ) {
+
+    }
+
+
+    if ( ! wd->moveWindowNotify ) {
+        /* pred ( "未检测到窗口移动通知" ); */
+        return TRUE;
+    }
+
+    wd->moveWindowNotify = FALSE;
+
+    pcyan ( "Window Invisible Right Down Position: %d %d Pointer Position: %d %d",
+            invisible_right_down_x, invisible_right_down_y, cd->pointerx, cd->pointery );
+
+    int targetX = cd->pointerx -
+        ( cd->pointerOffsetX *1.0 / 400 ) * invisible_win_width;;
+    int targetY = cd->pointery - 
+        ( cd->pointerOffsetY *1.0 / 252 ) * invisible_win_height;
+
+    /* if ( targetX < 0 ) targetX = 0; */
+    /* if ( targetY < 0 ) targetY = 0; */
+
 
     if ( ! wd->quickSearchFlag ) {
 
-        if ( cd->allowAutoAdjust ) 
-            adjustTargetPosition( &targetX, &targetY, pointerX, pointerY, wd );
+        if ( cd->allowAutoAdjust )
+            adjustTargetPosition( &targetX, &targetY, cd->pointerx, cd->pointery, wd );
 
-        pbcyan ( "Move window" );
-        gtk_widget_hide ( wd->window );
+        pbcyan ( "Move window, Win size: %d %d", wd->width, wd->height );
         gdk_window_move ( 
                 gtk_widget_get_window(wd->window),
                 targetX, targetY );
 
-        wd->targetx = targetX;
-        wd->targety = targetY;
-
         moveDone = 1;
-
-        /* gtk_widget_show_all ( wd->window ); */
-        /* reHideWidget(wd->needToBeHiddenWidget, */ 
-        /*         sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*)); */
+        wd->showLock = FALSE;
     }
 
-    return FALSE;
+    wd->previousWidth = invisible_win_width;
+    wd->previousHeight = invisible_win_height;
+
+    return TRUE;
 }
+
 
 /* 本函数代码借鉴自xdotool部分源码*/
 int focusOurWindow( WinData *wd ) {
@@ -243,37 +360,6 @@ int getFocusWinPos( int *x, int *y ) {
     return 0;
 }
 
-/* 此函数由于on_button_press_cb中拖动窗口的代码
- * 导致失效*/
-gboolean on_button_release_cb ( 
-        GtkWidget *widget,
-        GdkEventButton *event,
-        WinData *wd) {
-
-    wd->mouseRelease = TRUE;
-    wd->beginDrag = FALSE;
-    return TRUE;
-}
-
-void setPointerOffset ( WinData *wd ) {
-
-    gint pointerX = 0;
-    gint pointerY = 0;
-    gint invisible_win_width = 0;
-    gint invisible_win_height = 0;
-    gint visible_win_width = 0;
-    gint visible_win_height = 0;
-
-    GdkWindow *win = gtk_widget_get_window ( wd->window );
-    gdk_window_get_pointer ( win, &pointerX, &pointerY, NULL );
-    gdk_window_get_geometry ( win, NULL, NULL,
-            &invisible_win_width, &invisible_win_height );
-    gtk_window_get_size ( GTK_WINDOW(wd->window), 
-            &visible_win_width, &visible_win_height );
-    wd->offsetX = pointerX - ( invisible_win_width-visible_win_width )/2;
-    wd->offsetY = pointerY - ( invisible_win_height-visible_win_height )/2+10;
-}
-
 gboolean on_button_press_cb ( 
         GtkWidget *widget,
         GdkEventButton *event,
@@ -281,47 +367,15 @@ gboolean on_button_press_cb (
 
     pbred ( "Button press:%d %d", event->type, event->state );
 
-    int pointer_x = 0;
-    int pointer_y = 0;
-    int win_width = 0;
-    int win_height = 0;
-    int border_height = 0;
-    int border_width = 0;
-    int invisible_win_width = 0;
-    int invisible_win_height = 0;
-
-    GdkWindow *win = gtk_widget_get_window(wd->window);
-
     if ( event->type == GDK_2BUTTON_PRESS ) {
-        if ( ! gtk_window_is_maximized ( GTK_WINDOW(wd->window) ) )
-            gtk_window_maximize ( GTK_WINDOW(wd->window) );
-        else
-            gtk_window_unmaximize ( GTK_WINDOW(wd->window) );
+
+        pmag ( "双击切换窗口大小" );
+        wd->doubleClickAction = TRUE;;
+        on_maximize_button_clicked_cb ( NULL, wd );
     }
 
     if (event->type == GDK_BUTTON_PRESS  && event->state == 16 )
     {
-
-        gdk_window_get_pointer ( win, &pointer_x, &pointer_y, NULL );
-        gtk_window_get_size ( GTK_WINDOW(wd->window), &win_width, &win_height );
-        invisible_win_width = gdk_window_get_width ( win );
-        invisible_win_height = gdk_window_get_height ( win );
-        border_width = (invisible_win_width - win_width)/2 - 5;
-        border_height = (invisible_win_height - win_height)/2 - 5;
-
-        /* 判断鼠标是否位于窗口四周的位置,如果是,则此时是调整窗口尺寸的动作
-         * 不应该进行拖拽,返回false，让信号继续传递*/
-        if ( 
-                pointer_x > border_width+win_width ||
-                pointer_x < border_width ||
-                pointer_y > border_height+win_height ||
-                pointer_y < border_height
-
-           ) {
-            pgreen ( "不满足条件，不进行拖拽" );
-            return FALSE;
-        }
-
         if (event->button == 1) {
             gtk_window_begin_move_drag(GTK_WINDOW(gtk_widget_get_toplevel(widget)),
                     event->button,
@@ -329,11 +383,7 @@ gboolean on_button_press_cb (
                     event->y_root,
                     event->time);
         }
-        return TRUE;
-
-        setPointerOffset ( wd );
         wd->beginDrag = TRUE;
-        on_motion_notify_event ( widget, event, wd );
     }
 
     wd->mousePress = TRUE;
@@ -344,12 +394,28 @@ int detect_outside_click_action ( void *data ) {
 
     WinData *wd = data;
     ConfigData *cd = WINDATA(data)->cd;
-    GtkAllocation alloc;
     static gboolean block = FALSE;
     static int lock = 1;
-    static int count = 0;
     static int reCheck = 0;
-    int winx, winy;
+    static int tick = 0;
+
+    if ( wd->time <= 100 ) wd->time++;
+
+    /* 窗口内双击动作被设计为最大化或者取消最大化窗口
+     * ，检测到此动作后doubleClickAciton置位，在计数100
+     * 次后恢复默认值FALSE，防止双击动作被误测为区域外点击
+     * 事件而将窗口关闭*/
+    if ( wd->doubleClickAction && ++tick == 100 ) {
+        wd->doubleClickAction = FALSE;
+        moveDone = 0;
+        tick = 0;
+    }
+
+    if ( cd->buttonState == BUTTON_RELEASE ) {
+        wd->beginDrag = FALSE;
+        block = FALSE;
+        resizeAction = FALSE;
+    }
 
     /* 请先阅读下一块的注释.
      * 重新检测设置窗口的关闭状态，如果设置窗口已经关闭，则重新使能
@@ -373,12 +439,11 @@ int detect_outside_click_action ( void *data ) {
 
     if ( wd->pinEnable ) return TRUE;
 
-    if ( lock && (moveDone || wd->quickSearchFlag) ) {
-        gtk_widget_show_all ( wd->window );
-        reHideWidget(wd->needToBeHiddenWidget, 
-                sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
-        int focus_request(void *data);
+    if ( !wd->showLock && lock && (moveDone || wd->quickSearchFlag) ) {
+        printf("Show all widget\n");
+        show_all_visible_widget ( wd );
         focus_request((void*)wd);
+        wd->showLock = TRUE;
 
         /* Quick Search 弹出的窗口放到屏幕中央，
          * 之后只进行一次聚焦请求，而且不移动窗口，
@@ -387,21 +452,7 @@ int detect_outside_click_action ( void *data ) {
         if ( wd->quickSearchFlag ) lock = 0;
     }
 
-    if ( ! wd->quickSearchFlag ) {
-
-        gdk_window_get_origin ( gtk_widget_get_window(wd->window), &winx, &winy);
-
-        /* 确认是否成功移动窗口到目标位置(超过200ms后不再检测)*/
-        if ( ++count <= 20 && (winx != wd->targetx || wd->moveWindowNotify) ) 
-            moveWindow ( wd );
-        else 
-            moveDone = 0; /* 禁止继续调用前面的if(moveDone...)*/
-
-        /* 禁止上一个if语句中重复调用moveWindow*/
-        wd->moveWindowNotify = FALSE;
-    }
-
-    if ( ! action ){ return TRUE; } 
+    if ( ! action || action == SLIDE ) return TRUE; 
 
     if ( ! cd->alwaysDisplay ) return FALSE;
 
@@ -414,57 +465,52 @@ int detect_outside_click_action ( void *data ) {
      *
      * 此处解决办法不是监听鼠标release事件是因为drag窗口动作导致
      * 此事件的回调函数没办法被执行到,应该是信号被阻断了*/
-    if ( block && mouseNotRelease ) { return TRUE; }
+    if ( block && cd->buttonState == BUTTON_PRESS ) { 
+        return TRUE;
+    }
 
     block = FALSE;
 
-    /* GtkWidget *widget; */
     gint wx = 0;
     gint wy = 0;
-    /* gint focusWinX = 0; */
-    /* gint focusWinY = 0; */
-    gboolean condition = FALSE;
-    /* gboolean condition2 = FALSE;; */
-
 
     gtk_window_get_position ( 
             GTK_WINDOW(wd->window), &wx, &wy);
 
     GdkWindow *win = gtk_widget_get_window(wd->window);
 
-    /* On the X11 platform the returned size is the size 
-     * reported in the most-recently-processed configure event,
-     * rather than the current size on the X server. 
-     * 
-     * 由于以上的原因,
-     * 如果将以下两行代码放到configure-event的回调函数中，获得的
-     * 窗口尺寸是包含了不可见边框的
-     * */
     gint w = gdk_window_get_width(win);
     gint h = gdk_window_get_height(win);
 
-    gint pointerX = 0;
-    gint pointerY = 0;
+    gint pointerX = cd->pointerx;
+    gint pointerY = cd->pointery;
     gtk_window_get_size ( GTK_WINDOW(wd->window), &w, &h );
 
-    getPointerPosition ( &pointerX, &pointerY );
-
-    if ( !cd->hideHeaderBar ) {
-        gtk_widget_get_allocation ( wd->headerbar, &alloc );
-        h += alloc.height;
-    }
-
+    gboolean condition = FALSE;
     condition = 
         pointerX >= wx && pointerX <= wx+w &&
         pointerY >= wy && pointerY <= wy+h;
 
-    /* condition满足，说明鼠标点击了窗口，并且
-     * 鼠标未释放时，使能block变量*/
-    if ( condition && mouseNotRelease )
+    if ( condition && cd->buttonState == BUTTON_PRESS ) {
+        pgreen ( "Block -> TRUE" );
         block = TRUE;
+        action = 0;
+        return TRUE;
+    }
 
-    if ( ! condition ) {
-        pbmag ( "区域外点击销毁窗口" );
+    if ( action == SINGLE_CLICK && cd->buttonState == BUTTON_RELEASE)  {
+        /* printf("begignDrag and resizeAction to False\n"); */
+        wd->beginDrag = FALSE;
+        resizeAction = FALSE;
+    }
+
+    if ( 
+            ! condition  && 
+            ! resizeAction && 
+            ! wd->beginDrag &&
+            ! wd->doubleClickAction) {
+
+        pbmag ( "区域外点击销毁窗口. Action=%d", action );
         destroyNormalWin ( NULL, wd );
         return FALSE;
     }
@@ -630,7 +676,7 @@ void loadSelectedButton( WinData *wd ) {
     GtkWidget *offlineButtonSelected;
     GtkWidget *pinButtonSelected;
 
-    GtkBuilder *builder = gtk_builder_new_from_file(expanduser("/home/$USER/.stran/sure.ui"));
+    GtkBuilder *builder = gtk_builder_new_from_file(expanduser(UI_SRC));
 
     googleButtonSelected =
         (GtkWidget*)gtk_builder_get_object(GTK_BUILDER(builder), "google_button_selected");
@@ -730,6 +776,65 @@ void appendTranToItemListBox (
     append ( item_listbox, s, color,  wd );
 }
 
+void on_minimize_button_clicked_cb ( 
+        GtkWidget *button,
+        WinData *wd) {
+
+    gtk_window_iconify ( GTK_WINDOW(wd->window) );
+}
+
+void handleShadowBorder ( WinData *wd ) {
+
+    if ( ! gtk_window_is_maximized ( GTK_WINDOW(wd->window) ) ) {
+        gtk_widget_show ( wd->topBox );
+        gtk_widget_show ( wd->bottomBox );
+        gtk_widget_show ( wd->leftBox );
+        gtk_widget_show ( wd->rightBox );
+
+        gtk_widget_queue_draw ( wd->topBox );
+        gtk_widget_queue_draw ( wd->bottomBox );
+        gtk_widget_queue_draw ( wd->leftBox );
+        gtk_widget_queue_draw ( wd->rightBox );
+    }
+    else {
+
+        gtk_widget_hide ( wd->topBox );
+        gtk_widget_hide ( wd->bottomBox );
+        gtk_widget_hide ( wd->leftBox );
+        gtk_widget_hide ( wd->rightBox );
+    }
+}
+
+void on_maximize_button_clicked_cb ( 
+        GtkWidget *button,
+        WinData *wd) {
+
+    if ( ! gtk_window_is_maximized ( GTK_WINDOW(wd->window) ) ) {
+        gtk_window_maximize ( GTK_WINDOW(wd->window) );
+        gtk_widget_hide ( wd->topBox );
+        gtk_widget_hide ( wd->bottomBox );
+        gtk_widget_hide ( wd->leftBox );
+        gtk_widget_hide ( wd->rightBox );
+    }
+    else {
+
+        gtk_window_unmaximize ( GTK_WINDOW(wd->window) );
+
+        gtk_widget_show ( wd->topBox );
+        gtk_widget_show ( wd->bottomBox );
+        gtk_widget_show ( wd->leftBox );
+        gtk_widget_show ( wd->rightBox );
+
+        gtk_widget_queue_draw ( wd->topBox );
+        gtk_widget_queue_draw ( wd->bottomBox );
+        gtk_widget_queue_draw ( wd->leftBox );
+        gtk_widget_queue_draw ( wd->rightBox );
+    }
+
+    wd->doubleClickAction = TRUE;
+
+}
+
 void insertTextContentBox (  gchar *pos, gchar *tran, WinData *wd, gchar *color  ) {
 
     GtkBuilder *builder = NULL;
@@ -738,7 +843,7 @@ void insertTextContentBox (  gchar *pos, gchar *tran, WinData *wd, gchar *color 
     GtkWidget *item_listbox = NULL;
     gint INSERT_END = -1;
 
-    builder = gtk_builder_new_from_file ( expanduser("/home/$USER/.stran/sure.ui") );
+    builder = gtk_builder_new_from_file ( expanduser(UI_SRC) );
     item_box = (GtkWidget*)gtk_builder_get_object ( builder, "item_box" );
     item_label = (GtkWidget*)gtk_builder_get_object ( builder, "item_label" );
     item_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "item_listbox" );
@@ -755,10 +860,7 @@ void insertTextContentBox (  gchar *pos, gchar *tran, WinData *wd, gchar *color 
 
     static int i = 0;
     gtk_widget_set_size_request ( wd->window, 1, i++ ); /* 触发窗口重新调整大小*/
-    gtk_widget_show_all ( wd->window );
-    reHideWidget(wd->needToBeHiddenWidget, 
-            sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
-
+    show_all_visible_widget ( wd );
     disable_row_selectable_activatable ( wd->content_listbox );
     disable_row_selectable_activatable ( item_listbox );
 }
@@ -779,7 +881,7 @@ void on_calibration_button_clicked_cb (
 
     gdk_window_get_geometry ( win,
             &invisible_win_root_x, &invisible_win_root_y,
-            NULL, NULL );
+            &win_width, &win_height );
 
     gdk_window_get_origin ( win,
             &visible_win_root_x, &visible_win_root_y );
@@ -790,7 +892,7 @@ void on_calibration_button_clicked_cb (
     pblue ( "Visible Window Root Position: %d %d",
             visible_win_root_x, visible_win_root_y);
 
-    gtk_window_get_size ( GTK_WINDOW(wd->window), &win_width, &win_height );
+    /* gtk_window_get_size ( GTK_WINDOW(wd->window), &win_width, &win_height ); */
     pblue ( "Win size: %d %d", win_width, win_height  );
 
     GList *children = gtk_container_get_children ( GTK_CONTAINER(wd->window) );
@@ -849,6 +951,15 @@ int dataInit(WinData *wd) {
     wd->pinEnable = FALSE;
     wd->openSettingWindowAction = FALSE;
     wd->moveWindowNotify = FALSE;
+    wd->doubleClickAction = FALSE;
+    wd->previousWidth = 0; 
+    wd->previousHeight = 0; 
+    wd->showLock = FALSE;
+    wd->headerBarWidth  =0;
+    wd->headerBarHeight  =0;
+    resizeAction = FALSE;
+    wd->time = 0;
+    wd->beginDrag = FALSE;
 
     return 0;
 }
@@ -857,13 +968,6 @@ void makeSegmentationFault (  ) {
     char buf[1];
     if ( sizeof(buf) )  /* prevent anoying warning (set but not used)*/
         buf[9] = '0';
-}
-
-void on_icon_press_cb ( 
-        GtkWidget *widget,
-        gpointer data
-        ) {
-    printf("icon press\n");
 }
 gboolean 
 on_phonetic_button_clicked_cb ( 
@@ -876,9 +980,137 @@ on_phonetic_button_clicked_cb (
     return TRUE;
 }
 
+/* From:https://stackoverflow.com/questions/3908565/how-to-make-gtk-window-background-transparent*/
+static gboolean expose_draw(GtkWidget *widget, GdkEventExpose *event, WinData *wd ) {
+    cairo_t *cr = gdk_cairo_create(gtk_widget_get_window(widget));
+
+    gboolean supports_alpha = FALSE;
+    GdkScreen *screen = gtk_widget_get_screen(widget);
+    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+
+    if (!visual) {
+        printf("Your screen does not support alpha channels!\n");
+        visual = gdk_screen_get_system_visual(screen);
+        supports_alpha = FALSE;
+    } else {
+        /* printf("Your screen supports alpha channels!\n"); */
+        supports_alpha = TRUE;
+    }
+
+    gtk_widget_set_visual(widget, visual);
+    if (supports_alpha) {
+        /* printf("setting transparent window\n"); */
+        cairo_set_source_rgba (cr, 1.0, 1.0, 1.0, 0.0); 
+    } else {
+        /* printf("setting opaque window\n"); */
+        cairo_set_source_rgb (cr, 1.0, 1.0, 1.0); 
+    }
+
+    cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+    cairo_paint (cr);
+
+    cairo_destroy(cr);
+
+    return FALSE;
+}
+
+gboolean supports_alpha = FALSE;
+static void screen_changed(GtkWidget *widget, GdkScreen *old_screen, WinData *wd ) {
+
+    GdkScreen *screen = gtk_widget_get_screen(widget);
+    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+
+    if (!visual) {
+        /* printf("Your screen does not support alpha channels!\n"); */
+        visual = gdk_screen_get_system_visual(screen);
+        supports_alpha = FALSE;
+    } else {
+        /* printf("Your screen supports alpha channels!\n"); */
+        supports_alpha = TRUE;
+    }
+
+    gtk_widget_set_visual(widget, visual);
+
+}
+    gboolean
+area_draw_callback (GtkWidget *widget, cairo_t *cr, gint direction )
+{
+    guint width, height;
+
+    width = gtk_widget_get_allocated_width (widget);
+    height = gtk_widget_get_allocated_height (widget);
+
+    cairo_pattern_t *pattern;
+
+    switch ( direction ) {
+        case SOUTH_AREA:
+            pattern = cairo_pattern_create_linear ( 0, 0, 0, height ); break;
+        case NORTH_AREA:
+            pattern = cairo_pattern_create_linear ( 0, height, 0, 0 ); break;
+        case WEST_AREA:
+            pattern = cairo_pattern_create_linear ( width, 0, 0, 0 ); break;
+        case EAST_AREA:
+            pattern = cairo_pattern_create_linear ( 0, 0, width, 0 ); break;
+        case SOUTH_EAST_AREA:
+            pattern = cairo_pattern_create_radial ( 0, 0, 0, 0, 0, SHADOW_BORDER_WIDTH ); break;
+        case SOUTH_WEST_AREA:
+            pattern = cairo_pattern_create_radial ( width, 0, 0, width, 0, SHADOW_BORDER_WIDTH ); break;
+        case NORTH_WEST_AREA:
+            pattern = cairo_pattern_create_radial ( width, height, 0, width, height, SHADOW_BORDER_WIDTH ); break;
+        case NORTH_EAST_AREA:
+            pattern = cairo_pattern_create_radial ( 0, height, 0, 0, height, SHADOW_BORDER_WIDTH ); break;
+
+        default:
+            pattern = cairo_pattern_create_linear ( 0, 0, 0, 0 ); break;
+    }
+
+    cairo_pattern_add_color_stop_rgba ( pattern, 0, 0, 0, 0, 0.1 );
+    cairo_pattern_add_color_stop_rgba ( pattern, 0.3, 0.2, 0.2, 0.2, 0.05 );
+    cairo_pattern_add_color_stop_rgba ( pattern, 1, 0.1, 0.1, 0.1, 0 );
+
+    cairo_rectangle ( cr, 0, 0, width, height );
+    cairo_set_source ( cr, pattern );
+    cairo_pattern_destroy ( pattern );
+
+    cairo_fill (cr);
+
+    return TRUE;
+}
+
+/* 代码来源： GTK项目测试用例test/gtktest.c*/
+    static gboolean
+grippy_button_press (GtkWidget *area, GdkEventButton *event, GdkWindowEdge edge)
+{
+    if (event->type == GDK_BUTTON_PRESS) 
+    {
+        if (event->button == GDK_BUTTON_PRIMARY)
+            gtk_window_begin_resize_drag (GTK_WINDOW (gtk_widget_get_toplevel (area)), edge,
+                    event->button, event->x_root, event->y_root,
+                    event->time);
+        else if (event->button == GDK_BUTTON_MIDDLE)
+            gtk_window_begin_move_drag (GTK_WINDOW (gtk_widget_get_toplevel (area)), 
+                    event->button, event->x_root, event->y_root,
+                    event->time);
+    }
+
+    pyellow ( "Resize Action To TRUE" );
+    resizeAction = TRUE;
+    return FALSE;
+}
+void setHeaderBarBackground ( WinData *wd, gchar *color ) {
+
+    GdkRGBA rgba;
+    gdk_rgba_parse ( &rgba, color );
+    gtk_widget_override_background_color ( wd->headerbar, 0, &rgba );
+    gtk_widget_override_background_color ( wd->setting_button, 0, &rgba );
+    gtk_widget_override_background_color ( wd->minimizeButton, 0, &rgba );
+    gtk_widget_override_background_color ( wd->maximizeButton, 0, &rgba );
+    gtk_widget_override_background_color ( wd->destroyButton, 0, &rgba );
+}
+
 void initObjectFromFile ( WinData *wd ) {
 
-    GtkBuilder *builder = gtk_builder_new_from_file(expanduser("/home/$USER/.stran/sure.ui"));
+    GtkBuilder *builder = gtk_builder_new_from_file(expanduser(UI_SRC));
     GtkWidget *window = (GtkWidget*)gtk_builder_get_object ( builder, "root" );
     GtkWidget *audio_button_en =  (GtkWidget*)gtk_builder_get_object ( builder, "audio_button_en" );
     GtkWidget *audio_button_am =  (GtkWidget*)gtk_builder_get_object ( builder, "audio_button_am" );
@@ -886,7 +1118,8 @@ void initObjectFromFile ( WinData *wd ) {
     GtkWidget *phonetic_am =  (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_am" );
     GtkWidget *src_label =  (GtkWidget*)gtk_builder_get_object ( builder, "source_label" );
     GtkWidget *box =  (GtkWidget*)gtk_builder_get_object ( builder, "box" );
-    GtkWidget *headerbar =  (GtkWidget*)gtk_builder_get_object ( builder, "headerbar" );
+    GtkWidget *headerbar =  (GtkWidget*)gtk_builder_get_object ( builder, "header_bar" );
+    GtkWidget *headerBox = (GtkWidget*)gtk_builder_get_object ( builder, "header_box" ); 
     GtkWidget *phon_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "phonetic_listbox" );
     GtkWidget *ctrl_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "control_listbox" );
     GtkWidget *ctrl_grid_src = (GtkWidget*)gtk_builder_get_object ( builder, "control_grid" );
@@ -899,6 +1132,22 @@ void initObjectFromFile ( WinData *wd ) {
     GtkWidget *offlinebutton = (GtkWidget*)gtk_builder_get_object ( builder, "offline_button" );
     GtkWidget *googlebutton = (GtkWidget*)gtk_builder_get_object ( builder, "google_button" );
     GtkWidget *src_listbox = (GtkWidget*)gtk_builder_get_object ( builder, "src_listbox" );
+    GtkWidget *areaWest = (GtkWidget*)gtk_builder_get_object ( builder, "area_west" );
+    GtkWidget *areaEast = (GtkWidget*)gtk_builder_get_object ( builder, "area_east" );
+    GtkWidget *areaNorth = (GtkWidget*)gtk_builder_get_object ( builder, "area_north" );
+    GtkWidget *areaSouth = (GtkWidget*)gtk_builder_get_object ( builder, "area_south" );
+    GtkWidget *areaSouthEast = (GtkWidget*)gtk_builder_get_object ( builder, "area_south_east" );
+    GtkWidget *areaSouthWest = (GtkWidget*)gtk_builder_get_object ( builder, "area_south_west" );
+    GtkWidget *areaNorthEast = (GtkWidget*)gtk_builder_get_object ( builder, "area_north_east" );
+    GtkWidget *areaNorthWest = (GtkWidget*)gtk_builder_get_object ( builder, "area_north_west" );
+    GtkWidget *bottomBox = (GtkWidget*)gtk_builder_get_object ( builder, "bottom_box" ); 
+    GtkWidget *topBox = (GtkWidget*)gtk_builder_get_object ( builder, "top_box" ); 
+    GtkWidget *rightBox = (GtkWidget*)gtk_builder_get_object ( builder, "right_box" ); 
+    GtkWidget *leftBox = (GtkWidget*)gtk_builder_get_object ( builder, "left_box" ); 
+    GtkWidget *mainBox = (GtkWidget*)gtk_builder_get_object ( builder, "main_box" ); 
+    GtkWidget *minimizeButton = (GtkWidget*)gtk_builder_get_object ( builder, "minimize_button" ); 
+    GtkWidget *maximizeButton = (GtkWidget*)gtk_builder_get_object ( builder, "maximize_button" ); 
+    GtkWidget *destroyButton = (GtkWidget*)gtk_builder_get_object ( builder, "destroy_button" ); 
 
     GtkWidget *setting_button = NULL;
     GtkWidget *setting_button_bottom = NULL;
@@ -932,12 +1181,30 @@ void initObjectFromFile ( WinData *wd ) {
     wd->src_listbox = src_listbox;
     wd->exitButton = exitbutton;
     wd->calibrationButton = calibrationButton;
+    wd->areaEast = areaEast ;
+    wd->areaWest = areaWest ;
+    wd->areaNorth = areaNorth ;
+    wd->areaSouth = areaSouth ;
+    wd->areaSouthEast = areaSouthEast ;
+    wd->areaSouthWest = areaSouthWest ;
+    wd->areaNorthEast = areaNorthEast ;
+    wd->areaNorthWest = areaNorthWest ;
+    wd->bottomBox = bottomBox;
+    wd->topBox = topBox;
+    wd->leftBox = leftBox;
+    wd->rightBox = rightBox;
+    wd->headerBox = headerBox;
+    wd->minimizeButton = minimizeButton;
+    wd->maximizeButton = maximizeButton;
+    wd->destroyButton = destroyButton;
+    wd->mainBox = mainBox;
 
-    setWidgetProperties(src_label, 1.2, "#000000", BOLD_TYPE, NOT_TRANSPARENT);
     addUnderline (src_label, "#581880", PANGO_UNDERLINE_LOW);
 
     setWidgetProperties(phonetic_en, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
     setWidgetProperties(phonetic_am, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
+
+    setHeaderBarBackground  ( wd, "#494949" );
 
     gtk_window_set_default_size(GTK_WINDOW(wd->window), 400, 100);
     gtk_window_set_keep_above ( GTK_WINDOW(wd->window), TRUE );
@@ -948,9 +1215,6 @@ void initObjectFromFile ( WinData *wd ) {
 
     g_signal_connect(G_OBJECT(wd->window), "key-press-event", \
             G_CALLBACK(on_key_press_cb), wd);
-
-    /* g_signal_connect(G_OBJECT(wd->window), "configure-event", \ */
-    /* G_CALLBACK(syncNormalWinForConfigEvent), wd); */
 
     g_signal_connect ( calibrationButton, "clicked",
             G_CALLBACK(on_calibration_button_clicked_cb), wd );
@@ -970,27 +1234,82 @@ void initObjectFromFile ( WinData *wd ) {
     g_signal_connect ( pinbutton, "clicked",
             G_CALLBACK(on_pin_button_clicked_cb), wd);
 
-    g_signal_connect ( src_label, "icon-press",
-            G_CALLBACK(on_icon_press_cb), wd );
-
     g_signal_connect ( audio_button_am, "clicked", 
             G_CALLBACK(on_phonetic_button_clicked_cb), wd );
 
     g_signal_connect ( audio_button_en, "clicked", 
             G_CALLBACK(on_phonetic_button_clicked_cb), wd );
-}
 
-void initHeaderBar ( WinData *wd ) {
+    gtk_widget_set_app_paintable(window, TRUE);
+    g_signal_connect(G_OBJECT(window), "draw", G_CALLBACK(expose_draw), wd );
+    g_signal_connect(G_OBJECT(window), "screen-changed", G_CALLBACK(screen_changed), wd);
 
-    gtk_window_set_titlebar ( GTK_WINDOW(wd->window), wd->headerbar );
-    gtk_header_bar_set_show_close_button ( GTK_HEADER_BAR(wd->headerbar), TRUE );
+    screen_changed( window, NULL, NULL );
+
+    g_signal_connect ( areaEast, "draw", G_CALLBACK(area_draw_callback), (void*)EAST_AREA );
+    g_signal_connect ( areaWest, "draw", G_CALLBACK(area_draw_callback), (void*)WEST_AREA );
+    g_signal_connect ( areaNorth, "draw", G_CALLBACK(area_draw_callback), (void*)NORTH_AREA );
+    g_signal_connect ( areaSouth, "draw", G_CALLBACK(area_draw_callback), (void*)SOUTH_AREA );
+    g_signal_connect ( areaNorthEast, "draw", G_CALLBACK(area_draw_callback), (void*)NORTH_EAST_AREA );
+    g_signal_connect ( areaNorthWest, "draw", G_CALLBACK(area_draw_callback), (void*)NORTH_WEST_AREA );
+    g_signal_connect ( areaSouthEast, "draw", G_CALLBACK(area_draw_callback), (void*)SOUTH_EAST_AREA );
+    g_signal_connect ( areaSouthWest, "draw", G_CALLBACK(area_draw_callback), (void*)SOUTH_WEST_AREA );
+
+    int mask = GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK ;
+    gtk_widget_add_events (areaEast, mask);
+    gtk_widget_add_events (areaWest, mask);
+    gtk_widget_add_events (areaNorth, mask);
+    gtk_widget_add_events (areaSouth, mask);
+    gtk_widget_add_events (areaNorthEast, mask);
+    gtk_widget_add_events (areaNorthWest, mask);
+    gtk_widget_add_events (areaSouthEast, mask);
+    gtk_widget_add_events (areaSouthWest, mask);
+
+    gtk_widget_set_events (areaEast, gtk_widget_get_events (areaEast)
+            | GDK_BUTTON_PRESS_MASK
+            | GDK_POINTER_MOTION_MASK
+            | GDK_BUTTON_RELEASE_MASK
+            |GDK_LEAVE_NOTIFY_MASK);
+
+    g_signal_connect (areaNorthWest, "button-press-event",
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH_WEST));
+    g_signal_connect (areaNorth, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH));
+    g_signal_connect (areaNorthEast, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH_EAST));
+    g_signal_connect (areaWest, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_WEST));
+    g_signal_connect (areaEast, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_EAST));
+    g_signal_connect (areaSouthWest, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH_WEST));
+    g_signal_connect (areaSouth, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH));
+    g_signal_connect (areaSouthEast, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH_EAST));
+
+
+    g_signal_connect ( areaEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( areaWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( areaSouth, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( areaNorth, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( areaNorthEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( areaSouthEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( areaNorthWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( areaSouthWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+
+    g_signal_connect ( maximizeButton, "clicked", G_CALLBACK(on_maximize_button_clicked_cb), wd );
+    g_signal_connect ( minimizeButton, "clicked", G_CALLBACK(on_minimize_button_clicked_cb), wd );
+    g_signal_connect ( destroyButton, "clicked", G_CALLBACK(destroyNormalWin), wd );
+
+    gtk_window_set_decorated ( GTK_WINDOW(window), FALSE );
 }
 
 void on_setting_button_clicked_cb (
         GtkWidget *button,
         WinData *wd
         ) {
-    
+
     /* 设置窗口打开标志，在设置窗口的逻辑里会执行这个操作，但是由于
      * 时间差，会导致本文件中检测设置窗口是否已经关闭时产生误判，所以
      * 这里先行标记*/
@@ -1045,25 +1364,55 @@ void setBackground( WinData *wd ) {
     gtk_widget_override_background_color ( wd->audio_button_en, 0, &rgba );
 }
 
+int areaToDirection ( GtkWidget *widget, WinData *wd  ) {
+
+    int direction = -1;
+
+    if ( widget == wd->areaNorth ) direction = NORTH_AREA;
+    if ( widget == wd->areaNorthEast ) direction = NORTH_EAST_AREA;
+    if ( widget == wd->areaNorthEast ) direction = NORTH_EAST_AREA;
+    if ( widget == wd->areaEast ) direction = EAST_AREA;
+    if ( widget == wd->areaSouthEast ) direction = SOUTH_EAST_AREA;
+    if ( widget == wd->areaSouth) direction = SOUTH_AREA;
+    if ( widget == wd->areaSouthWest) direction = SOUTH_WEST_AREA;
+    if ( widget == wd->areaWest) direction = WEST_AREA;
+    if ( widget == wd->areaNorthWest) direction = NORTH_WEST_AREA;
+
+    return direction;
+}
+
 gboolean 
 on_motion_notify_event (
         GtkWidget *widget,
         GdkEventButton *event,
         WinData *wd) {
 
-    gint targetX = event->x_root - wd->offsetX;
-    gint targetY = event->y_root - wd->offsetY;
+    static char cursors[][10] = {
+        "n-resize","ne-resize", "e-resize","se-resize",
+        "s-resize","sw-resize","w-resize","nw-resize"
+    };
 
-    gint pointerX = 0;
-    gint pointerY = 0;
+    int i = areaToDirection ( widget, wd );
 
-    GdkWindow *win = gtk_widget_get_window ( wd->window );
-    gdk_window_get_pointer ( win, &pointerX, &pointerY, NULL );
+    if ( i == -1 ) return FALSE;
 
-    if ( wd->beginDrag )
-        gtk_window_move ( GTK_WINDOW(wd->window), targetX, targetY );
+    GdkCursor *cursor = gdk_cursor_new_from_name (gtk_widget_get_display (widget), cursors[i]);
+    gdk_window_set_cursor (gtk_widget_get_window (widget), cursor);
+    g_object_unref (cursor);
+
+    resizeAction = TRUE;
 
     return TRUE;
+}
+
+gboolean on_cnfigure_event_cb (
+        GtkWidget *widget,
+        GdkEvent *event,
+        WinData *wd) {
+
+    /* printf("Configure event\n"); */
+
+    return FALSE;
 }
 
 /*新建翻译结果窗口, 本文件入口函数*/
@@ -1087,7 +1436,6 @@ void *newNormalWindow ( void *data ) {
     gtk_init(NULL, NULL);
 
     initObjectFromFile(&wd);
-    initHeaderBar(&wd);
     initSettingButton(&wd);
     /* setBackground( &wd ); */
 
@@ -1103,9 +1451,6 @@ void *newNormalWindow ( void *data ) {
         gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_MOUSE);
     }
 
-    /* if ( cd->hideHeaderBar ) */
-    /*     gtk_window_set_decorated ( GTK_WINDOW(wd.window), FALSE ); */
-
     /* printDebugInfo(); */
 
     /*初始化百度以及离线翻译结果存储空间*/
@@ -1118,17 +1463,14 @@ void *newNormalWindow ( void *data ) {
 
     g_signal_connect (wd.window, "button-press-event", 
             G_CALLBACK(on_button_press_cb), &wd);
-    g_signal_connect (wd.window, "button-release-event", 
-            G_CALLBACK(on_button_release_cb), &wd);
-    /* g_signal_connect ( wd.window, "motion-notify-event", */ 
-    /*         G_CALLBACK(on_motion_notify_event ), &wd ); */
-    /* g_signal_connect ( wd.window, "contigure-event", */ 
-    /*         G_CALLBACK(on_button_press_cb), &wd ); */
+    g_signal_connect ( wd.window, "configure-event", 
+            G_CALLBACK(on_cnfigure_event_cb), &wd );
 
     timeout_id = g_timeout_add(10, focus_request, &wd);
-
-    if ( ! wd.quickSearchFlag )
-        movewindow_timeout_id = g_timeout_add ( 100, (int(*)(void*))moveWindow, &wd);
+    if ( ! wd.quickSearchFlag ) {
+        pgreen ( "启动窗口位置超时检测函数" );
+        movewindow_timeout_id  = g_timeout_add ( 50, check_pointer_and_window_position, &wd );
+    }
 
     loadSelectedButton ( &wd );
 
@@ -1149,6 +1491,7 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
     clearMemory();
 
     g_source_remove ( timeout_id );
+    g_source_remove ( movewindow_timeout_id );
 
     /* 窗口关闭标志位*/
     shmaddr_keyboard[WINDOW_OPENED_FLAG] = '0';
@@ -1232,11 +1575,11 @@ int waitForContinue(WinData *wd) {
         }
 
         /*长时间未检测到共享内存里的数据进行双击取消本次窗口显示*/
-        if ( action == DOUBLECLICK ) {
+        if ( action == DOUBLE_CLICK ) {
 
             printf("捕获双击退出: In newNormalWindow.c\n");
 
-            /*action==DOUBLECLICK只代表取消显示，应重置action*/
+            /*action==DOUBLE_CLICK只代表取消显示，应重置action*/
             action = 0;
             return 1;
         }
@@ -1359,8 +1702,10 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 
     clearContentListBox ( wd->content_listbox );
 
-    if ( strlen( text )  < 30 ) 
+    if ( strlen( text )  < 30 )
         gtk_label_set_text ( GTK_LABEL(wd->src_label), text );
+
+    setWidgetProperties ( wd->src_label, 1.3, "#000000", BOLD_TYPE, NOT_TRANSPARENT );
 
     if ( result[0][0] ) 
         insertTextContentBox ( "翻译", result[0], wd, "#216459");
@@ -1410,9 +1755,7 @@ void displayTrans ( WinData *wd, char ***result  ) {
         insertTextContentBox ( "其它形式", result[4][0], wd , "#242783");
 
     gtk_widget_set_size_request ( wd->window, wd->tran_max_len*10, -1 );
-    gtk_widget_show_all ( wd->window );
-    reHideWidget(wd->needToBeHiddenWidget, 
-            sizeof(wd->needToBeHiddenWidget)/sizeof(GtkWidget*));
+    show_all_visible_widget ( wd );
 
     setWidgetProperties(wd->phonetic_en, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
     setWidgetProperties(wd->phonetic_am, 1.1, "#00aaff", NOT_BOLD, NOT_TRANSPARENT);
@@ -1435,8 +1778,8 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
 
 void getPhonetic ( char *src, char **phonetic_en, char **phonetic_am ) {
 
-    static char empty_en[] = "英: 无";
-    static char empty_am[] = "美: 无";
+    static char empty_en[] = "  英: 无";
+    static char empty_am[] = "  美: 无";
     static char buf[512] = { '\0' };
 
     *phonetic_en = empty_en;
@@ -1637,8 +1980,4 @@ void printDebugInfo() {
     pcyan("离线翻译结果: %s\n", &shmaddr_mysql[ACTUALSTART]);
     pcyan("百度翻译结果: %s\n", &shmaddr_baidu[ACTUALSTART]);
     pcyan("谷歌翻译结果: %s\n", &shmaddr_google[ACTUALSTART]);
-}
-
-/*当窗口大小被鼠标改变时进行窗口重绘以及自动调整switch button位置*/
-void syncNormalWinForConfigEvent( GtkWidget *window, GdkEvent *event, gpointer data ) {
 }
