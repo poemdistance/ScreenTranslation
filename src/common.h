@@ -38,10 +38,15 @@
 
 #define TEXTSIZE (1024*1024)
 
-#define SINGLECLICK (1)
-#define DOUBLECLICK (2)
-#define SLIDE (3)
-#define ALLONE (4)
+enum {
+    SINGLE_CLICK=1,
+    DOUBLE_CLICK,
+    SLIDE,
+    ALL_ONE,
+    BUTTON_PRESS,
+    BUTTON_RELEASE,
+    BUTTON_NO_ACTION,
+};
 
 #define EMPTYFLAG ('5')
 #define EXITFLAG ('4')
@@ -71,13 +76,15 @@
 #define ONLINE (2)
 
 
-#define QuickSearchShortcutPressed_FLAG (0)
-#define CTRL_C_PRESSED_FLAG (1)
-#define WINDOW_OPENED_FLAG (2)
-#define SEARCH_WINDOW_OPENED_FLAG (4)
-#define SELECT_EXCLUDE_FLAG (3)
-#define QUICK_SEARCH_NOTIFY (5)
-#define RECALL_PREVIOUS_TRAN (6)
+enum {
+    QUICK_SEARCH_FLAG,
+    CTRL_C_PRESSED_FLAG,
+    WINDOW_OPENED_FLAG,
+    SEARCH_WINDOW_OPENED_FLAG,
+    SELECT_EXCLUDE_FLAG,
+    QUICK_SEARCH_NOTIFY,
+    RECALL_PREVIOUS_TRAN
+};
 
 void tranSelect();
 void checkSelectionChanged();
