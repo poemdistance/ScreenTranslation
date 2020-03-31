@@ -1,7 +1,7 @@
 /*
  * 程序功能：
  * 1. 检测鼠标动作，捕捉双击，单击和区域选择事件，
- *    并设置action为相应的值:DOUBLECLICK,SINGLECLICK, SLIDE
+ *    并设置action为相应的值:DOUBLE_CLICK,SINGLE_CLICK, SLIDE
  *
  * 2. Fork一个子进程，父进程通过管道将剪贴板内容送入子进程
  *
@@ -49,19 +49,18 @@ pid_t fetch_data_from_mysql_pid;
 pid_t detect_tran_pic_action_pid;
 
 int mousefd;
-volatile sig_atomic_t mouseNotRelease;
 extern volatile sig_atomic_t action;
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 void *DetectMouse(void *arg) {
 
     pbblue ( "启动线程DetectMouse" );
-    /* ConfigData *cd = ((struct Arg*)arg)->cd; */
+    ConfigData *cd = ((struct Arg*)arg)->cd;
 
     setpgid ( getpid(), getppid() );
 
     struct sigaction sa;
-    int retval ;
+    int retval;
     char buf[3];
     struct timeval old, now, whenTimeout;
     double oldtime = 0;
@@ -199,7 +198,8 @@ void *DetectMouse(void *arg) {
             quit();
         }
 
-        int history[4] = { 0 };
+        int history[4] = { 0 }; /* 超时后数据将被清空*/
+        int cycle[4] = { 0 }; /* 始终不清空,循环写入数据*/
         int i = 0, n = 0, m = 0;
         struct pollfd pfd;
         int timeout = 200;
@@ -288,7 +288,7 @@ void *DetectMouse(void *arg) {
                 inTimeout = (whenTimeout.tv_usec + whenTimeout.tv_sec*1000000) / 1000;
 
                 /* 超时自动清零history*/
-                if ( abs (inTimeout - oldtime) > 700 && ! isAction(history, i, ALLONE))
+                if ( abs (inTimeout - oldtime) > 700 && ! isAction(history, i, ALL_ONE))
                     if ( history[0] | history[1] |  history[2] | history[3]) {
                         memset(history, 0, sizeof(history));
                         releaseButton = 1;
@@ -316,9 +316,10 @@ void *DetectMouse(void *arg) {
             /* continue; */
 
             /*循环写入鼠标数据到数组*/
-            history[i++] = buf[0] & 0x07;
-            if ( i == 4 )
-                i = 0;
+            history[i] = buf[0] & 0x07;
+            cycle[i] = history[i];
+            i++;
+            if ( i == 4 ) i = 0;
 
             /*m为最后得到的鼠标键值*/
             m = previous(i);
@@ -327,6 +328,7 @@ void *DetectMouse(void *arg) {
             /* LOG */
             /* int j = previous(n), x = previous(j); */
             /* printf("%d %d %d %d\n", history[m], history[n], history[j], history[x]); */
+            /* printf("%d %d %d %d\n", cycle[m], cycle[n], cycle[j], cycle[x]); */
 
             /*没有按下按键并活动鼠标,标志releaseButton=1*/
             if ( history[m] == 0 && history[n] == 0 ) {
@@ -339,10 +341,14 @@ void *DetectMouse(void *arg) {
                 action = 0;
             }
 
-            /* 此变量用于newNormalWindow，
-             * 作用：拖动窗口标志变量(仅当拖动窗口时起效)
-             * 详见newNormalWindow*/
-            if ( isAction(history, i, ALLONE) ) mouseNotRelease = 1;
+            if ( isAction(cycle, i, BUTTON_PRESS) )  {
+                cd->buttonState = BUTTON_PRESS;
+                /* pgreen ( "Button Press" ); */
+            }
+            if ( isAction(cycle, i, BUTTON_RELEASE) )  {
+                cd->buttonState = BUTTON_RELEASE;
+                /* pgreen ( "Button Release" ); */
+            }
 
             /*按下左键*/
             /* 此处不要改变1 0的顺序，因为m n下标出现0 1可能是区域选择
@@ -356,7 +362,7 @@ void *DetectMouse(void *arg) {
                      * 如果上次双击时间到现在不超过600ms，则断定为3击事件;
                      * 3击会选中一整段，或一整句，此种情况也应该复制文本*/
                     if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 800 \
-                            && lasttime != 0 && action == DOUBLECLICK) {
+                            && lasttime != 0 && action == DOUBLE_CLICK) {
 
                         thirdClick = 1;
                         notify(&history, &thirdClick, &releaseButton, fd_python);
@@ -364,8 +370,7 @@ void *DetectMouse(void *arg) {
                     else { /*不是3击事件则按单击处理，更新oldtime*/
                         oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
                         thirdClick = 0;
-                        action = SINGLECLICK;
-                        mouseNotRelease = 0;
+                        action = SINGLE_CLICK;
                     }
                     releaseButton = 0;
 
@@ -376,7 +381,7 @@ void *DetectMouse(void *arg) {
             }
 
             /*检测检测是否可能为双击,以及判断时间间隔(应跳过确定的3击事件)*/
-            if ( isAction(history, i, DOUBLECLICK) && !thirdClick )  {
+            if ( isAction(history, i, DOUBLE_CLICK) && !thirdClick )  {
                 releaseButton = 1;
                 gettimeofday( &now, NULL );
                 newtime = (now.tv_usec + now.tv_sec*1000000) / 1000;
@@ -398,7 +403,6 @@ void *DetectMouse(void *arg) {
             }
 
             if ( isAction( history, i, SLIDE ) ) {
-                mouseNotRelease = 0;
                 notify(&history, &thirdClick, &releaseButton, fd_python);
             }
 
