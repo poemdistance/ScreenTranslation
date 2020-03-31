@@ -69,20 +69,20 @@ void quickSearch()
 
         while ( 1 ) {
 
-            if ( shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] == '1') {
+            if ( shmaddr_keyboard[QUICK_SEARCH_FLAG] == '1') {
 
                 pmag ( "启动quick search 窗口" );
 
                 //InSearchWin = 1;
                 shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '1';
-                shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] = '0';
+                shmaddr_keyboard[QUICK_SEARCH_FLAG] = '0';
 
 
                 /* 莫得办法，不每次都fork一个进程，窗口除第一次外都无法聚焦*/
                 if ( ( pid = fork() ) == 0) {
                     searchWindow();
                     pbblue ( "searchWindow() 退出" );
-                    shmaddr_keyboard[QuickSearchShortcutPressed_FLAG] = '0';
+                    shmaddr_keyboard[QUICK_SEARCH_FLAG] = '0';
                     exit(0);
                 } 
                 else {
