@@ -26,6 +26,7 @@ typedef struct ConfigData {
 
     int pointerx;
     int pointery;
+    int buttonState;
 
 }ConfigData;
 
