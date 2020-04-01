@@ -46,7 +46,7 @@
 
   #### Arch Linux 测试通过:
 
-   ![img](./ui/window-has-title-bar-1.png) 
+   ![img](./gif_pic/window-has-title-bar.png) 
 
  #### Deepin Linux 测试通过:
  ![img](./gif_pic/deepin.png)
