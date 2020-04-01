@@ -1,4 +1,5 @@
 ## 离线功能若要正常使用，请将Python更新到3.8及以上
+### Deepin 需要开启窗口特效，不然窗口周围的阴影特效会变成一团黑，目前暂未添加用户接口禁用周围阴影，之后会添加上.
 
 <br> 
 
@@ -39,16 +40,16 @@
   
   
 
-  #### Ubuntu 19.04 测试通过(旧版UI):
+  #### Ubuntu 19.04 测试通过:
 
    ![img](./gif_pic/ubuntu.png)
 
-  #### Arch Linux 测试通过(目前最新UI):
+  #### Arch Linux 测试通过:
 
    ![img](./gif_pic/GUI.png) 
 
- #### Deepin Linux 测试通过 (旧版本UI)
- ![img](./gif_pic/deeping.png)
+ #### Deepin Linux 测试通过:
+ ![img](./gif_pic/deepin.png)
 
 
 
