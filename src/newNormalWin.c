@@ -1646,7 +1646,7 @@ int reGetBaiduTrans (gpointer *data, int who ) {
     return 0;
 }
 
-int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
+int refreshResult(GtkWidget *button, gpointer *data, int who ) {
 
     int ret = 0;
 
@@ -1660,7 +1660,7 @@ int adjustWinSize(GtkWidget *button, gpointer *data, int who ) {
         if ( index[0] != 0 )
             separateGoogleData ( index, 28 );
         else
-            pred("未找到分隔符(adjustWinSize)");
+            pred("未找到分隔符(refreshResult)");
     }
     else if ( who == BAIDU || who == MYSQL)
     {
@@ -1698,7 +1698,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
     wd->who = GOOGLE;
     wd->specific = 1;
 
-    adjustWinSize ( button, data, GOOGLE );
+    refreshResult ( button, data, GOOGLE );
 
     clearContentListBox ( wd->content_listbox );
 
@@ -1771,7 +1771,7 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
     wd->who = MYSQL;
     wd->specific = 1;
 
-    adjustWinSize ( button, data, MYSQL );
+    refreshResult ( button, data, MYSQL );
 
     displayTrans ( wd, result );
 }
@@ -1845,7 +1845,7 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
     wd->who = BAIDU;
     wd->specific = 1;
 
-    adjustWinSize ( button, data, BAIDU );
+    refreshResult ( button, data, BAIDU );
 
     displayTrans ( wd, result );
 }
