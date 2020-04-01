@@ -1686,6 +1686,24 @@ int changeDisplay(GtkWidget *button, WinData *wd) {
     return 0;
 }
 
+/* 删除字符串末尾遇到的第一个回车符*/
+char *removeTrailCR ( char *str ) {
+
+    if ( !str ) return NULL;
+
+    char *p = str;
+
+    /* 使指针指向字符串末尾*/
+    while ( *p++ );
+    p = p - 2;
+
+    /* 回退p，使其指向遇到的第一个回车符,如果找到则替换成'\0'*/
+    while ( p != str && *p != '\n' ) p--;
+    if ( *p == '\n' ) *p = '\0';
+
+    return str;
+}
+
 void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 
     pyellow("显示谷歌翻译结果:\n");
@@ -1703,7 +1721,7 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
     clearContentListBox ( wd->content_listbox );
 
     if ( strlen( text )  < 30 )
-        gtk_label_set_text ( GTK_LABEL(wd->src_label), text );
+        gtk_label_set_text ( GTK_LABEL(wd->src_label), removeTrailCR(text) );
 
     setWidgetProperties ( wd->src_label, 1.3, "#000000", BOLD_TYPE, NOT_TRANSPARENT );
 
