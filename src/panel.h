@@ -20,6 +20,8 @@ void iconPositionSetting ( SettingWindowData *settingWindow );
 
 void windowPosSetting ( SettingWindowData *settingWindow );
 
+void windowPrefSetting ( SettingWindowData *swd );
+
 
 gboolean on_configure_event_cb ( 
         GtkWindow *window,
