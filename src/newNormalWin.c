@@ -86,7 +86,6 @@ void selectDisplay( WinData *wd ) {
     else
         wd->who = GOOGLE;
 
-
     GtkWidget *pressButton = GET_BUTTON ( wd, wd->who );
     on_tran_button_clicked_cb ( pressButton, wd );
 }
@@ -170,18 +169,19 @@ static inline gboolean isPointerInOurWin
 ( int x0, int y0, int x1, int y1, WinData *wd ) {
 
     return 
-            wd->cd->pointerx >= x0 && 
-            wd->cd->pointery >= y0 &&
-            wd->cd->pointerx <= x1 &&
-            wd->cd->pointery <= y1;
+        wd->cd->pointerx >= x0 && 
+        wd->cd->pointery >= y0 &&
+        wd->cd->pointerx <= x1 &&
+        wd->cd->pointery <= y1;
 }
 
 /* 
  * (x0, y0): 窗口左上角坐标(可见部分)
  * (x1, y1): 窗口右下角坐标(可见部分)
  * */
-static inline gboolean isPointerInOurVisibleWin
-( int x0, int y0, int x1, int y1, WinData *wd ) {
+static inline gboolean 
+isPointerInOurVisibleWin ( int x0, int y0, int x1, int y1, WinData *wd ) 
+{
 
     return isPointerInOurWin ( x0, y0, x1, y1, wd );
 }
@@ -1426,9 +1426,8 @@ void *newNormalWindow ( void *data ) {
 
     dataInit(&wd);
 
-    int ret = waitForContinue( &wd );
-
-    if ( ret ) {
+    if ( waitForContinue( &wd ) ) 
+    {
         InNewWin = 0;
         return (void*)0;
     }
@@ -1457,9 +1456,7 @@ void *newNormalWindow ( void *data ) {
     initMemoryBaidu();
     initMemoryMysql();
     initMemoryTmp();
-
-    if ( google_result[0] == NULL )
-        initMemoryGoogle();
+    initMemoryGoogle();
 
     g_signal_connect (wd.window, "button-press-event", 
             G_CALLBACK(on_button_press_cb), &wd);
@@ -1560,49 +1557,32 @@ int getIndex(int *index, char *src) {
 
 int waitForContinue(WinData *wd) {
 
-    int flag = 0;
+    pgreen("准备接收共享内存数据... ( WaitForContinue )");
+
     int time = 0;
 
     /*等待任意一方python端的翻译数据全部写入共享内存*/
-    while( ( shmaddr_google[0] != FINFLAG 
-                && shmaddr_baidu[0] != FINFLAG
-                && shmaddr_mysql[0] != FINFLAG )) {
-
-
-        if ( flag ) {
-            flag = 0;
-            printf("准备接收共享内存数据...\n");
-        }
+    while( (
+                shmaddr_google[0] != FINFLAG && 
+                shmaddr_baidu [0] != FINFLAG &&
+                shmaddr_mysql [0] != FINFLAG )) {
 
         /*长时间未检测到共享内存里的数据进行双击取消本次窗口显示*/
         if ( action == DOUBLE_CLICK ) {
 
-            printf("捕获双击退出: In newNormalWindow.c\n");
-
-            /*action==DOUBLE_CLICK只代表取消显示，应重置action*/
+            pred("双击退出. ( WaitForContinue )");
             action = 0;
             return 1;
         }
         if ( shmaddr_google[0] == ERRCHAR) {
-            printf("翻译过程出现错误, 准备窗口错误提示\n");
+            pred("翻译过程出现错误 ( WaitForContinue )");
             break;
         }
 
-        if ( shmaddr_google[0] == NULLCHAR ) {
-            if ( shmaddr_google[0] == NULLCHAR)
-                printf("空字符串\n");
-            action = 0;
-            shmaddr_google[0] = CLEAR;
-            shmaddr_baidu[0] = CLEAR;
-            shmaddr_mysql[0] = CLEAR;
-            InNewWin = 0;
-            return 1;
-        }
         usleep(400000);
-        time++;
 
         /* 超时时间1.6S ( 2 * 400000ms )*/
-        if ( time >= 2 ) {
+        if ( ++time >= 2 ) {
             pred("超时退出");
             shmaddr_google[0] = ERRCHAR;
             shmaddr_baidu[0] = ERRCHAR;
@@ -1611,24 +1591,12 @@ int waitForContinue(WinData *wd) {
     }
 
     if ( text == NULL )
-        if (( text = calloc(TEXTSIZE, 1)) == NULL)
-            err_exit("malloc failed in notify.c");
-
-    if ( shmaddr_baidu[0] == EXITFLAG ) {
-        pred("百度翻译异常退出");
-        pred("正在停止取词翻译");
-        quit();
-    }
+        text = calloc(TEXTSIZE, 1);
 
     action = 0;
-    wd->gotOfflineTran = ( shmaddr_mysql[0] == FINFLAG ) ? 1 : 0;
-    wd->gotGoogleTran = ( shmaddr_google[0] == FINFLAG ) ? 1 : 0;
-    wd->gotBaiduTran = ( shmaddr_baidu[0] == FINFLAG ) ? 1 : 0;
-
-    /*原始数据超过一定长度，在ScrolledWin中显示, 并返回1，
-     * 不再执行newWin函数*/
-    if ( strlen (text) > 130 ) 
-        return newScrolledWin();
+    wd->gotOfflineTran = ( shmaddr_mysql [0] == FINFLAG ) ? 1 : 0;
+    wd->gotGoogleTran  = ( shmaddr_google[0] == FINFLAG ) ? 1 : 0;
+    wd->gotBaiduTran   = ( shmaddr_baidu [0] == FINFLAG ) ? 1 : 0;
 
     return 0;
 }
@@ -1917,6 +1885,8 @@ GtkWidget *setWidgetProperties (
         int bold,
         int alpha
         ) {
+
+    if ( ! widget  ) return NULL;
 
     GdkRGBA color;
     gdk_rgba_parse ( &color, rgb );
