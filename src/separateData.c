@@ -131,7 +131,7 @@ void separateGoogleData ( int *index, int len ) {
         p[1] = index[0] != 0 ? &tmp[index[0]] : NULL;
         p[2] = index[1] != 0 ? &tmp[index[1]] : NULL;
 
-        adjustStrForGoogle(p, 28, google_result, &enterNum);
+        adjustStrForGoogle(p, len, google_result, &enterNum);
     }
     else  {
         shmaddr_google[0] = CLEAR;
