@@ -13,6 +13,22 @@
 #include "expanduser.h"
 #include "sharedMemory.h"
 
+/* 添加设置窗口新条目的步骤：
+ *
+ * 1. 到settingWindowData.h 定义新的结构体,并在SettingWindowData结构体中
+ *    定义一个新的该结构体的指针
+ * 
+ * 2. 添加新的.c文件，入口函数在panel.h中声明,并将该入口函数加入本文件中
+ *    contentDisplayFunc[] 数组中.
+ *
+ * 3. 到settingList.c中加入该条目的标题到settingItems[][]数组, 然后找到
+ *    settingItemsIcon[][]数组，加入该条目对应的图标.
+ *
+ * 4. 将页面逻辑添加到新的.c文件中，可以参考其他文件的书写方式.一般步骤是
+ *    先将swd->contentScrollWindow清空，然后在其内部添加各种所需部件.
+ *
+ * */
+
 
 extern GtkWidget *items[LIST_BOX_ITEMS];
 
@@ -21,6 +37,7 @@ ContentDisplayFunc contentDisplayFunc[] = {
     iconShowTimeSetting, 
     iconPositionSetting,
     windowPosSetting,
+    windowPrefSetting,
 };
 
 ContentDisplayFunc getFuncBySelectedRow ( int row ) {
