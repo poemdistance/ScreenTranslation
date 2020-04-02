@@ -318,17 +318,6 @@ void iconPositionSetting ( SettingWindowData *settingWindowData ) {
     ipswd.icon =  (GtkWidget*)icon;
     ipswd.saveButton = (GtkWidget*)saveButton;
 
-    GtkWidget *pointerImage = gtk_image_new_from_pixbuf(
-            gdk_cursor_get_image (
-                gdk_cursor_new_from_name ( 
-                    gdk_display_get_default(),
-                    "default"
-                    )
-                )
-            );
-
-    gtk_button_set_image ( GTK_BUTTON(pointer), pointerImage );
-
     gtk_widget_set_hexpand ( (GtkWidget*)layout, TRUE );
     gtk_widget_set_vexpand ( (GtkWidget*)layout, TRUE );
     gtk_widget_set_margin_start ( (GtkWidget*)layout, 0 );
