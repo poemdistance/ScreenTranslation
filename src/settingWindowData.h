@@ -22,6 +22,13 @@
 extern char settingItems[][128] ;
 extern char settingItemsIcon[][128];
 
+typedef struct {
+
+    GtkWidget *listBox;
+    GtkWidget *box;
+
+}WinPrefSettingWindowData ;
+
 typedef struct WinPosSettingWindowData {
 
     GtkWidget *listBox;
@@ -127,6 +134,7 @@ typedef struct SettingWindowData {
     ShortcutSettingWindowData *shortcutSettingWindowData ;
     IconPositionSettingWindowData *iconPositionSettingWindowData;
     WinPosSettingWindowData *winPosSettingWindowData;
+    WinPrefSettingWindowData *winPrefSettingWindowData;
 
     gint width;
     gint height;
