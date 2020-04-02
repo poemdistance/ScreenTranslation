@@ -79,7 +79,7 @@ void WatchSelection(Display *display, const char *bufname)
             if ( shmaddr_selection[0] != '1' ) {
 
                 shmaddr_selection[0] = '1';
-                pred("Selection change: write finish flag: 1");
+                pgreen("Selection change: write finish flag: 1");
             }
         }
 

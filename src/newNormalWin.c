@@ -164,7 +164,6 @@ void on_win_size_allocate_cb (
  * (x0, y0): 窗口左上角坐标(不可见部分)
  * (x1, y1): 窗口右下角坐标(亦不可见)
  * */
-
 static inline gboolean isPointerInOurWin 
 ( int x0, int y0, int x1, int y1, WinData *wd ) {
 
@@ -249,12 +248,8 @@ int check_pointer_and_window_position ( void *data ) {
     if ( isPointerInOurVisibleWin (
                 visible_win_root_x, visible_win_root_y,
                 visible_right_down_x, visible_right_down_y, 
-                wd
-
-                ) ) {
-
+                wd) ) {
     }
-
 
     if ( ! wd->moveWindowNotify ) {
         /* pred ( "未检测到窗口移动通知" ); */
@@ -270,10 +265,6 @@ int check_pointer_and_window_position ( void *data ) {
         ( cd->pointerOffsetX *1.0 / 400 ) * invisible_win_width;;
     int targetY = cd->pointery - 
         ( cd->pointerOffsetY *1.0 / 252 ) * invisible_win_height;
-
-    /* if ( targetX < 0 ) targetX = 0; */
-    /* if ( targetY < 0 ) targetY = 0; */
-
 
     if ( ! wd->quickSearchFlag ) {
 
@@ -1487,22 +1478,14 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
 
     clearMemory();
 
-    g_source_remove ( timeout_id );
-    g_source_remove ( movewindow_timeout_id );
-
     /* 窗口关闭标志位*/
     shmaddr_keyboard[WINDOW_OPENED_FLAG] = '0';
     shmaddr_keyboard[CTRL_C_PRESSED_FLAG] = '0';
-
-    //gtk_widget_destroy ( wd->image );
 
     /*清除相关标记*/
     shmaddr_baidu[0] = CLEAR;
     shmaddr_google[0] = CLEAR;
 
-    /* TODO:按了exit键后变成了单击事件，此时再双击会导致检测错误
-     * 应手动置0 ( 当前可以不用这个了，这是以前用过的,不过先放着
-     * 可能以后用得着，可以当个提醒 )*/
     action = 0;
 
     pbcyan ( "InNewWin 置零" );
@@ -1511,7 +1494,6 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
     InNewWin = 0;
 
 
-    //gtk_window_close(GTK_WINDOW(window));
     gtk_widget_destroy(wd->window);
     gtk_main_quit();
 

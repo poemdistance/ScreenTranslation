@@ -12,7 +12,6 @@
 #include "setting.h"
 #include "sharedMemory.h"
 
-/* The declaration of fucntions*/
 void iconShowTimeSetting( SettingWindowData *settingWindowData  );
 void removeLockFile();
 void scale_value_changed_call_back ( GtkRange *delayScale, SettingWindowData *settingWindowData );

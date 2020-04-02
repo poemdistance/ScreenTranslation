@@ -73,7 +73,6 @@ void quickSearch()
 
                 pmag ( "启动quick search 窗口" );
 
-                //InSearchWin = 1;
                 shmaddr_keyboard[SEARCH_WINDOW_OPENED_FLAG] = '1';
                 shmaddr_keyboard[QUICK_SEARCH_FLAG] = '0';
 
