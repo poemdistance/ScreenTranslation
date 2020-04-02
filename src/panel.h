@@ -18,7 +18,7 @@ void shortcutSetting(  SettingWindowData *settingWindowData   );
 
 void iconPositionSetting ( SettingWindowData *settingWindow );
 
-void windowPrefSetting ( SettingWindowData *settingWindow );
+void windowPosSetting ( SettingWindowData *settingWindow );
 
 
 gboolean on_configure_event_cb ( 
