@@ -5,6 +5,7 @@
 #include "configControl.h"
 #include "settingWindowData.h"
 #include "settingList.h"
+#include "expanduser.h"
 
 #define ICON_MARGIN_START (5)
 
@@ -19,11 +20,11 @@ char settingItems[][128] = {
 };
 
 char settingItemsIcon[][128] = {
-    "preferences-desktop-keyboard-shortcuts",
-    "appointment-soon",
-    "mark-location",
-    "preferences-system-windows",
-    "preferences-system-windows",
+    "keyboard-shortcuts",
+    "delay",
+    "location",
+    "window-position",
+    "window-preference",
     /* "emblem-system", */
 };
 
@@ -95,6 +96,7 @@ void initSettingItems ( GtkWidget *parent ) {
     GtkWidget *icon;
     GtkWidget *grid;
     GtkWidget *box;
+    gchar iconPath[512];
 
     for ( int i = 0; i<sizeof(settingItems)/sizeof(settingItems[0]); i++ ) {
 
@@ -105,7 +107,11 @@ void initSettingItems ( GtkWidget *parent ) {
             return;
         }
 
-        icon = gtk_image_new_from_icon_name ( settingItemsIcon[i], 3 );
+        strcpy ( iconPath, expanduser("/home/$USER/.stran/") );
+        strcat ( iconPath, settingItemsIcon[i] );
+        strcat ( iconPath, ".png" );
+
+        icon = gtk_image_new_from_file ( iconPath );
         label = gtk_label_new ( settingItems[i] );
         box = gtk_box_new ( GTK_ORIENTATION_HORIZONTAL ,0 );
 
