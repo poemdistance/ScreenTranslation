@@ -52,6 +52,82 @@ int mousefd;
 extern volatile sig_atomic_t action;
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
+int checkBingGoogleProcessStatus () {
+
+    /* 任何一端翻译程序终止即退出取词翻译*/
+    if ( BAIDU_TRANS_EXIT_FALG ) {
+        pbred("百度翻译子进程已退出");
+        pbred("准备退出取词翻译程序");
+        SIGTERM_NOTIFY = 1;
+    } 
+
+    if ( GOOGLE_TRANS_EXIT_FLAG ) {
+
+        pbred("谷歌翻译子进程已退出");
+        pbred("准备退出取词翻译程序");
+        SIGTERM_NOTIFY = 1;
+    }
+
+    return 0;
+}
+
+int checkOtherProcessNotifyEvent ( int fd_python[] ) {
+
+
+    if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
+
+        pbcyan ( "Quick Search 完毕" );
+
+        if ( text == NULL )
+            if (( text = calloc(TEXTSIZE, 1)) == NULL)
+                err_exit("malloc failed in notify.c");
+
+        shmaddr_searchWin[TEXT_SUBMIT_FLAG] = '0';
+        strcpy ( text,  &shmaddr_searchWin[SUBMIT_TEXT] );
+        writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[0] );
+        writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
+        writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[2] );
+        CanNewWin = 1;
+    }
+
+    if ( shmaddr_pic[0] == FINFLAG ) {
+
+        pbcyan ( "Tran pic 完毕" );
+
+        if ( text == NULL )
+            if (( text = calloc(TEXTSIZE, 1)) == NULL)
+                err_exit("malloc failed in notify.c");
+
+        shmaddr_pic[0] = CLEAR;
+        strcpy ( text,  &shmaddr_pic[ACTUALSTART] );
+        writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[0] );
+        writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[1] );
+        writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[2] );
+        CanNewEntrance = 1;
+    }
+
+    if ( shmaddr_keyboard[RECALL_PREVIOUS_TRAN] == '1' ) {
+
+        pbcyan ( "打开上一次翻译内容" );
+
+        if ( text == NULL )
+            if (( text = calloc(TEXTSIZE, 1)) == NULL)
+                err_exit("malloc failed in notify.c");
+
+        shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = CLEAR;
+
+        if ( strlen ( text ) ) {
+            writePipe ( text, fd_python[0] );
+            writePipe ( text, fd_python[1] );
+            writePipe ( text, fd_python[2] );
+            CanNewWin = 1;
+        }
+        else { pbred ( "上一次翻译内容为空，此次不调出窗口" );}
+    }
+
+    return 0;
+}
+
 void *DetectMouse(void *arg) {
 
     pbblue ( "启动线程DetectMouse" );
@@ -69,6 +145,7 @@ void *DetectMouse(void *arg) {
     double inTimeout = 0;
     int releaseButton = 1;
     int thirdClick;
+    static int t = 0;
 
     int fd_google[2], fd_baidu[2], fd_mysql[2];
     int fd_python[3];
@@ -111,6 +188,7 @@ void *DetectMouse(void *arg) {
             baidu_translate_pid = pid_baidu;
     }
 
+    /* fork一个子进程用于检测剪贴板变化*/
     if ( pid_google > 0 ) {
 
         if ( ( retpid = fork() ) == -1) 
@@ -128,7 +206,7 @@ void *DetectMouse(void *arg) {
         }
     }
 
-    /* 咱再fork一个用于离线翻译的*/
+    /* 再fork一个用于离线翻译*/
     if ( pid_google > 0 ) {
 
         if ( ( retpid = fork() ) == -1) 
@@ -147,7 +225,7 @@ void *DetectMouse(void *arg) {
         }
     }
 
-    /* 来来来，加个检测截图识别的进程*/
+    /* fork一个子进程用于检测截图识别*/
     if ( pid_google > 0 ) {
 
         if ( ( retpid = fork() ) == -1) 
@@ -202,7 +280,7 @@ void *DetectMouse(void *arg) {
         int cycle[4] = { 0 }; /* 始终不清空,循环写入数据*/
         int i = 0, n = 0, m = 0;
         struct pollfd pfd;
-        int timeout = 200;
+        int timeout = 2000;
         pfd.fd = mousefd;
         pfd.events = POLLIN|POLLPRI;
 
@@ -212,77 +290,11 @@ void *DetectMouse(void *arg) {
 
             if ( SIGTERM_NOTIFY ) break;
 
-            /* 任何一端翻译程序终止即退出取词翻译*/
-            if ( BAIDU_TRANS_EXIT_FALG ) {
-                pbred("百度翻译子进程已退出");
-                pbred("准备退出取词翻译程序");
-                SIGTERM_NOTIFY = 1;
-                break;
-                /* quit(); */
-            } 
-
-            if ( GOOGLE_TRANS_EXIT_FLAG ) {
-
-                pbred("谷歌翻译子进程已退出");
-                pbred("准备退出取词翻译程序");
-                SIGTERM_NOTIFY = 1;
-                break;
-                /* quit(); */
-            }
-
-            if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
-
-                pbcyan ( "Quick Search 完毕" );
-
-                if ( text == NULL )
-                    if (( text = calloc(TEXTSIZE, 1)) == NULL)
-                        err_exit("malloc failed in notify.c");
-
-                shmaddr_searchWin[TEXT_SUBMIT_FLAG] = '0';
-                strcpy ( text,  &shmaddr_searchWin[SUBMIT_TEXT] );
-                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[0] );
-                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
-                writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[2] );
-                CanNewWin = 1;
-            }
-
-            if ( shmaddr_pic[0] == FINFLAG ) {
-
-                pbcyan ( "Tran pic 完毕" );
-
-                if ( text == NULL )
-                    if (( text = calloc(TEXTSIZE, 1)) == NULL)
-                        err_exit("malloc failed in notify.c");
-
-                shmaddr_pic[0] = CLEAR;
-                strcpy ( text,  &shmaddr_pic[ACTUALSTART] );
-                writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[0] );
-                writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[1] );
-                writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[2] );
-                CanNewEntrance = 1;
-            }
-
-            if ( shmaddr_keyboard[RECALL_PREVIOUS_TRAN] == '1' ) {
-
-                pbcyan ( "打开上一次翻译内容" );
-
-                if ( text == NULL )
-                    if (( text = calloc(TEXTSIZE, 1)) == NULL)
-                        err_exit("malloc failed in notify.c");
-
-                shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = CLEAR;
-
-                if ( strlen ( text ) ) {
-                    writePipe ( text, fd_python[0] );
-                    writePipe ( text, fd_python[1] );
-                    writePipe ( text, fd_python[2] );
-                    CanNewWin = 1;
-                }
-                else { pbred ( "上一次翻译内容为空，此次不调出窗口" );}
-            }
+            checkBingGoogleProcessStatus();
+            checkOtherProcessNotifyEvent( fd_python );
 
             /*超时*/
-            if(retval==0) {
+            if( retval == 0 ) {
 
                 gettimeofday( &whenTimeout, NULL );
                 inTimeout = (whenTimeout.tv_usec + whenTimeout.tv_sec*1000000) / 1000;
@@ -294,8 +306,6 @@ void *DetectMouse(void *arg) {
                         releaseButton = 1;
                         action = 0;
                     }
-                /* pred ( "retval==0, 超时" ); */
-
                 continue;
             }
 
@@ -304,34 +314,25 @@ void *DetectMouse(void *arg) {
                 shmaddr_keyboard[SELECT_EXCLUDE_FLAG] = '0';
             }
 
-            if(read(mousefd, buf, 3) <= 0) {
-                continue;
-            }
-
-            /*打开翻译窗口后不再判断鼠标动作
-             * NOTE: 这句要放在读鼠标设备的语句之后,防止窗口关闭后旧数据
-             * 被读进history误判，而把任何时候的数据都读完了,
-             * 其他代码逻辑才不会被旧数据影响*/
-            /* if ( InNewWin == 1 ) */
-            /* continue; */
+            if(read(mousefd, buf, 3) <= 0) continue;
 
             /*循环写入鼠标数据到数组*/
             history[i] = buf[0] & 0x07;
             cycle[i] = history[i];
-            i++;
-            if ( i == 4 ) i = 0;
+            if ( ++i == 4 ) i = 0;
 
             /*m为最后得到的鼠标键值*/
             m = previous(i);
             n = previous(m);
 
-            /* LOG */
+            /* mark */
             /* int j = previous(n), x = previous(j); */
             /* printf("%d %d %d %d\n", history[m], history[n], history[j], history[x]); */
             /* printf("%d %d %d %d\n", cycle[m], cycle[n], cycle[j], cycle[x]); */
 
             /*没有按下按键并活动鼠标,标志releaseButton=1*/
             if ( history[m] == 0 && history[n] == 0 ) {
+                
                 releaseButton = 1;
 
                 /* 由于拼音打字和复制操作也会触发selection changed event
@@ -341,19 +342,17 @@ void *DetectMouse(void *arg) {
                 action = 0;
             }
 
-            if ( isAction(cycle, i, BUTTON_PRESS) )  {
+            if ( isAction(cycle, i, BUTTON_PRESS) )
                 cd->buttonState = BUTTON_PRESS;
-                /* pgreen ( "Button Press" ); */
-            }
-            if ( isAction(cycle, i, BUTTON_RELEASE) )  {
+
+            if ( isAction(cycle, i, BUTTON_RELEASE) )
                 cd->buttonState = BUTTON_RELEASE;
-                /* pgreen ( "Button Release" ); */
-            }
 
             /*按下左键*/
             /* 此处不要改变1 0的顺序，因为m n下标出现0 1可能是区域选择
              * 事件(SLIDE),这将导致SLIDE被一直误判*/
             if ( history[m] == 1 && history[n] == 0 ) {
+
                 if ( releaseButton ) {
 
                     gettimeofday(&old, NULL);
@@ -374,9 +373,8 @@ void *DetectMouse(void *arg) {
                     }
                     releaseButton = 0;
 
-                    /*非3击事件，则为单击，更新oldtime后返回检测鼠标新一轮事件*/
-                    if ( !thirdClick)
-                        continue;
+                    /*非3击事件, 则为单击, 返回检测鼠标新一轮事件*/
+                    if ( !thirdClick) continue;
                 }
             }
 
@@ -402,9 +400,8 @@ void *DetectMouse(void *arg) {
                 continue;
             }
 
-            if ( isAction( history, i, SLIDE ) ) {
+            if ( isAction( history, i, SLIDE ) )
                 notify(&history, &thirdClick, &releaseButton, fd_python);
-            }
 
         } /*while loop*/
 
@@ -485,11 +482,8 @@ void *DetectMouse(void *arg) {
         exit(1);
 
     }
-    pbcyan ( "Detect Mouse 退出: %d", getpid() );
-    /* pthread_exit(NULL); */
 
-    /* SIGTERM_NOTIFY = 1; */
-    /* quit(); */
+    pbcyan ( "Detect Mouse 退出: %d", getpid() );
 
     return NULL;
 }
