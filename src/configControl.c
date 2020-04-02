@@ -261,6 +261,9 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     cd->allowAutoAdjust = 
         str2bool ( readFromConfig ( "Allow-Auto-Adjust-Popup-Window-Pref" , buf ) );
 
+    cd->disableShadowBorder = 
+        str2bool ( readFromConfig ( "Disable-Shadow-Border-Pref", buf ) );
+
     printf("iconOffsetX:%d\n", cd->iconOffsetX);
     printf("iconOffsetY:%d\n", cd->iconOffsetY);
     printf("pointerOffsetX:%d\n", cd->pointerOffsetX);
@@ -272,6 +275,7 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     printf("switchSourceMask:%d %d\n", cd->switchSourceMask, cd->switchSourceKeyval);
     printf("playAudioMask:%d keyval:%d\n", cd->playAudioMask, cd->playAudioKeyval);
     printf("allowAutoAdjust:%d\n", cd->allowAutoAdjust);
+    printf("disableShadowBorder:%d\n", cd->disableShadowBorder);
 }
 
 /* int main(int argc, char **argv) */

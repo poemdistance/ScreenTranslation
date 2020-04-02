@@ -23,6 +23,7 @@ typedef struct ConfigData {
     int switchSourceMask;
     unsigned int switchSourceKeyval;
     int allowAutoAdjust;
+    int disableShadowBorder;
 
     int pointerx;
     int pointery;
