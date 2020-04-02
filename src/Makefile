@@ -22,7 +22,8 @@ COMMON = useful.o configControl.o expanduser.o strmask.o shmCreate.o
 
 MONNITOR = StranMonitor.o gtkLabel.o iconShowTimeSetting.o removeWidget.o \
 		   shortcutSetting.o windowPositionSetting.o focus.o setting.o \
-		   settingWindow.o tray.o iconPositionSetting.o settingList.o
+		   settingWindow.o tray.o iconPositionSetting.o settingList.o \
+		   windowPrefSetting.o
 
 
 all : stran mstran
