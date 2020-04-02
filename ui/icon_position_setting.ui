@@ -1,121 +1,126 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.22.2 -->
 <interface>
-    <requires lib="gtk+" version="3.20"/>
-    <object class="GtkImage" id="image">
+  <requires lib="gtk+" version="3.20"/>
+  <object class="GtkImage" id="image">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="halign">center</property>
+    <property name="valign">center</property>
+    <property name="icon_name">location-services-active-symbolic</property>
+    <property name="icon_size">5</property>
+  </object>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="pixbuf">pointer.png</property>
+  </object>
+  <object class="GtkLayout" id="layout">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="width">0</property>
+    <property name="height">0</property>
+    <child>
+      <object class="GtkEntry" id="entry">
+        <property name="width_request">378</property>
+        <property name="height_request">34</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="halign">center</property>
-        <property name="valign">center</property>
-        <property name="icon_name">location-services-active-symbolic</property>
-        <property name="icon_size">5</property>
-    </object>
-    <object class="GtkLayout" id="layout">
+        <property name="editable">False</property>
+        <property name="width_chars">40</property>
+        <property name="text" translatable="yes">Press and move the following icon</property>
+      </object>
+      <packing>
+        <property name="x">143</property>
+        <property name="y">113</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkEntry" id="entry1">
+        <property name="width_request">378</property>
+        <property name="height_request">34</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="width">0</property>
-        <property name="height">0</property>
-        <child>
-            <object class="GtkEntry" id="entry">
-                <property name="width_request">378</property>
-                <property name="height_request">34</property>
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="editable">False</property>
-                <property name="width_chars">40</property>
-                <property name="text" translatable="yes">Press and move the following icon</property>
-            </object>
-            <packing>
-                <property name="x">130</property>
-                <property name="y">113</property>
-            </packing>
-        </child>
-        <child>
-            <object class="GtkEntry" id="entry1">
-                <property name="width_request">378</property>
-                <property name="height_request">34</property>
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="editable">False</property>
-                <property name="width_chars">40</property>
-                <property name="text" translatable="yes">This setting will affect the position of popup icon</property>
-            </object>
-            <packing>
-                <property name="x">130</property>
-                <property name="y">162</property>
-            </packing>
-        </child>
-        <child>
-            <object class="GtkEntry" id="entry2">
-                <property name="width_request">378</property>
-                <property name="height_request">34</property>
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="editable">False</property>
-                <property name="width_chars">40</property>
-                <property name="text" translatable="yes">when selecting the text in paragraph</property>
-            </object>
-            <packing>
-                <property name="x">130</property>
-                <property name="y">211</property>
-            </packing>
-        </child>
-        <child>
-            <object class="GtkButton" id="pointer">
-                <property name="name">set</property>
-                <property name="width_request">30</property>
-                <property name="height_request">30</property>
-                <property name="visible">True</property>
-                <property name="relief">none</property>
-                <property name="can_focus">False</property>
-                <property name="receives_default">True</property>
-                <!-- <property name="sensitive">False</property> -->
-                <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK | GDK_ENTER_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
-                <property name="tooltip_text" translatable="yes">Pointer Position</property>
-                <property name="valign">start</property>
-            </object>
-
-            <packing>
-                <property name="x">300</property>
-                <property name="y">300</property>
-            </packing>
-        </child>
-        <child>
-            <object class="GtkButton" id="saveButton">
-                <property name="name">set</property>
-                <property name="label">Save Change</property>
-                <property name="width_request">30</property>
-                <property name="height_request">30</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK | GDK_ENTER_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
-                <property name="tooltip_text" translatable="yes">Applying Change</property>
-                <property name="valign">start</property>
-            </object>
-            <packing>
-                <property name="x">390</property>
-                <property name="y">400</property>
-            </packing>
-        </child>
-        <child>
-            <object class="GtkButton" id="icon">
-                <property name="name">icon</property>
-                <property name="width_request">30</property>
-                <property name="height_request">30</property>
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="receives_default">True</property>
-                <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK | GDK_ENTER_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
-                <property name="tooltip_text" translatable="yes">Drag Me</property>
-                <property name="valign">start</property>
-                <property name="image">image</property>
-                <property name="relief">none</property>
-            </object>
-            <packing>
-                <property name="x">300</property>
-                <property name="y">350</property>
-            </packing>
-        </child>
-    </object>
+        <property name="editable">False</property>
+        <property name="width_chars">40</property>
+        <property name="text" translatable="yes">This setting will affect the position of popup icon</property>
+      </object>
+      <packing>
+        <property name="x">143</property>
+        <property name="y">162</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkEntry" id="entry2">
+        <property name="width_request">378</property>
+        <property name="height_request">34</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="editable">False</property>
+        <property name="width_chars">40</property>
+        <property name="text" translatable="yes">when selecting the text in paragraph</property>
+      </object>
+      <packing>
+        <property name="x">143</property>
+        <property name="y">211</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="pointer">
+        <property name="name">set</property>
+        <property name="width_request">50</property>
+        <property name="height_request">50</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="receives_default">True</property>
+        <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK | GDK_ENTER_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
+        <property name="tooltip_text" translatable="yes">Pointer Position</property>
+        <property name="halign">start</property>
+        <property name="valign">start</property>
+        <property name="image">image1</property>
+        <property name="relief">none</property>
+      </object>
+      <packing>
+        <property name="x">303</property>
+        <property name="y">332</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="saveButton">
+        <property name="label">Save Change</property>
+        <property name="name">set</property>
+        <property name="width_request">30</property>
+        <property name="height_request">30</property>
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">True</property>
+        <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK | GDK_ENTER_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
+        <property name="tooltip_text" translatable="yes">Applying Change</property>
+        <property name="valign">start</property>
+      </object>
+      <packing>
+        <property name="x">403</property>
+        <property name="y">400</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="icon">
+        <property name="name">icon</property>
+        <property name="width_request">39</property>
+        <property name="height_request">42</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="receives_default">True</property>
+        <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK | GDK_ENTER_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
+        <property name="tooltip_text" translatable="yes">Drag Me</property>
+        <property name="valign">start</property>
+        <property name="image">image</property>
+        <property name="relief">none</property>
+      </object>
+      <packing>
+        <property name="x">293</property>
+        <property name="y">284</property>
+      </packing>
+    </child>
+  </object>
 </interface>
