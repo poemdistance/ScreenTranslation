@@ -7,7 +7,7 @@ LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0 libbsd libbsd-ctor`
 
 OBJECTS = forDetectMouse.o getClipboard.o GuiEntrance.o \
 		  notify.o detectMouse.o newNormalWin.o\
-		  separateData.o cleanup.o adjustStr.o Main.o newScrollWin.o\
+		  separateData.o cleanup.o adjustStr.o Main.o \
 		  countLines.o countCharNums.o adjustStrForScrolledWin.o\
 		  audioPlayer.o background.o switchButton.o checkSelectionChanged.o\
 		  keyPressEvent.o quickSearch.o findKeyboardDevice.o\
