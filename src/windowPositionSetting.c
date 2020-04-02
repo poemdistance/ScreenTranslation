@@ -449,7 +449,8 @@ void windowPosSetting ( SettingWindowData *swd ) {
     static char prefValue[MAX_PREF_NUM][PREF_CONTENT_LEN];
     memset ( prefName, '\0', sizeof(prefName) );
     memset ( prefValue, '\0', sizeof(prefValue) );
-    readFromConfigByKeyword ( prefValue, "Pref" );
+    /* readFromConfigByKeyword ( prefValue, "Pref" ); */
+    readFromConfigByKeyword ( prefValue, "Hide-Header-Bar-Pref" );
     readNameByKeyword ( prefName, "Pref" );
 
     /* 添加窗口配置信息到listBox*/
