@@ -26,7 +26,7 @@ static void on_save_button_click_cb (
         ) {
 
     WinPosSettingWindowData *wpswd = 
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
 
     char buf[16];
     writeToConfig ( "Pointer-Offset-X", int2str(wpswd->pointerOffsetX, buf) );
@@ -46,7 +46,7 @@ static void on_list_box_size_allocate_cb (
         ) {
 
     WinPosSettingWindowData *wpswd =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
 
     /* pbcyan ( "list box %d %d", alloc->width, alloc->height ); */
 
@@ -60,7 +60,7 @@ static void on_layout_widget_size_allocate_cb (
         ) {
 
     WinPosSettingWindowData *wpswd =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
 
     char buf[32];
     int i = 0;
@@ -101,7 +101,7 @@ static void on_layout_widget_size_allocate_cb (
 static void adjustLayoutWidget ( SettingWindowData *swd ) {
 
     WinPosSettingWindowData *wpswd =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
     GtkWidget *window = swd->window;
 
     int height=0, width=0;
@@ -170,7 +170,7 @@ static void on_layout_size_allocate_cb (
         ) {
 
     WinPosSettingWindowData *wpswd  =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
 
     wpswd->layoutWidth = alloc->width;
     wpswd->layoutHeight = alloc->height;
@@ -182,7 +182,7 @@ static void on_motion_notify_event (
         SettingWindowData *swd ) {
 
     WinPosSettingWindowData *wpswd  =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
 
 
     if ( wpswd->pointerPress && wpswd->pointerEnter ) wpswd->pointerDrag = TRUE;
@@ -268,7 +268,7 @@ static gboolean on_leave_pointer_cb (
         SettingWindowData *swd) {
 
     WinPosSettingWindowData *wpswd  =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
 
     wpswd->pointerEnter = FALSE;
     return TRUE;
@@ -280,7 +280,7 @@ static gboolean on_enter_pointer_button_cb (
         ) {
 
     WinPosSettingWindowData *wpswd  =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
     wpswd->pointerEnter = TRUE;
     return TRUE;
 }
@@ -291,7 +291,7 @@ static gboolean on_release_pointer_button_cb (
         SettingWindowData *swd
         ) {
     WinPosSettingWindowData *wpswd  =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
     wpswd->pointerPress = FALSE;
     wpswd->pointerDrag = FALSE;
     wpswd->cx = 0;
@@ -305,7 +305,7 @@ static gboolean on_press_pointer_button_cb (
         SettingWindowData *swd
         ) {
     WinPosSettingWindowData *wpswd  =
-        swd->windowPrefSettingWindowData;
+        swd->winPosSettingWindowData;
     wpswd->pointerPress = TRUE;
     /* 保存相对于icon本身按下的坐标位置*/
     wpswd->cx = ((GdkEventMotion*)event)->x;
@@ -320,7 +320,7 @@ static void updateLayout  (
         SettingWindowData *swd
         ) {
 
-    WinPosSettingWindowData *wpswd = swd->windowPrefSettingWindowData;
+    WinPosSettingWindowData *wpswd = swd->winPosSettingWindowData;
 
     if ( hideTitleBar ) {
         gtk_widget_hide ( wpswd->imageHasTitleBar );
@@ -355,7 +355,7 @@ void addPrefToListBox (
         char (*prefName)[PREF_CONTENT_LEN],
         SettingWindowData *swd ) {
 
-    WinPosSettingWindowData *wpswd = swd->windowPrefSettingWindowData;
+    WinPosSettingWindowData *wpswd = swd->winPosSettingWindowData;
     GtkListBox *list = (GtkListBox*)wpswd->listBox;
     GtkWidget *grid;
     GtkWidget *box;
@@ -414,10 +414,10 @@ void addPrefToListBox (
 }
 
 
-void windowPrefSetting ( SettingWindowData *swd ) {
+void windowPosSetting ( SettingWindowData *swd ) {
 
     static WinPosSettingWindowData wpswd;
-    swd->windowPrefSettingWindowData = &wpswd;
+    swd->winPosSettingWindowData = &wpswd;
     memset ( &wpswd, '\0', sizeof(wpswd) );
 
     wpswd.come = 0;
@@ -458,7 +458,7 @@ void windowPrefSetting ( SettingWindowData *swd ) {
 
     /* 加载ui配置文件*/
     GtkBuilder *builder = gtk_builder_new_from_file ( 
-            expanduser("/home/$USER/.stran/window-preference.ui"));
+            expanduser("/home/$USER/.stran/window-position.ui"));
 
     int i = -1;
     GObject *layout = gtk_builder_get_object ( builder, "layout" );

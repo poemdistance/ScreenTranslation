@@ -14,7 +14,7 @@ char settingItems[][128] = {
     "Keyboard Shortcuts",
     "Delay",
     "Icon Position",
-    "Window Preferences",
+    "Window Position",
 };
 
 char settingItemsIcon[][128] = {

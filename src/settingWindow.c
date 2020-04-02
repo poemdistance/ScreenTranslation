@@ -20,7 +20,7 @@ ContentDisplayFunc contentDisplayFunc[] = {
     shortcutSetting,
     iconShowTimeSetting, 
     iconPositionSetting,
-    windowPrefSetting,
+    windowPosSetting,
 };
 
 ContentDisplayFunc getFuncBySelectedRow ( int row ) {

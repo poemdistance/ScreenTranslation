@@ -126,7 +126,7 @@ typedef struct SettingWindowData {
     DelaySettingWindowData *delaySettingWindowData;
     ShortcutSettingWindowData *shortcutSettingWindowData ;
     IconPositionSettingWindowData *iconPositionSettingWindowData;
-    WinPosSettingWindowData *windowPrefSettingWindowData;
+    WinPosSettingWindowData *winPosSettingWindowData;
 
     gint width;
     gint height;
