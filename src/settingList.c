@@ -15,12 +15,14 @@ char settingItems[][128] = {
     "Delay",
     "Icon Position",
     "Window Position",
+    "Window Preferences",
 };
 
 char settingItemsIcon[][128] = {
     "preferences-desktop-keyboard-shortcuts",
     "appointment-soon",
     "mark-location",
+    "preferences-system-windows",
     "preferences-system-windows",
     /* "emblem-system", */
 };
