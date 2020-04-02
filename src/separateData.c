@@ -138,7 +138,7 @@ void separateGoogleData ( int *index, int len ) {
         strcpy(google_result[0], "翻译超时或出现其他错误");
     }
 
-    if ( enterNum > 8 )
+    if ( enterNum > 8 && len < 100 )
         separateGoogleData ( index, len+8 );
 }
 
