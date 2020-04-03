@@ -24,9 +24,10 @@ typedef struct ConfigData {
     unsigned int switchSourceKeyval;
     int allowAutoAdjust;
     int disableShadowBorder;
+    int shrinkShadowBorder;
 
-    int pointerx;
-    int pointery;
+    volatile int pointerx;
+    volatile int pointery;
     int buttonState;
 
 }ConfigData;

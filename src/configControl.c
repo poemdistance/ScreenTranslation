@@ -264,6 +264,9 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     cd->disableShadowBorder = 
         str2bool ( readFromConfig ( "Disable-Shadow-Border-Pref", buf ) );
 
+    cd->shrinkShadowBorder = 
+        str2bool ( readFromConfig ( "Shrink-Shadow-Border-Pref", buf ) );
+
     printf("iconOffsetX:%d\n", cd->iconOffsetX);
     printf("iconOffsetY:%d\n", cd->iconOffsetY);
     printf("pointerOffsetX:%d\n", cd->pointerOffsetX);
@@ -276,6 +279,7 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     printf("playAudioMask:%d keyval:%d\n", cd->playAudioMask, cd->playAudioKeyval);
     printf("allowAutoAdjust:%d\n", cd->allowAutoAdjust);
     printf("disableShadowBorder:%d\n", cd->disableShadowBorder);
+    printf("shrinkShadowBorder:%d\n", cd->shrinkShadowBorder);
 }
 
 /* int main(int argc, char **argv) */
