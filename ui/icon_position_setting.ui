@@ -7,7 +7,7 @@
     <property name="can_focus">False</property>
     <property name="halign">center</property>
     <property name="valign">center</property>
-    <property name="icon_name">location-services-active-symbolic</property>
+    <property name="pixbuf">location-services-active-symbolic.symbolic.png</property>
     <property name="icon_size">5</property>
   </object>
   <object class="GtkImage" id="image1">

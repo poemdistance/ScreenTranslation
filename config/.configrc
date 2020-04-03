@@ -16,9 +16,9 @@ Hide-Header-Bar-Pref: TRUE
 Click-Outside-To-Close-Window-Pref: TRUE
 Control+C-To-Close-Window-Pref: TRUE
 Pointer-Offset-X: 195
-Pointer-Offset-Y: 251
+Pointer-Offset-Y: 262
 Pointer-Absolute-X: 273
-Pointer-Absolute-Y: 331
+Pointer-Absolute-Y: 342
 Allow-Auto-Adjust-Popup-Window-Pref: TRUE
 Disable-Shadow-Border-Pref: FALSE
 Shrink-Shadow-Border-Pref: FALSE
