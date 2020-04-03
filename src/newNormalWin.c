@@ -165,21 +165,21 @@ void on_win_size_allocate_cb (
  * (x1, y1): 窗口右下角坐标(亦不可见)
  * */
 static inline gboolean isPointerInOurWin 
-( int x0, int y0, int x1, int y1, WinData *wd ) {
+             ( int x0, int y0, int x1, int y1, WinData *wd ) {
 
-    return 
-        wd->cd->pointerx >= x0 && 
-        wd->cd->pointery >= y0 &&
-        wd->cd->pointerx <= x1 &&
-        wd->cd->pointery <= y1;
-}
+                 return 
+                     wd->cd->pointerx >= x0 && 
+                     wd->cd->pointery >= y0 &&
+                     wd->cd->pointerx <= x1 &&
+                     wd->cd->pointery <= y1;
+             }
 
 /* 
  * (x0, y0): 窗口左上角坐标(可见部分)
  * (x1, y1): 窗口右下角坐标(可见部分)
  * */
-static inline gboolean 
-isPointerInOurVisibleWin ( int x0, int y0, int x1, int y1, WinData *wd ) 
+    static inline gboolean 
+             isPointerInOurVisibleWin ( int x0, int y0, int x1, int y1, WinData *wd ) 
 {
 
     return isPointerInOurWin ( x0, y0, x1, y1, wd );
@@ -468,13 +468,10 @@ int detect_outside_click_action ( void *data ) {
     gtk_window_get_position ( 
             GTK_WINDOW(wd->window), &wx, &wy);
 
-    GdkWindow *win = gtk_widget_get_window(wd->window);
-
-    gint w = gdk_window_get_width(win);
-    gint h = gdk_window_get_height(win);
-
     gint pointerX = cd->pointerx;
     gint pointerY = cd->pointery;
+    gint w = 0;
+    gint h = 0;
     gtk_window_get_size ( GTK_WINDOW(wd->window), &w, &h );
 
     gboolean condition = FALSE;
@@ -973,6 +970,7 @@ on_phonetic_button_clicked_cb (
 
 /* From:https://stackoverflow.com/questions/3908565/how-to-make-gtk-window-background-transparent*/
 static gboolean expose_draw(GtkWidget *widget, GdkEventExpose *event, WinData *wd ) {
+
     cairo_t *cr = gdk_cairo_create(gtk_widget_get_window(widget));
 
     gboolean supports_alpha = FALSE;
@@ -1026,6 +1024,14 @@ static void screen_changed(GtkWidget *widget, GdkScreen *old_screen, WinData *wd
     gboolean
 area_draw_callback (GtkWidget *widget, cairo_t *cr, gint direction )
 {
+
+    if ( direction == -1 ) {
+        GdkScreen *screen = gtk_widget_get_screen(widget);
+        GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+        gtk_widget_set_visual ( widget, visual );
+        return TRUE;
+    }
+
     guint width, height;
 
     width = gtk_widget_get_allocated_width (widget);
@@ -1054,6 +1060,7 @@ area_draw_callback (GtkWidget *widget, cairo_t *cr, gint direction )
         default:
             pattern = cairo_pattern_create_linear ( 0, 0, 0, 0 ); break;
     }
+
 
     cairo_pattern_add_color_stop_rgba ( pattern, 0, 0, 0, 0, 0.1 );
     cairo_pattern_add_color_stop_rgba ( pattern, 0.3, 0.2, 0.2, 0.2, 0.05 );
@@ -1097,6 +1104,105 @@ void setHeaderBarBackground ( WinData *wd, gchar *color ) {
     gtk_widget_override_background_color ( wd->minimizeButton, 0, &rgba );
     gtk_widget_override_background_color ( wd->maximizeButton, 0, &rgba );
     gtk_widget_override_background_color ( wd->destroyButton, 0, &rgba );
+}
+
+void shrinkShdowBorder ( WinData *wd ) {
+
+    gtk_widget_set_size_request ( wd->areaWest, 1, -1 );
+    gtk_widget_set_size_request ( wd->areaEast, 1, -1 );
+    gtk_widget_set_size_request ( wd->areaNorth, -1, 1 );
+    gtk_widget_set_size_request ( wd->areaSouth, -1, 1 );
+
+    gtk_widget_set_size_request ( wd->areaNorthWest, 1, 1 );
+    gtk_widget_set_size_request ( wd->areaNorthEast, 1, 1 );
+    gtk_widget_set_size_request ( wd->areaSouthWest, 1, 1 );
+    gtk_widget_set_size_request ( wd->areaSouthEast, 1, 1 );
+}
+
+void initShadowBorder ( WinData *wd ) {
+
+
+    ConfigData *cd = wd->cd;
+    
+    if ( cd->shrinkShadowBorder ) {
+        shrinkShdowBorder ( wd );
+        return;
+    }
+
+    gtk_widget_set_app_paintable(wd->window, TRUE);
+
+    if ( ! cd->disableShadowBorder ) {
+        g_signal_connect(G_OBJECT(wd->window), "draw", G_CALLBACK(expose_draw), wd );
+        g_signal_connect(G_OBJECT(wd->window), "screen-changed", G_CALLBACK(screen_changed), wd);
+    }
+
+    screen_changed( wd->window, NULL, NULL );
+    g_signal_connect ( wd->areaEast, "draw", G_CALLBACK(area_draw_callback), 
+            cd->disableShadowBorder ? (void*)-1 : (void*)EAST_AREA );
+
+    g_signal_connect ( wd->areaWest, "draw", G_CALLBACK(area_draw_callback),
+            cd->disableShadowBorder ? (void*)-1 : (void*)WEST_AREA );
+
+    g_signal_connect ( wd->areaNorth, "draw", G_CALLBACK(area_draw_callback), 
+            cd->disableShadowBorder ? (void*)-1 : (void*)NORTH_AREA );
+
+    g_signal_connect ( wd->areaSouth, "draw", G_CALLBACK(area_draw_callback), 
+            cd->disableShadowBorder ? (void*)-1 : (void*)SOUTH_AREA );
+
+    g_signal_connect ( wd->areaNorthEast, "draw", G_CALLBACK(area_draw_callback), 
+            cd->disableShadowBorder ? (void*)-1 : (void*)NORTH_EAST_AREA );
+
+    g_signal_connect ( wd->areaNorthWest, "draw", G_CALLBACK(area_draw_callback), 
+            cd->disableShadowBorder ? (void*)-1 : (void*)NORTH_WEST_AREA );
+
+    g_signal_connect ( wd->areaSouthEast, "draw", G_CALLBACK(area_draw_callback), 
+            cd->disableShadowBorder ? (void*)-1 : (void*)SOUTH_EAST_AREA );
+
+    g_signal_connect ( wd->areaSouthWest, "draw", G_CALLBACK(area_draw_callback), 
+            cd->disableShadowBorder ? (void*)-1 : (void*)SOUTH_WEST_AREA );
+
+    int mask = GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK ;
+    gtk_widget_add_events (wd->areaEast, mask);
+    gtk_widget_add_events (wd->areaWest, mask);
+    gtk_widget_add_events (wd->areaNorth, mask);
+    gtk_widget_add_events (wd->areaSouth, mask);
+    gtk_widget_add_events (wd->areaNorthEast, mask);
+    gtk_widget_add_events (wd->areaNorthWest, mask);
+    gtk_widget_add_events (wd->areaSouthEast, mask);
+    gtk_widget_add_events (wd->areaSouthWest, mask);
+
+    gtk_widget_set_events (wd->areaEast, gtk_widget_get_events (wd->areaEast)
+            | GDK_BUTTON_PRESS_MASK
+            | GDK_POINTER_MOTION_MASK
+            | GDK_BUTTON_RELEASE_MASK
+            |GDK_LEAVE_NOTIFY_MASK);
+
+    g_signal_connect (wd->areaNorthWest, "button-press-event",
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH_WEST));
+    g_signal_connect (wd->areaNorth, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH));
+    g_signal_connect (wd->areaNorthEast, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH_EAST));
+    g_signal_connect (wd->areaWest, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_WEST));
+    g_signal_connect (wd->areaEast, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_EAST));
+    g_signal_connect (wd->areaSouthWest, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH_WEST));
+    g_signal_connect (wd->areaSouth, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH));
+    g_signal_connect (wd->areaSouthEast, "button-press-event", 
+            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH_EAST));
+
+
+    g_signal_connect ( wd->areaEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( wd->areaWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( wd->areaSouth, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( wd->areaNorth, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( wd->areaNorthEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( wd->areaSouthEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( wd->areaNorthWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
+    g_signal_connect ( wd->areaSouthWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
 }
 
 void initObjectFromFile ( WinData *wd ) {
@@ -1197,9 +1303,12 @@ void initObjectFromFile ( WinData *wd ) {
 
     setHeaderBarBackground  ( wd, "#494949" );
 
+
     gtk_window_set_default_size(GTK_WINDOW(wd->window), 400, 100);
     gtk_window_set_keep_above ( GTK_WINDOW(wd->window), TRUE );
     gtk_window_set_title(GTK_WINDOW(wd->window), "");
+
+    initShadowBorder ( wd );
 
     g_signal_connect(G_OBJECT(wd->window), "destroy", \
             G_CALLBACK(destroyNormalWin), wd);
@@ -1231,63 +1340,6 @@ void initObjectFromFile ( WinData *wd ) {
     g_signal_connect ( audio_button_en, "clicked", 
             G_CALLBACK(on_phonetic_button_clicked_cb), wd );
 
-    gtk_widget_set_app_paintable(window, TRUE);
-    g_signal_connect(G_OBJECT(window), "draw", G_CALLBACK(expose_draw), wd );
-    g_signal_connect(G_OBJECT(window), "screen-changed", G_CALLBACK(screen_changed), wd);
-
-    screen_changed( window, NULL, NULL );
-
-    g_signal_connect ( areaEast, "draw", G_CALLBACK(area_draw_callback), (void*)EAST_AREA );
-    g_signal_connect ( areaWest, "draw", G_CALLBACK(area_draw_callback), (void*)WEST_AREA );
-    g_signal_connect ( areaNorth, "draw", G_CALLBACK(area_draw_callback), (void*)NORTH_AREA );
-    g_signal_connect ( areaSouth, "draw", G_CALLBACK(area_draw_callback), (void*)SOUTH_AREA );
-    g_signal_connect ( areaNorthEast, "draw", G_CALLBACK(area_draw_callback), (void*)NORTH_EAST_AREA );
-    g_signal_connect ( areaNorthWest, "draw", G_CALLBACK(area_draw_callback), (void*)NORTH_WEST_AREA );
-    g_signal_connect ( areaSouthEast, "draw", G_CALLBACK(area_draw_callback), (void*)SOUTH_EAST_AREA );
-    g_signal_connect ( areaSouthWest, "draw", G_CALLBACK(area_draw_callback), (void*)SOUTH_WEST_AREA );
-
-    int mask = GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK ;
-    gtk_widget_add_events (areaEast, mask);
-    gtk_widget_add_events (areaWest, mask);
-    gtk_widget_add_events (areaNorth, mask);
-    gtk_widget_add_events (areaSouth, mask);
-    gtk_widget_add_events (areaNorthEast, mask);
-    gtk_widget_add_events (areaNorthWest, mask);
-    gtk_widget_add_events (areaSouthEast, mask);
-    gtk_widget_add_events (areaSouthWest, mask);
-
-    gtk_widget_set_events (areaEast, gtk_widget_get_events (areaEast)
-            | GDK_BUTTON_PRESS_MASK
-            | GDK_POINTER_MOTION_MASK
-            | GDK_BUTTON_RELEASE_MASK
-            |GDK_LEAVE_NOTIFY_MASK);
-
-    g_signal_connect (areaNorthWest, "button-press-event",
-            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH_WEST));
-    g_signal_connect (areaNorth, "button-press-event", 
-            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH));
-    g_signal_connect (areaNorthEast, "button-press-event", 
-            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_NORTH_EAST));
-    g_signal_connect (areaWest, "button-press-event", 
-            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_WEST));
-    g_signal_connect (areaEast, "button-press-event", 
-            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_EAST));
-    g_signal_connect (areaSouthWest, "button-press-event", 
-            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH_WEST));
-    g_signal_connect (areaSouth, "button-press-event", 
-            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH));
-    g_signal_connect (areaSouthEast, "button-press-event", 
-            G_CALLBACK (grippy_button_press), GINT_TO_POINTER (GDK_WINDOW_EDGE_SOUTH_EAST));
-
-
-    g_signal_connect ( areaEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
-    g_signal_connect ( areaWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
-    g_signal_connect ( areaSouth, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
-    g_signal_connect ( areaNorth, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
-    g_signal_connect ( areaNorthEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
-    g_signal_connect ( areaSouthEast, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
-    g_signal_connect ( areaNorthWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
-    g_signal_connect ( areaSouthWest, "motion-notify-event", G_CALLBACK(on_motion_notify_event), wd );
 
     g_signal_connect ( maximizeButton, "clicked", G_CALLBACK(on_maximize_button_clicked_cb), wd );
     g_signal_connect ( minimizeButton, "clicked", G_CALLBACK(on_minimize_button_clicked_cb), wd );
