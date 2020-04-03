@@ -10,7 +10,7 @@
 #include "printWithColor.h"
 
 static int _XlibErrorHandler(Display *display, XErrorEvent *event) {
-    fprintf(stderr, "An error occured detecting the mouse position\n");
+    pred("~~~~~~~~~An error occured detecting the mouse position~~~~~~~~~");
     return True;
 }
 
