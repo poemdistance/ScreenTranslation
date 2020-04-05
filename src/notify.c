@@ -49,14 +49,18 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     /* 必须延迟一下, 原因:
      * 检测Primary Selection的程序跑的没这边快，
      * 需要等到对方写完1后才能继续(如果对方正在写1)*/
-    usleep(230000);
+    /* usleep(230000); */
+
+    pmag ( "In notify" );
 
     while ( shmaddr_selection[0] != '1' ) {
 
         gettimeofday( &tv, NULL );
-        now = (tv.tv_sec*1e6-tv.tv_usec)/1e6;
-        if ( start - now > 300 )
+        now = (tv.tv_sec*1e6-tv.tv_usec)/1e3;
+        if ( abs(start - now) > 2000 ) {
+            pmag ( "超时返回detecmouse" );
             return;
+        }
     }
 
     pikaqiuGo = 1;
