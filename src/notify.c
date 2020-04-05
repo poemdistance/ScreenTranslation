@@ -15,7 +15,6 @@
 #include "cleanup.h"
 #include "printWithColor.h"
 
-int fd_key = -1;
 FILE *fp = NULL;
 char *text = NULL;
 int NoneText = 0;
@@ -84,11 +83,6 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
         *thirdClick = 0;
 
     *releaseButton = 1;
-
-    /* TODO: Please remove relative codes of opening this device*/
-    if ( fd_key < 0 )
-        if ((fd_key = open("/dev/input/event3", O_RDWR)) < 0 ) 
-            err_exit("opened keyboard device fail");
 
 
     /*需每次都执行才能判断当前的窗口是什么*/

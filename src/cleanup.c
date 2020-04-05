@@ -18,7 +18,6 @@ extern int shmid_setting;
 extern int mousefd;
 
 extern char *text;
-extern int fd_key;
 
 extern pid_t baidu_translate_pid;
 extern pid_t tranSelect_pid;
@@ -61,8 +60,6 @@ void quit() {
         free(text);
 
     close(mousefd);
-    close(fd_key);
-
 
     /* TODO:有时候共享内存会清理不成功*/
     releaseSharedMemory(shmaddr_google, shmid_google, "google");
