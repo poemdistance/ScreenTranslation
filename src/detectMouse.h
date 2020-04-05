@@ -16,7 +16,7 @@ void release(int fd, int keyCode);
 void simulateKey(int fd,  int key[], int len);
 void *GuiEntrance(void *arg);
 void *DetectMouse(void *arg);
-void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[2]);
+void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]);
 
 int checkApp(char *app);
 char *selectApp();
