@@ -1,5 +1,6 @@
 #include "common.h"
 #include <assert.h>
+#include <poll.h>
 #include <X11/extensions/Xfixes.h>
 #include "cleanup.h"
 
@@ -49,29 +50,24 @@ void WatchSelection(Display *display, const char *bufname)
     Atom bufid = XInternAtom(display, bufname, False);
 
     int fd;
-    fd_set fds;
-    struct timeval tv;
 
     fd = ConnectionNumber ( display );
 
     assert( XFixesQueryExtension(display, &event_base, &error_base) );
     XFixesSelectSelectionInput(display, DefaultRootWindow(display), bufid, XFixesSetSelectionOwnerNotifyMask);
 
+    struct pollfd pfd;
+    int timeout = 200;
+    pfd.fd = fd;
+    pfd.events = POLLIN|POLLPRI;
+
     while ( 1 ) {
 
-        FD_ZERO ( &fds );
-        FD_SET ( fd, &fds );
-        tv.tv_sec = 0;
-        tv.tv_usec = 100000;
-
-        select ( fd+1, &fds, NULL, NULL, &tv );
+        poll ( &pfd, 1, timeout );
 
         memset ( &event, '\0', sizeof(event) );
         while(XPending(display))
             XNextEvent(display, &event);
-
-        /* printf("Waiting next event (WatchSelection)\n"); */
-        /* XNextEvent ( display, &event ); */
 
         if (event.type == event_base + XFixesSelectionNotify &&
                 ((XFixesSelectionNotifyEvent*)&event)->selection == bufid) {
