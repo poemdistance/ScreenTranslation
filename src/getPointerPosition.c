@@ -67,8 +67,10 @@ void *detectPointerPosition ( void *arg ) {
             return NULL;
         }
 
-        cd->pointerx = root_x;
-        cd->pointery = root_y;
+        if ( cd ) {
+            cd->pointerx = root_x;
+            cd->pointery = root_y;
+        }
     }
 
     pbred ( "detectPointerPosition 退出" );
