@@ -17,7 +17,6 @@ char *shmaddr_mysql;
 char *shmaddr_pic;
 char *shmaddr_setting;
 
-int action = 0;
 int timeout_id_1;
 int timeout_id_2;
 int CanNewWin = 0;
