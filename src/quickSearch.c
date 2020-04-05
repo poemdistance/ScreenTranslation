@@ -31,7 +31,7 @@ static void readChild() {
 
 void kill_ourselves() {
 
-    kill ( captureShortcutEvent_pid, SIGTERM );
+    /* kill ( captureShortcutEvent_pid, SIGTERM ); */
     SIGTERM_SIGNAL = 1;
 }
 
@@ -103,11 +103,11 @@ void quickSearch()
             if ( SIGTERM_SIGNAL ) break;
         }
     } 
-    else {
+    /* else { */
 
-        setproctitle ( "%s", "Listening Shortcut" );
-        listenShortcut();
-    }
+    /*     setproctitle ( "%s", "Listening Shortcut" ); */
+    /*     listenShortcut(); */
+    /* } */
 
     pbcyan ( "Quick Search 程序退出: %d", getpid() );
 }
