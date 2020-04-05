@@ -49,7 +49,7 @@ pid_t fetch_data_from_mysql_pid;
 pid_t detect_tran_pic_action_pid;
 
 int mousefd;
-extern volatile sig_atomic_t action;
+volatile sig_atomic_t action;
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 int checkBingGoogleProcessStatus () {
@@ -145,7 +145,6 @@ void *DetectMouse(void *arg) {
     double inTimeout = 0;
     int releaseButton = 1;
     int thirdClick;
-    static int t = 0;
 
     int fd_google[2], fd_baidu[2], fd_mysql[2];
     int fd_python[3];
