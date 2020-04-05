@@ -34,7 +34,7 @@ extern int numlock_mask;
 extern int scrolllock_mask;
 extern int capslock_mask;
 
-static int SIGTERM_SIGNAL = 0;
+extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 static char shortcutName[MAX_SHORTCUT_NUM][SHORTCUT_CONTENT_LEN] = { '\0' };
 static char shortcutValue[MAX_SHORTCUT_NUM][SHORTCUT_CONTENT_LEN] = { '\0' };
@@ -44,6 +44,7 @@ static char *shmaddr_keyboard = NULL;
 static char *shmaddr_setting = NULL;
 static XRecordContext  rc;
 static XRecordRange  *rr;
+ConfigData *cd = NULL;
 
 
 /* for this struct, refer to libxnee */
@@ -62,10 +63,6 @@ typedef union {
  */
 Display *data_display = NULL;
 Display *ctrl_display = NULL;
-
-void exitNotify ( ) {
-    SIGTERM_SIGNAL = 1;
-}
 
 char *getShortcutName ( char *shortcut ) {
 
@@ -141,8 +138,8 @@ static void cleanup() {
 void event_callback(XPointer priv, XRecordInterceptData *hook )
 {
     /* FIXME: we need use XQueryPointer to get the first location */
-    /* static int cur_x = 0; */
-    /* static int cur_y = 0; */
+    static int cur_x = 0;
+    static int cur_y = 0;
     char modifierstr[64];
     char *keystr = NULL;
     char keystrArray[64] = { '\0' };
@@ -174,9 +171,9 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
     keycode = data->event.u.u.detail;
     int mask = data->event.u.keyButtonPointer.state;
 
-    /* int rootx = data->event.u.keyButtonPointer.rootX; */
-    /* int rooty = data->event.u.keyButtonPointer.rootY; */
-    /* int time = hook->server_time; */
+    int rootx = data->event.u.keyButtonPointer.rootX;
+    int rooty = data->event.u.keyButtonPointer.rootY;
+    int time = hook->server_time;
 
     switch (event_type) {
         case KeyPress:
@@ -200,9 +197,14 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
             break;
 
         case KeyRelease: break;
-        case ButtonPress: break;
-        case ButtonRelease: break;
-        case MotionNotify: /* cur_x = rootx; cur_y = rooty;*/ break;
+        case ButtonPress: cd->buttonPress = 1;printf("Button press\n");break;
+        case ButtonRelease:cd->buttonRelease=1; printf("Button release\n");break;
+        case MotionNotify:
+                if ( cd ) {
+                    cd->pointerx = cur_x = rootx;
+                    cd->pointery = cur_y = rooty;
+                } 
+                break;
         case CreateNotify: break;
         case DestroyNotify: break;
         case NoExpose: break;
@@ -212,7 +214,7 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
 
     XRecordFreeData (hook);
 
-    if ( SIGTERM_SIGNAL ) 
+    if ( SIGTERM_NOTIFY )
         XRecordDisableContext (ctrl_display, rc);
 }
 
@@ -235,18 +237,9 @@ void initSharedMemory() {
 }
 
 
-int listenShortcut()
-    /* int main() */
+void *listenShortcut ( void *data )
 {
-    struct sigaction sa;
-    sa.sa_handler = exitNotify;
-    sigemptyset ( &sa.sa_mask );
-    if ( sigaction ( SIGTERM, &sa, NULL) != 0 ) {
-        pred ( "sigaction exec failed in shortcutListener.c. function: event_loop" );
-        XCloseDisplay ( ctrl_display );
-        XCloseDisplay ( data_display );
-        exit(1);
-    }
+    cd = (ConfigData*)data;
 
     XInitThreads();
     ctrl_display = XOpenDisplay (NULL);

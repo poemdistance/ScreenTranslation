@@ -8,7 +8,7 @@ int str2mask( char *str );
 char* mask2str( int mask, char *result );
 char *toStr( int mask );
 int *extractShortcut ( Display *display );
-int listenShortcut();
+void *listenShortcut ( void *data );
 char *getKeyString ( char *str );
 char *getRawKeyString ( char *str );
 int unusedMask();
