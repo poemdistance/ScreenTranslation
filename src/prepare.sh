@@ -8,6 +8,8 @@ END='\033[0m'
 bash stop.sh
 echo "Use server for pip: "$specific
 
+sed -i "s/\$USER/$USER/g" Mstran.desktop
+
 #复制文件到家目录
 storage="$HOME/.stran"
 currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.png"\ 
@@ -52,8 +54,6 @@ git pull origin mainline
 
 #git submodule foreach git pull #origin master
 sudo pip3 install  mysql-connector-python $specific
-
-sed -i "s/\$USER/$USER/g" Mstran.desktop
 
 #复制启动图标，创建日志文件,修改读写权限
 sudo cp Mstran.desktop /usr/share/applications/ -v
