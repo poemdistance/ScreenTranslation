@@ -315,7 +315,8 @@ void *DetectMouse(void *arg) {
             if ( cd->buttonRelease ) {
                 cd->buttonState = BUTTON_RELEASE;
                 cd->buttonRelease = 0;
-                buttonPress = 0;
+                if ( action != DOUBLE_CLICK )
+                    buttonPress = 0;
                 if ( action == START_SLIDE ) {
                     buttonPress = 1;
                     cd->startSlide = 0;
