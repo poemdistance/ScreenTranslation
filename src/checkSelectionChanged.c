@@ -51,7 +51,7 @@ void WatchSelection(Display *display, const char *bufname)
 
     int fd;
 
-    fd = ConnectionNumber ( display );
+    fd = XConnectionNumber ( display );
 
     assert( XFixesQueryExtension(display, &event_base, &error_base) );
     XFixesSelectSelectionInput(display, DefaultRootWindow(display), bufid, XFixesSetSelectionOwnerNotifyMask);
