@@ -301,8 +301,12 @@ void *DetectMouse(void *arg) {
                 buttonPress = 1;
             }
 
+            static int printLock = 1;
             if ( cd->startSlide ) {
-                printf("Action to start slide\n");
+                if ( printLock ) {
+                    printf("Action to start slide\n");
+                    printLock = 0;
+                }
                 slideCount++;
                 action = START_SLIDE;
                 buttonPress = 0;
@@ -315,6 +319,7 @@ void *DetectMouse(void *arg) {
                 if ( action == START_SLIDE ) {
                     buttonPress = 1;
                     cd->startSlide = 0;
+                    printLock = 1;
                 } 
             }
 
