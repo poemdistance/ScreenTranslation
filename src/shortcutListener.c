@@ -260,6 +260,10 @@ void *listenShortcut ( void *data )
 {
     cd = (ConfigData*)data;
 
+    cd->startSlide = 0;
+    cd->buttonPress = 0;
+    cd->buttonRelease = 0;
+
     XInitThreads();
     ctrl_display = XOpenDisplay (NULL);
     data_display = XOpenDisplay (NULL);
