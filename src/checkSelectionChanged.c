@@ -61,6 +61,8 @@ void WatchSelection(Display *display, const char *bufname)
     pfd.fd = fd;
     pfd.events = POLLIN|POLLPRI;
 
+    pbmag ( "启动 checkSelectionChanged" );
+
     while ( 1 ) {
 
         poll ( &pfd, 1, timeout );
