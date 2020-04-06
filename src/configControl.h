@@ -29,6 +29,9 @@ typedef struct ConfigData {
     volatile int pointerx;
     volatile int pointery;
     int buttonState;
+    volatile int buttonPress;
+    volatile int buttonRelease;
+    volatile int startSlide;
 
 }ConfigData;
 
