@@ -7,6 +7,7 @@
 #include "configControl.h"
 #include "expanduser.h"
 #include "pointer.h"
+#include "shortcutListener.h"
 
 char *shmaddr_google;
 char *shmaddr_baidu;
@@ -100,8 +101,8 @@ void tranSelect() {
     pthread_t t2 = 0;
     pthread_t t3 = 0;
     pthread_t t4 = 0;
-    pthread_t t5 = 0;
-
+    /* pthread_t t5 = 0; */
+    pthread_t t6 = 0;
 
     char *addr_google;
     char *addr_baidu;
@@ -137,7 +138,8 @@ void tranSelect() {
     pthread_create(&t2, NULL, DetectMouse, (void*)&arg);
     pthread_create( &t3, NULL, newNormalWindowThread, (void*)&cd );
     pthread_create( &t4, NULL, updateConfigData, (void*)&cd );
-    pthread_create( &t5, NULL, detectPointerPosition, (void*)&cd );
+    /* pthread_create( &t5, NULL, detectPointerPosition, (void*)&cd ); */
+    pthread_create( &t6, NULL, listenShortcut, (void*)&cd );
 
     void *thread_ret;
 
