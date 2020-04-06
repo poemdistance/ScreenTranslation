@@ -11,6 +11,7 @@
 extern char *shmaddr_google;
 extern char *shmaddr_searchWin;
 extern volatile sig_atomic_t action;
+extern volatile sig_atomic_t destroyIcon;
 extern int timeout_id_1;
 extern int timeout_id_2;
 extern volatile sig_atomic_t CanNewWin;
@@ -51,7 +52,7 @@ void *GuiEntrance(void *arg) {
     /*等待鼠标事件到来创建入口图标*/
     while(1) {
 
-        if (CanNewEntrance) {
+        if ( CanNewEntrance ) {
             printf("\nDetect mouse action, creating icon entry "
                     "CanNewEntrance = %d action=%d\n", CanNewEntrance, action);
 
@@ -67,16 +68,10 @@ void *GuiEntrance(void *arg) {
             break;
         }
 
-        /*
-           if ( shmaddr_searchWin[20] == '1' ) {
-           quickSearchFlag = 1;
-           pthread_exit(NULL);
-           return (void*)0;
-           } */
-
         if ( SIGTERM_NOTIFY ) return NULL;
         usleep(1000);
     }
+
 
     GtkWidget *window;
 
@@ -86,7 +81,7 @@ void *GuiEntrance(void *arg) {
     /*入口图标销毁标志置0，表示处于显示状态*/
     HadDestroied = 0;
     CanNewEntrance = 0;
-    action = 0;
+    /* action = 0; */
 
     gtk_init(NULL, NULL);
 
@@ -190,27 +185,20 @@ int quit_test(void *arg) {
         return FALSE;
 
     /*不在窗口上的单击定义为销毁窗口命令*/
-    if (!HadDestroied && !aboveWindow && \
-            (action == SINGLE_CLICK || action == DOUBLE_CLICK) ) {
+    if (!HadDestroied && !aboveWindow ) {
 
-        if ( action == SINGLE_CLICK  && !aboveWindow) {
+        if ( destroyIcon && !aboveWindow) {
+
             printf("GuiEntrance: 单击销毁\n");
 
             clearMemory();
 
             CanNewWin = 0;
-
-            /*单击销毁action置0
-             * 双击销毁则可能新选中了文本，再新建一个入口*/
-            if ( action == SINGLE_CLICK )
-                action = 0;
-            else if (action == DOUBLE_CLICK)
-                CanNewEntrance = 1;
-
+            destroyIcon = 0;
             HadDestroied = 1;
 
-            g_source_remove(timeout_id_2);
             g_source_remove(timeout_id_1);
+            g_source_remove(timeout_id_2);
 
             gtk_widget_destroy(button);
             gtk_widget_destroy(window);
@@ -238,14 +226,9 @@ int quit_entry(void *arg) {
 
         printf("GuiEntrance: 超时销毁\n");
 
-        /*如果超时销毁的时候恰好又遇到双击选中文本
-         * 也应该新建入口图标*/
-        if ( action == DOUBLE_CLICK)
-            CanNewEntrance = 1;
-
         clearMemory();
 
-        action  = 0;
+        /* action  = 0; */
         CanNewWin = 0;
         HadDestroied = 1;
 

@@ -275,45 +275,30 @@ int previous( int n )
     if ( n != 0 )
         return n - 1;
     else
-        return  3;
+        return  1;
 }
 
 /*判断当前鼠标action*/
 int isAction(int history[], int last, int judgeType) {
 
-    int m, n, j, q;
+    int m, n;
 
     m = previous(last);
     n = previous(m);
-    j = previous(n);
-    q = previous(j);
 
     switch ( judgeType ) {
 
-        case DOUBLE_CLICK:
-             
-            return history[m] == 0 && history[n] == 1 
-                && history[j] == 0 && history[q] == 1 
-                && ( action = DOUBLE_CLICK || 1);
-
-        case SLIDE:
-            
-            return history[m] == 0 && history[n] == 1 
-                && history[j] == 1 && history[q] == 1
-                && ( action == SLIDE || 1 );
-
         case ALL_ONE:
-            return history[m] == 1 && history[n] == 1 
-                && history[j] == 1 && history[q] == 1;
+            return history[m] == 1 && history[n] == 1 ;
 
         case BUTTON_PRESS:
-            return history[m] | history[j];
+            return  history[m] == 1 && history[n] == 0;
 
         case BUTTON_RELEASE:
             return history[m] == 0 && history[n] == 1;
 
         default:
-            pred ( "Unknow jude type" );
+            pred ( "Warning: Unknow judge type" );
     }
 
     return 0;

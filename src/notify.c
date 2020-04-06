@@ -10,6 +10,7 @@
  *
  */
 
+#include <poll.h>
 #include "common.h"
 #include "detectMouse.h"
 #include "cleanup.h"
@@ -17,8 +18,9 @@
 
 FILE *fp = NULL;
 char *text = NULL;
-int NoneText = 0;
+
 volatile sig_atomic_t CanNewEntrance = 0;
+volatile sig_atomic_t destroyIcon = 0;
 
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
@@ -29,7 +31,7 @@ extern volatile sig_atomic_t InNewWin;
 
 extern volatile sig_atomic_t HadDestroied;
 
-void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
+void notify ( int fd[3], ConfigData *cd ) {
 
     /* 禁止套娃*/
     if ( InNewWin ) {
@@ -40,54 +42,47 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     }
 
     char appName[100];
-    int pikaqiuGo = 0;
     struct timeval tv;
+    double now = 0;
+    int go = 0;
+    int count = 0;
+    int timeout = 300;
+
     gettimeofday( &tv, NULL );
     double start =  ( tv.tv_sec*1e6 + tv.tv_usec ) / 1e3; /* ms*/
-    double now = 0;
 
-    /* 必须延迟一下, 原因:
-     * 检测Primary Selection的程序跑的没这边快，
-     * 需要等到对方写完1后才能继续(如果对方正在写1)*/
-    /* usleep(230000); */
+    printf("Check selecttion changed event %d\n", count++);
 
-    pmag ( "In notify" );
+    /* 战略性休眠*/
+    usleep ( 150*1e3 );
 
+    /* 等待剪贴板变化事件，超时直接返回*/
     while ( shmaddr_selection[0] != '1' ) {
 
         gettimeofday( &tv, NULL );
-        now = (tv.tv_sec*1e6-tv.tv_usec)/1e3;
-        if ( abs(start - now) > 2000 ) {
-            pmag ( "超时返回detecmouse" );
+        now = (tv.tv_sec*1e6+tv.tv_usec)/1e3;
+        if ( action == DOUBLE_CLICK && cd->buttonPress ) {
+            pmag ( "Trible click in notify" );
+            timeout += 300;
+        }
+        if ( abs ( start - now ) > timeout )  {
+            pbred ( "剪贴板检测超时返回" );
+            if ( action == TRIBLE_CLICK ) destroyIcon = 1;
             return;
         }
     }
 
-    pikaqiuGo = 1;
-
     if ( shmaddr_selection[0] == '1') {
-
+        pbgreen ( "剪贴板已发生变化" );
         shmaddr_selection[0] = '0';
-
-        /* 去吧, 皮卡丘*/
-        pikaqiuGo = 1;
-        pbgreen ( "皮卡皮卡 GO" );
+        go = 1;
     }
 
-    if ( ! pikaqiuGo ) {
-
-        action = 0;
-        memset(*history, 0, sizeof(*history));
+    if ( ! go ) {
+        pred ( "剪贴板未变化, 返回" );
         CanNewEntrance = 0;
-        pbred ( "皮卡丘掉头跑了" );
         return;
     }
-
-    if ( *thirdClick == 1 )
-        *thirdClick = 0;
-
-    *releaseButton = 1;
-
 
     /*需每次都执行才能判断当前的窗口是什么*/
     fp = popen("ps -p `xdotool getwindowfocus getwindowpid` | awk '{print $NF}' | tail -n 1", "r");
@@ -124,8 +119,6 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     /* TODO:返回值已经没有1*/
     if ( (retval = getClipboard(text) ) == 1 || isEmpty(text)) {
         printf("Not copy event or empty text\n");
-        action = 0;
-        memset(*history, 0, sizeof(*history));
         CanNewEntrance = 0;
         return ;
     }
@@ -147,65 +140,11 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
      *       是否为销毁状态的标志位, 只要是销毁状态，应该弹出
      */
 
-    if ( HadDestroied )
+    if ( HadDestroied ) {
         CanNewEntrance = 1;
-
-    /*清除鼠标记录*/
-    memset(*history, 0, sizeof(*history));
+        destroyIcon = 0;
+    }
 
     pbgreen ( "Return from notify" );
-}
-
-void send_Ctrl_Shift_C() {
-
-    Display *dpy;
-    unsigned int ctrl, shift, c;
-    dpy = XOpenDisplay(NULL);
-
-    ctrl = XKeysymToKeycode (dpy, XK_Control_L);
-    XTestFakeKeyEvent (dpy, ctrl, True, 0);
-    XFlush(dpy);
-
-    shift = XKeysymToKeycode (dpy, XK_Shift_L);
-    XTestFakeKeyEvent (dpy, shift, True, 0);
-    XFlush(dpy);
-
-    c = XKeysymToKeycode(dpy, XK_C);
-    XTestFakeKeyEvent(dpy, c, True, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, c, False, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, shift, False, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, ctrl, False, 0);
-    XFlush(dpy);
-
-    XCloseDisplay(dpy);
-}
-
-void send_Ctrl_C() {
-
-    Display *dpy;
-    unsigned int ctrl, c;
-    dpy = XOpenDisplay(NULL);
-
-    ctrl = XKeysymToKeycode (dpy, XK_Control_L);
-    XTestFakeKeyEvent (dpy, ctrl, True, 0);
-    XFlush(dpy);
-
-    c = XKeysymToKeycode(dpy, XK_C);
-    XTestFakeKeyEvent(dpy, c, True, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, c, False, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, ctrl, False, 0);
-    XFlush(dpy);
-
-    XCloseDisplay(dpy);
 }
 
