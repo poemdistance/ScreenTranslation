@@ -101,9 +101,11 @@ sudo ./setup.py install --record files.txt
 sudo chmod -c 775 /usr/bin/bing
 cat files.txt |xargs sudo chmod -c 775
 
-system=`uname -a`
-if [[ $system =~ .*"deepin".* ]]; then
+system=`awk -F= '$1=="ID" { print $2 ;}' /etc/os-release`
+if [[ $system == deepin || $system == debian || $system == ubuntu ]]; then
     sudo apt install gnome-screenshot
+else if [[ $system == arch || $system == manjaro ]]; then
+    sudo pacman -S gnome-screenshot
 else
     cd ../gnome-screenshot
     sudo bash install.sh
