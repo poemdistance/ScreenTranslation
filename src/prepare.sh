@@ -93,6 +93,6 @@ if [[ $system == deepin || $system == debian || $system == ubuntu ]]; then
 elif [[ $system == arch || $system == manjaro ]]; then
     sudo pacman -S gnome-screenshot
 else
-    cd ../gnome-screenshot
-    sudo bash install.sh
+    echo '未识别的发行版，请自行安装gnome-screenshot'
+    echo '(目前可以不用安装，因截图识别已暂时被禁用)'
 fi
