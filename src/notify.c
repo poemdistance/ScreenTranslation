@@ -10,6 +10,7 @@
  *
  */
 
+#include <poll.h>
 #include "common.h"
 #include "detectMouse.h"
 #include "cleanup.h"
@@ -17,8 +18,10 @@
 
 FILE *fp = NULL;
 char *text = NULL;
-int NoneText = 0;
+char *previousText = NULL;
+
 volatile sig_atomic_t CanNewEntrance = 0;
+volatile sig_atomic_t destroyIcon = 0;
 
 extern char *shmaddr_google;
 extern char *shmaddr_baidu;
@@ -29,7 +32,38 @@ extern volatile sig_atomic_t InNewWin;
 
 extern volatile sig_atomic_t HadDestroied;
 
-void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
+enum {
+
+    CONTINUE,
+    RETURN,
+};
+
+int waitForSelectionChangedEvent ( ) {
+
+    struct timeval tv;
+    int timeout = 300;
+    double now = 0;
+
+    printf("Check selecttion changed event\n");
+
+    gettimeofday( &tv, NULL );
+    double start =  ( tv.tv_sec*1e6 + tv.tv_usec ) / 1e3; /* ms*/
+
+    /* 等待剪贴板变化事件，超时直接返回*/
+    while ( shmaddr_selection[0] != '1' ) {
+        gettimeofday( &tv, NULL );
+        now = (tv.tv_sec*1e6+tv.tv_usec)/1e3;
+        if ( abs ( start - now ) > timeout )  {
+            if ( action == TRIBLE_CLICK ) return CONTINUE;
+            pbred ( "剪贴板检测超时" );
+            return RETURN;
+        }
+    }
+
+    return -1;
+}
+
+void notify ( int fd[3], ConfigData *cd ) {
 
     /* 禁止套娃*/
     if ( InNewWin ) {
@@ -40,57 +74,29 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     }
 
     char appName[100];
-    int pikaqiuGo = 0;
-    struct timeval tv;
-    gettimeofday( &tv, NULL );
-    double start =  ( tv.tv_sec*1e6 + tv.tv_usec ) / 1e3; /* ms*/
-    double now = 0;
+    int go = 0;
 
-    /* 必须延迟一下, 原因:
-     * 检测Primary Selection的程序跑的没这边快，
-     * 需要等到对方写完1后才能继续(如果对方正在写1)*/
-    /* usleep(230000); */
-
-    pmag ( "In notify" );
-
-    while ( shmaddr_selection[0] != '1' ) {
-
-        gettimeofday( &tv, NULL );
-        now = (tv.tv_sec*1e6-tv.tv_usec)/1e3;
-        if ( abs(start - now) > 2000 ) {
-            pmag ( "超时返回detecmouse" );
-            return;
-        }
+    switch ( waitForSelectionChangedEvent() ) {
+        case RETURN: return;
+        case CONTINUE: break;
+        default: break;
     }
-
-    pikaqiuGo = 1;
 
     if ( shmaddr_selection[0] == '1') {
-
+        pbgreen ( "剪贴板已发生变化" );
         shmaddr_selection[0] = '0';
-
-        /* 去吧, 皮卡丘*/
-        pikaqiuGo = 1;
-        pbgreen ( "皮卡皮卡 GO" );
+        go = 1;
     }
 
-    if ( ! pikaqiuGo ) {
-
-        action = 0;
-        memset(*history, 0, sizeof(*history));
+    if ( ! go && !(action==TRIBLE_CLICK)) {
+        pred ( "剪贴板未变化, 返回" );
         CanNewEntrance = 0;
-        pbred ( "皮卡丘掉头跑了" );
         return;
     }
 
-    if ( *thirdClick == 1 )
-        *thirdClick = 0;
-
-    *releaseButton = 1;
-
-
     /*需每次都执行才能判断当前的窗口是什么*/
-    fp = popen("ps -p `xdotool getwindowfocus getwindowpid` | awk '{print $NF}' | tail -n 1", "r");
+    fp = popen("ps -p `xdotool getwindowfocus getwindowpid` \
+            | awk '{print $NF}' | tail -n 1", "r");
 
     memset ( appName, 0, sizeof(appName) );
 
@@ -114,20 +120,50 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     }
 
     if ( text == NULL )
-        /*free in forDetectMouse.c*/
-        if (( text = calloc(TEXTSIZE, 1)) == NULL)
-            err_exit("malloc failed in notify.c");
+        text = calloc(TEXTSIZE, 1);
+
+    if ( previousText == NULL )
+        previousText = calloc(TEXTSIZE, 1);
 
     memset(text, 0, TEXTSIZE);
-    int retval = 0;
 
-    /* TODO:返回值已经没有1*/
-    if ( (retval = getClipboard(text) ) == 1 || isEmpty(text)) {
+    /* FIXME:剪贴板标志位可能已经被置位，可能影响到下一次
+     * 检测的正确性.*/
+    if ( cd->buttonPress ) {
+        pbmag ( "处理双击时检测到三击事件" );
+        cd->buttonPress = 0;
+        pbmag ( "Button Press: %d", cd->buttonPress );
+        if ( abs(cd->pointerx-cd->previousx) > 10 
+                || abs ( cd->pointery-cd->previousy ) > 10 ){
+            action = SINGLE_CLICK;
+            if ( !HadDestroied ) destroyIcon = 1;
+            return;
+        }
+    }
+
+    if ( getClipboard(text) || isEmpty(text)) {
         printf("Not copy event or empty text\n");
-        action = 0;
-        memset(*history, 0, sizeof(*history));
+        previousText[0] = '\0';
         CanNewEntrance = 0;
         return ;
+    }
+
+    char *p = text;
+    if ( cd->ignoreChinese && ((*p>>6)&0x03) == 3 ) {
+        pbcyan ( "非Ascii码. 忽略取词. 返回" );
+        return;
+    }
+
+    adjustSrcText ( text );
+
+    if ( action == TRIBLE_CLICK ) {
+        pyellow ( "text:%s<", text );
+        pyellow ( "previousText:%s<", previousText );
+        if ( strcmp ( text, previousText ) == 0 ) {
+            pmag ( "三击获取到的文本与上次相同，关闭弹出图标" );
+            if ( !HadDestroied ) destroyIcon = 1;
+            return;
+        }
     }
 
     /* 只能减小结果获取错误的概率，如果两边翻译都不够快，清零发生在百度谷歌翻译写1之前，
@@ -140,72 +176,19 @@ void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]) {
     writePipe(text, fd[1]);
     writePipe(text, fd[2]);
 
-    /* 情况1: 双击单词后再点击了一次形成的三击选段，此时的3击不能再弹出入口图标
-     * 情况2: 从空白处直接3击取段，此时应弹出入口图标
-     *
-     * 总结: 只要入口图标已经创建就不应该弹出，反之反之, HadDestroied就是入口图标
-     *       是否为销毁状态的标志位, 只要是销毁状态，应该弹出
-     */
-
-    if ( HadDestroied )
+    if ( HadDestroied ) {
         CanNewEntrance = 1;
+        destroyIcon = 0;
+    }
 
-    /*清除鼠标记录*/
-    memset(*history, 0, sizeof(*history));
+    strcpy ( previousText, text );
 
-    pbgreen ( "Return from notify" );
-}
+    pbmag ( "Return from notify. Button Press: %d", cd->buttonPress );
 
-void send_Ctrl_Shift_C() {
-
-    Display *dpy;
-    unsigned int ctrl, shift, c;
-    dpy = XOpenDisplay(NULL);
-
-    ctrl = XKeysymToKeycode (dpy, XK_Control_L);
-    XTestFakeKeyEvent (dpy, ctrl, True, 0);
-    XFlush(dpy);
-
-    shift = XKeysymToKeycode (dpy, XK_Shift_L);
-    XTestFakeKeyEvent (dpy, shift, True, 0);
-    XFlush(dpy);
-
-    c = XKeysymToKeycode(dpy, XK_C);
-    XTestFakeKeyEvent(dpy, c, True, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, c, False, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, shift, False, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, ctrl, False, 0);
-    XFlush(dpy);
-
-    XCloseDisplay(dpy);
-}
-
-void send_Ctrl_C() {
-
-    Display *dpy;
-    unsigned int ctrl, c;
-    dpy = XOpenDisplay(NULL);
-
-    ctrl = XKeysymToKeycode (dpy, XK_Control_L);
-    XTestFakeKeyEvent (dpy, ctrl, True, 0);
-    XFlush(dpy);
-
-    c = XKeysymToKeycode(dpy, XK_C);
-    XTestFakeKeyEvent(dpy, c, True, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, c, False, 0);
-    XFlush(dpy);
-
-    XTestFakeKeyEvent(dpy, ctrl, False, 0);
-    XFlush(dpy);
-
-    XCloseDisplay(dpy);
+    if ( cd->buttonPress ) {
+        cd->buttonPress = 0;
+        pbmag ( "Button Press 再次置零" );
+        shmaddr_selection[0] = '0';
+    }
 }
 

@@ -8,10 +8,10 @@ Open-Setting-Window-Shortcut: SHIFT+CTRL+M
 Recall-Previous-Translation-Shortcut: ALT+PERIOD
 Setting-Window-Height: 596
 Setting-Window-Width: 911
-Icon-Popup-Offset-X: -19
-Icon-Popup-Offset-Y: -75
-Icon-Absolute-X: 274
-Icon-Absolute-Y: 272
+Icon-Popup-Offset-X: -17
+Icon-Popup-Offset-Y: -65
+Icon-Absolute-X: 276
+Icon-Absolute-Y: 282
 Hide-Header-Bar-Pref: TRUE
 Click-Outside-To-Close-Window-Pref: TRUE
 Control+C-To-Close-Window-Pref: TRUE
@@ -22,3 +22,4 @@ Pointer-Absolute-Y: 342
 Allow-Auto-Adjust-Popup-Window-Pref: TRUE
 Disable-Shadow-Border-Pref: FALSE
 Shrink-Shadow-Border-Pref: FALSE
+Ignore-Chinese-Pref: FALSE

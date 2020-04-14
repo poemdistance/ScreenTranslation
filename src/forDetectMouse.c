@@ -1,6 +1,7 @@
 #include "common.h"
 #include "cleanup.h"
 #include "detectMouse.h"
+#include <ctype.h>
 
 typedef struct TmpIgnore {
 
@@ -176,49 +177,45 @@ void err_exit(char *buf) {
     quit();
 }
 
+char *adjustSrcText ( char *text ) {
+
+    char *p = text;
+    char *head = NULL;
+    char *p2 = NULL;
+
+    /* 替换回车符为空格字符*/
+    while ( *p ) {
+        if ( *p == '\n' )
+            *p = ' ';
+        p++;
+    }
+
+    /* 去除前缀空白字符*/
+    p = text;
+    while ( *p && isspace(*p) ) p++;
+    if ( !*p ) return NULL;
+    head = p;
+
+    /* 去除后缀空白字符*/
+    while ( *++p );
+    while ( p != head && isspace(*--p) );
+    *(p+1) = '\0';
+
+    /* 将处理后的字符串复制回text开头*/
+    p = text;
+    p2 = head;
+    if ( p != head )
+        while ( (*p++ = *p2++) );
+
+    strcat ( text, "\n" );
+
+    return text;
+}
+
 /*写数据到管道*/
 void writePipe(char *text, int fd) {
 
-    int writelen;
-    char *p  = NULL;
-
-    /*排除空字符和纯回车字符*/
-    if ( strcmp( text, " ") != 0 && strcmp( text, "\n") != 0 ) {
-
-        writelen = strlen(text);
-        for(int i=0; i<writelen; i++) {
-            if ( text[i] == '\n')
-                text[i] = ' ';
-        }
-
-        p = text;
-        while ( *p ) {
-            if ( *p != ' ' ) {
-                if ( *p == '\0' ) {
-                    shmaddr_google[0] = EMPTYFLAG;
-                    return;
-                }
-            }
-            p++;
-        }
-
-        if ( text[writelen-1] != '\n')  {
-            text = strcat(text, "\n");
-            writelen++;
-        }
-
-        int ret = write( fd, text, writelen );
-
-        if ( ret != writelen ) {
-            fprintf(stderr, "writelen=%d,\
-                    write error in forDetectMouse.c func: writePipe\n", ret);
-            perror("errno");
-            exit(1);
-        }
-    } else {
-        fprintf(stdout, "Null character...\n");
-        shmaddr_google[0] = EMPTYFLAG;
-    }
+    write( fd, text, strlen(text) );
 }
 
 /*获取子进程状态，防止僵尸进程*/
@@ -275,45 +272,30 @@ int previous( int n )
     if ( n != 0 )
         return n - 1;
     else
-        return  3;
+        return  1;
 }
 
 /*判断当前鼠标action*/
 int isAction(int history[], int last, int judgeType) {
 
-    int m, n, j, q;
+    int m, n;
 
     m = previous(last);
     n = previous(m);
-    j = previous(n);
-    q = previous(j);
 
     switch ( judgeType ) {
 
-        case DOUBLE_CLICK:
-             
-            return history[m] == 0 && history[n] == 1 
-                && history[j] == 0 && history[q] == 1 
-                && ( action = DOUBLE_CLICK || 1);
-
-        case SLIDE:
-            
-            return history[m] == 0 && history[n] == 1 
-                && history[j] == 1 && history[q] == 1
-                && ( action == SLIDE || 1 );
-
         case ALL_ONE:
-            return history[m] == 1 && history[n] == 1 
-                && history[j] == 1 && history[q] == 1;
+            return history[m] == 1 && history[n] == 1 ;
 
         case BUTTON_PRESS:
-            return history[m] | history[j];
+            return  history[m] == 1 && history[n] == 0;
 
         case BUTTON_RELEASE:
             return history[m] == 0 && history[n] == 1;
 
         default:
-            pred ( "Unknow jude type" );
+            pred ( "Warning: Unknow judge type" );
     }
 
     return 0;

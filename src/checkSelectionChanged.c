@@ -51,7 +51,7 @@ void WatchSelection(Display *display, const char *bufname)
 
     int fd;
 
-    fd = ConnectionNumber ( display );
+    fd = XConnectionNumber ( display );
 
     assert( XFixesQueryExtension(display, &event_base, &error_base) );
     XFixesSelectSelectionInput(display, DefaultRootWindow(display), bufid, XFixesSetSelectionOwnerNotifyMask);
@@ -60,6 +60,8 @@ void WatchSelection(Display *display, const char *bufname)
     int timeout = 200;
     pfd.fd = fd;
     pfd.events = POLLIN|POLLPRI;
+
+    pbmag ( "启动 checkSelectionChanged" );
 
     while ( 1 ) {
 

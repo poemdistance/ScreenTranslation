@@ -1,6 +1,8 @@
 #ifndef __detectMouse_h__
 #define __detectMouse_h__
 
+#include "configControl.h"
+
 void show_utf8_prop(Display *dpy, Window w, Atom p, char *text);
 
 int getClipboard(char *text);
@@ -16,8 +18,8 @@ void release(int fd, int keyCode);
 void simulateKey(int fd,  int key[], int len);
 void *GuiEntrance(void *arg);
 void *DetectMouse(void *arg);
-void notify(int (*history)[4], int *thirdClick, int *releaseButton, int fd[3]);
-
+void notify( int fd[3], ConfigData *cd );
+char *adjustSrcText ( char *text );
 int checkApp(char *app);
 char *selectApp();
 int isExist( char *buf,  char *app );

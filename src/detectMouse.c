@@ -13,7 +13,6 @@
  * */
 
 
-#include <poll.h>
 #include "common.h"
 #include "quickSearch.h"
 #include "detectMouse.h"
@@ -22,7 +21,7 @@
 #include "windowData.h"
 #include <bsd/unistd.h>
 
-#define TIMOUE_OUT (1000)
+#define DOUBLE_CLICK_TIMEOUT  ( 450 )
 
 extern char *shmaddr;
 extern char *shmaddr_selection;
@@ -48,8 +47,8 @@ pid_t check_selectionEvent_pid;
 pid_t fetch_data_from_mysql_pid;
 pid_t detect_tran_pic_action_pid;
 
-int mousefd;
 volatile sig_atomic_t action;
+extern volatile sig_atomic_t destroyIcon;
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 int checkBingGoogleProcessStatus () {
@@ -125,6 +124,11 @@ int checkOtherProcessNotifyEvent ( int fd_python[] ) {
         else { pbred ( "上一次翻译内容为空，此次不调出窗口" );}
     }
 
+    if ( shmaddr_keyboard[SELECT_EXCLUDE_FLAG] == '1' ) {
+        checkApp ( selectApp() );
+        shmaddr_keyboard[SELECT_EXCLUDE_FLAG] = '0';
+    }
+
     return 0;
 }
 
@@ -136,20 +140,22 @@ void *DetectMouse(void *arg) {
     setpgid ( getpid(), getppid() );
 
     struct sigaction sa;
-    int retval;
-    char buf[3];
-    struct timeval old, now, whenTimeout;
-    double oldtime = 0;
-    double newtime = 0;
-    double lasttime = 0;
-    double inTimeout = 0;
-    int releaseButton = 1;
-    int thirdClick;
+    struct timeval timer;
+    int startTimer = 0;
+    int checkTimeout = 1;
+    int slideCount = 1;
+    double start = 0;
+    double now = 0;
+    int buttonPress = 0;
 
-    int fd_google[2], fd_baidu[2], fd_mysql[2];
+    int fd_google[2];
+    int fd_baidu[2];
+    int fd_mysql[2];
     int fd_python[3];
     int status;
-    pid_t pid_google = -1, pid_baidu = -1, pid_mysql = -1;
+    pid_t pid_google = -1;
+    pid_t pid_baidu = -1;
+    pid_t pid_mysql = -1;
     pid_t retpid;
 
     if ( (status = pipe(fd_google)) != 0 ) {
@@ -267,140 +273,114 @@ void *DetectMouse(void *arg) {
             quit();
         }
 
-        // 打开鼠标设备
-        mousefd = open("/dev/input/mice", O_RDONLY );
-        if ( mousefd < 0 ) {
-            pbred("Failed to open mice, Try to execute as superuser\n\
-                    or add current user to group which /dev/input/mice belong to\n");
-            quit();
-        }
-
-        int history[4] = { 0 }; /* 超时后数据将被清空*/
-        int cycle[4] = { 0 }; /* 始终不清空,循环写入数据*/
-        int i = 0, n = 0, m = 0;
-        struct pollfd pfd;
-        int timeout = 2000;
-        pfd.fd = mousefd;
-        pfd.events = POLLIN|POLLPRI;
-
         while(1) {
 
-            retval = poll ( &pfd, 1, timeout );
+            usleep ( 1000 );
 
             if ( SIGTERM_NOTIFY ) break;
 
             checkBingGoogleProcessStatus();
             checkOtherProcessNotifyEvent( fd_python );
 
-            /*超时*/
-            if( retval == 0 ) {
-
-                gettimeofday( &whenTimeout, NULL );
-                inTimeout = (whenTimeout.tv_usec + whenTimeout.tv_sec*1000000) / 1000;
-
-                /* 超时自动清零history*/
-                if ( abs (inTimeout - oldtime) > 700 && ! isAction(history, i, ALL_ONE))
-                    if ( history[0] | history[1] |  history[2] | history[3]) {
-                        memset(history, 0, sizeof(history));
-                        releaseButton = 1;
-                        action = 0;
-                    }
-                continue;
+            if ( checkTimeout ) {
+                gettimeofday ( &timer, NULL );
+                now = (timer.tv_usec + timer.tv_sec*1e6) / 1e3;
+                if ( abs ( now-start ) > DOUBLE_CLICK_TIMEOUT ) {
+                    pred ( "超时 action asign value: NO_ACTION" );
+                    if ( !cd->startSlide ) action = NO_ACTION;
+                    checkTimeout = 0;
+                }
             }
 
-            if ( shmaddr_keyboard[SELECT_EXCLUDE_FLAG] == '1' ) {
-                checkApp ( selectApp() );
-                shmaddr_keyboard[SELECT_EXCLUDE_FLAG] = '0';
-            }
-
-            if(read(mousefd, buf, 3) <= 0) continue;
-
-            /*循环写入鼠标数据到数组*/
-            history[i] = buf[0] & 0x07;
-            cycle[i] = history[i];
-            if ( ++i == 4 ) i = 0;
-
-            /*m为最后得到的鼠标键值*/
-            m = previous(i);
-            n = previous(m);
-
-            /* mark */
-            /* int j = previous(n), x = previous(j); */
-            /* printf("%d %d %d %d\n", history[m], history[n], history[j], history[x]); */
-            /* printf("%d %d %d %d\n", cycle[m], cycle[n], cycle[j], cycle[x]); */
-
-            /*没有按下按键并活动鼠标,标志releaseButton=1*/
-            if ( history[m] == 0 && history[n] == 0 ) {
-                
-                releaseButton = 1;
-
-                /* 由于拼音打字和复制操作也会触发selection changed event
-                 * 但是一般拖动窗口等操作之前都是移动鼠标，并且没有按下任何
-                 * 按键，正好可以将剪贴板变化的事件标志给清空*/
-                shmaddr_selection[0] = '0';
-                action = 0;
-            }
-
-            if ( isAction(cycle, i, BUTTON_PRESS) )
+            if ( cd->buttonPress ) {
+                pgreen ( "................Button Press..............." );
                 cd->buttonState = BUTTON_PRESS;
+                cd->buttonPress = 0;
+                buttonPress = 1;
+            }
 
-            if ( isAction(cycle, i, BUTTON_RELEASE) )
+            static int printLock = 1;
+            if ( cd->startSlide ) {
+                if ( printLock ) {
+                    printf("Action to start slide\n");
+                    printLock = 0;
+                }
+                slideCount++;
+                action = START_SLIDE;
+                buttonPress = 0;
+            }
+
+            if ( cd->buttonRelease ) {
                 cd->buttonState = BUTTON_RELEASE;
+                cd->buttonRelease = 0;
+                if ( action != DOUBLE_CLICK )
+                    buttonPress = 0;
+                if ( action == START_SLIDE ) {
+                    buttonPress = 1;
+                    cd->startSlide = 0;
+                    printLock = 1;
+                } 
+            }
 
-            /*按下左键*/
-            /* 此处不要改变1 0的顺序，因为m n下标出现0 1可能是区域选择
-             * 事件(SLIDE),这将导致SLIDE被一直误判*/
-            if ( history[m] == 1 && history[n] == 0 ) {
 
-                if ( releaseButton ) {
+            if ( buttonPress )
+            {
+                startTimer = 1;
+                buttonPress = 0;
 
-                    gettimeofday(&old, NULL);
+                pbyellow ( "Switch Action" );
 
-                    /* lasttime为双击最后一次的按下按键时间;
-                     * 如果上次双击时间到现在不超过600ms，则断定为3击事件;
-                     * 3击会选中一整段，或一整句，此种情况也应该复制文本*/
-                    if (abs(lasttime - ((old.tv_usec + old.tv_sec*1000000) / 1000)) < 800 \
-                            && lasttime != 0 && action == DOUBLE_CLICK) {
-
-                        thirdClick = 1;
-                        notify(&history, &thirdClick, &releaseButton, fd_python);
-                    }
-                    else { /*不是3击事件则按单击处理，更新oldtime*/
-                        oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
-                        thirdClick = 0;
+                switch ( action ) {
+                    case TRIBLE_CLICK:
+                    case SLIDE:
+                    case NO_ACTION: 
+                        pbmag("~~~~~~~~~~~~~~~~Single click~~~~~~~~~~~~~~~~");
                         action = SINGLE_CLICK;
-                    }
-                    releaseButton = 0;
+                        shmaddr_selection[0] = '0';
+                        if ( slideCount > 16 || slideCount == 1 ) destroyIcon = 1;
+                        else {
+                            pbyellow("^^^^^^ 忽略两次单击中的轻微滑动，视为双击^^^^^^");
+                            action = DOUBLE_CLICK;
+                            notify ( fd_python, cd );
+                        }
+                        slideCount = 1;
+                        break;
+                    case SINGLE_CLICK:
+                        pbmag("~~~~~~~~~~~~~~~~Double click~~~~~~~~~~~~~~~~");
+                        action = DOUBLE_CLICK;
+                        cd->previousx = cd->pointerx;
+                        cd->previousy = cd->pointery;
+                        notify ( fd_python, cd );
+                        break;
+                    case DOUBLE_CLICK:
+                        pbmag("~~~~~~~~~~~~~~~~Trible click~~~~~~~~~~~~~~~~");
+                        if ( abs(cd->pointerx-cd->previousx) > 10 
+                                || abs ( cd->pointery-cd->previousy ) > 10 ){
+                            action = SINGLE_CLICK;
+                            destroyIcon = 1;
+                            break;
+                        }
+                        action = TRIBLE_CLICK;
+                        notify ( fd_python, cd );
+                        break;
+                    case START_SLIDE:
+                        action = SLIDE;
+                        pbmag ( ">>>>>>>>>>>>>>>>> SLIDE <<<<<<<<<<<<<<<<<<<<<<" );
+                        notify ( fd_python, cd );
+                        break;
 
-                    /*非3击事件, 则为单击, 返回检测鼠标新一轮事件*/
-                    if ( !thirdClick) continue;
+                    default:
+                        pred ( "Unknow action" );
+                        break;
                 }
             }
 
-            /*检测检测是否可能为双击,以及判断时间间隔(应跳过确定的3击事件)*/
-            if ( isAction(history, i, DOUBLE_CLICK) && !thirdClick )  {
-                releaseButton = 1;
-                gettimeofday( &now, NULL );
-                newtime = (now.tv_usec + now.tv_sec*1000000) / 1000;
-
-                /*双击超过700ms的丢弃掉*/
-                if ( abs (newtime - oldtime) > 700)  {
-                    gettimeofday(&old, NULL);
-                    oldtime = (old.tv_usec + old.tv_sec*1000000) / 1000;
-                    memset(history, 0, sizeof(history));
-                    pbred("超时丢弃");
-                    continue;
-                }
-
-                /*更新最后一次有效双击事件的发生时间*/
-                lasttime = newtime;
-
-                notify(&history, &thirdClick, &releaseButton, fd_python);
-                continue;
+            if ( startTimer ) {
+                gettimeofday ( &timer, NULL );
+                start = (timer.tv_usec + timer.tv_sec*1e6) / 1e3;
+                checkTimeout = 1;
+                startTimer = 0;
             }
-
-            if ( isAction( history, i, SLIDE ) )
-                notify(&history, &thirdClick, &releaseButton, fd_python);
 
         } /*while loop*/
 

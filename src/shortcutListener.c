@@ -165,17 +165,26 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
         /* extractShortcut( ctrl_display ); */
     }
 
-    int event_type = data->type;
+    /* int event_type = data->type; */
+    int event_type = data->event.u.u.type;
+
+    /* 如果是鼠标事件，则detail等于1,2,3等鼠标按钮*/
+    int detail = data->event.u.u.detail;
 
     BYTE keycode;
+
+    /* 相关定义可以在/usr/include/X11/Xproto.h的
+     * typedef struct _xEvent找到*/
     keycode = data->event.u.u.detail;
     int mask = data->event.u.keyButtonPointer.state;
 
     int rootx = data->event.u.keyButtonPointer.rootX;
     int rooty = data->event.u.keyButtonPointer.rootY;
-    int time = hook->server_time;
+    int motionState = data->event.u.keyButtonPointer.state;
+    /* int time = hook->server_time; */
 
     switch (event_type) {
+
         case KeyPress:
 
             /* Note: you should not use data_disp to do normal X operations !!!*/
@@ -197,14 +206,24 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
             break;
 
         case KeyRelease: break;
-        case ButtonPress: cd->buttonPress = 1;printf("Button press\n");break;
-        case ButtonRelease:cd->buttonRelease=1; printf("Button release\n");break;
+        case ButtonPress:
+                         if ( detail == 1 ){ cd->buttonPress = 1; }
+                         break;
+        case ButtonRelease:
+                         if ( detail == 1 ) { cd->buttonRelease=1; }
+                         break;
         case MotionNotify:
-                if ( cd ) {
-                    cd->pointerx = cur_x = rootx;
-                    cd->pointery = cur_y = rooty;
-                } 
-                break;
+                         if ( cd ) {
+                             cd->pointerx = cur_x = rootx;
+                             cd->pointery = cur_y = rooty;
+                         } 
+                         if ( motionState & Button1Mask ) {
+                             if ( cd && !(cd->startSlide) ) {
+                                 printf("Start Slide\n");
+                                 cd->startSlide = 1;
+                             }
+                         }
+                         break;
         case CreateNotify: break;
         case DestroyNotify: break;
         case NoExpose: break;
@@ -240,6 +259,10 @@ void initSharedMemory() {
 void *listenShortcut ( void *data )
 {
     cd = (ConfigData*)data;
+
+    cd->startSlide = 0;
+    cd->buttonPress = 0;
+    cd->buttonRelease = 0;
 
     XInitThreads();
     ctrl_display = XOpenDisplay (NULL);
