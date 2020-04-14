@@ -5,9 +5,10 @@ YELLOW='\033[0;33m'
 GREEN='\033[0;34m'
 END='\033[0m'
 
-bash stop.sh
+# bash stop.sh
 echo "Use server for pip: "$specific
 
+sed -i "s/rease/\$USER/g" Mstran.desktop
 sed -i "s/\$USER/$USER/g" Mstran.desktop
 
 #复制文件到家目录
@@ -15,7 +16,7 @@ storage="$HOME/.stran"
 currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.png"\ 
     "./startup.sh" "./errNotification.sh" "../gif_pic/google.png" "stop.sh");
 
-resourcesDir=("../ui/" "../config/")
+resourcesDir=("../ui/")
 
 declare -i len
 len=${#currFile[*]}-1
@@ -44,6 +45,9 @@ do
     done
     echo
 done
+
+echo
+python3 ./mergeConfig.py
 
 cd ../baidu-translate
 git pull origin master
