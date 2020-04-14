@@ -21,7 +21,7 @@
 #include "windowData.h"
 #include <bsd/unistd.h>
 
-#define TIMOUE_OUT (1000)
+#define DOUBLE_CLICK_TIMEOUT  ( 450 )
 
 extern char *shmaddr;
 extern char *shmaddr_selection;
@@ -147,8 +147,6 @@ void *DetectMouse(void *arg) {
     double start = 0;
     double now = 0;
     int buttonPress = 0;
-    int previousx = 0;
-    int previousy = 0;
 
     int fd_google[2];
     int fd_baidu[2];
@@ -287,7 +285,7 @@ void *DetectMouse(void *arg) {
             if ( checkTimeout ) {
                 gettimeofday ( &timer, NULL );
                 now = (timer.tv_usec + timer.tv_sec*1e6) / 1e3;
-                if ( abs ( now-start ) > 700 ) {
+                if ( abs ( now-start ) > DOUBLE_CLICK_TIMEOUT ) {
                     pred ( "超时 action asign value: NO_ACTION" );
                     if ( !cd->startSlide ) action = NO_ACTION;
                     checkTimeout = 0;
@@ -350,16 +348,17 @@ void *DetectMouse(void *arg) {
                     case SINGLE_CLICK:
                         pbmag("~~~~~~~~~~~~~~~~Double click~~~~~~~~~~~~~~~~");
                         action = DOUBLE_CLICK;
-                        previousx = cd->pointerx;
-                        previousy = cd->pointery;
+                        cd->previousx = cd->pointerx;
+                        cd->previousy = cd->pointery;
                         notify ( fd_python, cd );
                         break;
                     case DOUBLE_CLICK:
                         pbmag("~~~~~~~~~~~~~~~~Trible click~~~~~~~~~~~~~~~~");
-                        if ( abs(cd->pointerx-previousx) > 10 
-                                || abs ( cd->pointery-previousy ) > 10 ){
+                        if ( abs(cd->pointerx-cd->previousx) > 10 
+                                || abs ( cd->pointery-cd->previousy ) > 10 ){
                             action = SINGLE_CLICK;
                             destroyIcon = 1;
+                            break;
                         }
                         action = TRIBLE_CLICK;
                         notify ( fd_python, cd );
