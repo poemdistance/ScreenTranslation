@@ -25,9 +25,12 @@ typedef struct ConfigData {
     int allowAutoAdjust;
     int disableShadowBorder;
     int shrinkShadowBorder;
+    int ignoreChinese;
 
     volatile int pointerx;
     volatile int pointery;
+    volatile int previousx;
+    volatile int previousy;
     int buttonState;
     volatile int buttonPress;
     volatile int buttonRelease;
