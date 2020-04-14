@@ -48,7 +48,7 @@ def mergeConfigFile():
 if __name__ == "__main__":
 
     if not configFileExist():
-        os.system("cp "+configSrc+" "+configDst)
+        os.system("cp "+configSrc+" "+configDst+" -v")
         sys.exit(0)
 
     mergeConfigFile()
