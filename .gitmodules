@@ -12,7 +12,3 @@
 	path = BingTran
 	url = https://github.com/poemdistance/BingTran.git
     ignore = dirty
-[submodule "gnome-screenshot"]
-	path = gnome-screenshot
-	url = https://github.com/poemdistance/gnome-screenshot.git
-    ignore = dirty
