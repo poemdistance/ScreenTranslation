@@ -22,3 +22,4 @@ Pointer-Absolute-Y: 342
 Allow-Auto-Adjust-Popup-Window-Pref: TRUE
 Disable-Shadow-Border-Pref: FALSE
 Shrink-Shadow-Border-Pref: FALSE
+Ignore-Chinese-Pref: FALSE
