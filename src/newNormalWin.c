@@ -266,7 +266,7 @@ int check_pointer_and_window_position ( void *data ) {
     int targetY = cd->pointery - 
         ( cd->pointerOffsetY *1.0 / 252 ) * invisible_win_height;
 
-    if ( ! wd->quickSearchFlag ) {
+    if ( ! wd->quickSearchFlag && ! cd->doNotMoveWindow ) {
 
         if ( cd->allowAutoAdjust )
             adjustTargetPosition( &targetX, &targetY, cd->pointerx, cd->pointery, wd );

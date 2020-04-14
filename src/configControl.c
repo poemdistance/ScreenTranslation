@@ -270,6 +270,9 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     cd->ignoreChinese =
         str2bool ( readFromConfig ( "Ignore-Chinese-Pref", buf ) );
 
+    cd->doNotMoveWindow =
+        str2bool ( readFromConfig ( "Do-Not-Move-Window-Pref", buf ) );
+
     printf("iconOffsetX:%d\n", cd->iconOffsetX);
     printf("iconOffsetY:%d\n", cd->iconOffsetY);
     printf("pointerOffsetX:%d\n", cd->pointerOffsetX);
@@ -284,6 +287,7 @@ void readNeededValueFromConfig( ConfigData *cd  ) {
     printf("disableShadowBorder:%d\n", cd->disableShadowBorder);
     printf("shrinkShadowBorder:%d\n", cd->shrinkShadowBorder);
     printf("ignoreChinese:%d\n", cd->ignoreChinese);
+    printf("doNotMoveWindow:%d\n", cd->doNotMoveWindow);
 }
 
 /* int main(int argc, char **argv) */
