@@ -49,34 +49,16 @@ cd ../baidu-translate
 git pull origin master
 cd ../google-translate
 git pull origin master
-cd ../gnome-screenshot
-git pull origin mainline
 
 #git submodule foreach git pull #origin master
 sudo pip3 install  mysql-connector-python $specific
 
+cd ../src
 #复制启动图标，创建日志文件,修改读写权限
 sudo cp Mstran.desktop /usr/share/applications/ -v
 sudo touch /var/log/mstran.log
 sudo chmod -c 770 /var/log/mstran.log
 sudo chown -c $USER /var/log/mstran.log
-
-#加入设备文件用户组
-group=`ls -l /dev/input/mice | awk '{print $4}' | xargs`
-echo
-if [ -n "$group" ]
-then    
-    echo "Note: Please check whether the device 'mice' is belong to '$group'"
-    echo "because it might be wrong result"
-    echo
-    echo "/dev/input/mice is belong to the group of "\"$group\"
-    echo "Adding current user to group "\"$group\"
-    sudo usermod -aG $group $USER
-
-    echo
-    echo "注意: 加入的组在重启后生效，在此之前需要使用sudo执行程序"
-    echo
-fi
 
 echo
 echo 'Preparing to install submodules'
@@ -104,7 +86,4 @@ cat files.txt |xargs sudo chmod -c 775
 system=`uname -a`
 if [[ $system =~ .*"deepin".* ]]; then
     sudo apt install gnome-screenshot
-else
-    cd ../gnome-screenshot
-    sudo bash install.sh
 fi
