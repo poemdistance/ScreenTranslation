@@ -1123,7 +1123,7 @@ void initShadowBorder ( WinData *wd ) {
 
 
     ConfigData *cd = wd->cd;
-    
+
     if ( cd->shrinkShadowBorder ) {
         shrinkShdowBorder ( wd );
         return;
@@ -1751,7 +1751,9 @@ void displayTrans ( WinData *wd, char ***result  ) {
     void getPhonetic ( char *src, char **phonetic_en, char **phonetic_am );
     getPhonetic ( result[1][0], &p1, &p2 );
 
-    gtk_label_set_text ( GTK_LABEL(wd->src_label), result[0][0] );
+    if ( strlen(result[0][0]) < 30 )
+        gtk_label_set_text ( GTK_LABEL(wd->src_label), result[0][0] );
+
     setWidgetProperties ( wd->src_label, 1.3, "#000000", BOLD_TYPE, NOT_TRANSPARENT );
 
     gtk_label_set_text ( GTK_LABEL(wd->phonetic_en), p1 );
