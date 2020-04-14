@@ -18,6 +18,7 @@
 
 FILE *fp = NULL;
 char *text = NULL;
+char *previousText = NULL;
 
 volatile sig_atomic_t CanNewEntrance = 0;
 volatile sig_atomic_t destroyIcon = 0;
@@ -31,6 +32,37 @@ extern volatile sig_atomic_t InNewWin;
 
 extern volatile sig_atomic_t HadDestroied;
 
+enum {
+
+    CONTINUE,
+    RETURN,
+};
+
+int waitForSelectionChangedEvent ( ) {
+
+    struct timeval tv;
+    int timeout = 300;
+    double now = 0;
+
+    printf("Check selecttion changed event\n");
+
+    gettimeofday( &tv, NULL );
+    double start =  ( tv.tv_sec*1e6 + tv.tv_usec ) / 1e3; /* ms*/
+
+    /* 等待剪贴板变化事件，超时直接返回*/
+    while ( shmaddr_selection[0] != '1' ) {
+        gettimeofday( &tv, NULL );
+        now = (tv.tv_sec*1e6+tv.tv_usec)/1e3;
+        if ( abs ( start - now ) > timeout )  {
+            if ( action == TRIBLE_CLICK ) return CONTINUE;
+            pbred ( "剪贴板检测超时" );
+            return RETURN;
+        }
+    }
+
+    return -1;
+}
+
 void notify ( int fd[3], ConfigData *cd ) {
 
     /* 禁止套娃*/
@@ -42,34 +74,12 @@ void notify ( int fd[3], ConfigData *cd ) {
     }
 
     char appName[100];
-    struct timeval tv;
-    double now = 0;
     int go = 0;
-    int count = 0;
-    int timeout = 300;
 
-    gettimeofday( &tv, NULL );
-    double start =  ( tv.tv_sec*1e6 + tv.tv_usec ) / 1e3; /* ms*/
-
-    printf("Check selecttion changed event %d\n", count++);
-
-    /* 战略性休眠*/
-    usleep ( 150*1e3 );
-
-    /* 等待剪贴板变化事件，超时直接返回*/
-    while ( shmaddr_selection[0] != '1' ) {
-
-        gettimeofday( &tv, NULL );
-        now = (tv.tv_sec*1e6+tv.tv_usec)/1e3;
-        if ( action == DOUBLE_CLICK && cd->buttonPress ) {
-            pmag ( "Trible click in notify" );
-            timeout += 300;
-        }
-        if ( abs ( start - now ) > timeout )  {
-            pbred ( "剪贴板检测超时返回" );
-            if ( action == TRIBLE_CLICK ) destroyIcon = 1;
-            return;
-        }
+    switch ( waitForSelectionChangedEvent() ) {
+        case RETURN: return;
+        case CONTINUE: break;
+        default: break;
     }
 
     if ( shmaddr_selection[0] == '1') {
@@ -78,14 +88,15 @@ void notify ( int fd[3], ConfigData *cd ) {
         go = 1;
     }
 
-    if ( ! go ) {
+    if ( ! go && !(action==TRIBLE_CLICK)) {
         pred ( "剪贴板未变化, 返回" );
         CanNewEntrance = 0;
         return;
     }
 
     /*需每次都执行才能判断当前的窗口是什么*/
-    fp = popen("ps -p `xdotool getwindowfocus getwindowpid` | awk '{print $NF}' | tail -n 1", "r");
+    fp = popen("ps -p `xdotool getwindowfocus getwindowpid` \
+            | awk '{print $NF}' | tail -n 1", "r");
 
     memset ( appName, 0, sizeof(appName) );
 
@@ -109,18 +120,50 @@ void notify ( int fd[3], ConfigData *cd ) {
     }
 
     if ( text == NULL )
-        /*free in forDetectMouse.c*/
-        if (( text = calloc(TEXTSIZE, 1)) == NULL)
-            err_exit("malloc failed in notify.c");
+        text = calloc(TEXTSIZE, 1);
+
+    if ( previousText == NULL )
+        previousText = calloc(TEXTSIZE, 1);
 
     memset(text, 0, TEXTSIZE);
-    int retval = 0;
 
-    /* TODO:返回值已经没有1*/
-    if ( (retval = getClipboard(text) ) == 1 || isEmpty(text)) {
+    /* FIXME:剪贴板标志位可能已经被置位，可能影响到下一次
+     * 检测的正确性.*/
+    if ( cd->buttonPress ) {
+        pbmag ( "处理双击时检测到三击事件" );
+        cd->buttonPress = 0;
+        pbmag ( "Button Press: %d", cd->buttonPress );
+        if ( abs(cd->pointerx-cd->previousx) > 10 
+                || abs ( cd->pointery-cd->previousy ) > 10 ){
+            action = SINGLE_CLICK;
+            if ( !HadDestroied ) destroyIcon = 1;
+            return;
+        }
+    }
+
+    if ( getClipboard(text) || isEmpty(text)) {
         printf("Not copy event or empty text\n");
+        previousText[0] = '\0';
         CanNewEntrance = 0;
         return ;
+    }
+
+    char *p = text;
+    if ( cd->ignoreChinese && ((*p>>6)&0x03) == 3 ) {
+        pbcyan ( "非Ascii码. 忽略取词. 返回" );
+        return;
+    }
+
+    adjustSrcText ( text );
+
+    if ( action == TRIBLE_CLICK ) {
+        pyellow ( "text:%s<", text );
+        pyellow ( "previousText:%s<", previousText );
+        if ( strcmp ( text, previousText ) == 0 ) {
+            pmag ( "三击获取到的文本与上次相同，关闭弹出图标" );
+            if ( !HadDestroied ) destroyIcon = 1;
+            return;
+        }
     }
 
     /* 只能减小结果获取错误的概率，如果两边翻译都不够快，清零发生在百度谷歌翻译写1之前，
@@ -133,18 +176,19 @@ void notify ( int fd[3], ConfigData *cd ) {
     writePipe(text, fd[1]);
     writePipe(text, fd[2]);
 
-    /* 情况1: 双击单词后再点击了一次形成的三击选段，此时的3击不能再弹出入口图标
-     * 情况2: 从空白处直接3击取段，此时应弹出入口图标
-     *
-     * 总结: 只要入口图标已经创建就不应该弹出，反之反之, HadDestroied就是入口图标
-     *       是否为销毁状态的标志位, 只要是销毁状态，应该弹出
-     */
-
     if ( HadDestroied ) {
         CanNewEntrance = 1;
         destroyIcon = 0;
     }
 
-    pbgreen ( "Return from notify" );
+    strcpy ( previousText, text );
+
+    pbmag ( "Return from notify. Button Press: %d", cd->buttonPress );
+
+    if ( cd->buttonPress ) {
+        cd->buttonPress = 0;
+        pbmag ( "Button Press 再次置零" );
+        shmaddr_selection[0] = '0';
+    }
 }
 
