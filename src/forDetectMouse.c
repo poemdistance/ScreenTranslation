@@ -1,6 +1,7 @@
 #include "common.h"
 #include "cleanup.h"
 #include "detectMouse.h"
+#include <ctype.h>
 
 typedef struct TmpIgnore {
 
@@ -176,49 +177,45 @@ void err_exit(char *buf) {
     quit();
 }
 
+char *adjustSrcText ( char *text ) {
+
+    char *p = text;
+    char *head = NULL;
+    char *p2 = NULL;
+
+    /* 替换回车符为空格字符*/
+    while ( *p ) {
+        if ( *p == '\n' )
+            *p = ' ';
+        p++;
+    }
+
+    /* 去除前缀空白字符*/
+    p = text;
+    while ( *p && isspace(*p) ) p++;
+    if ( !*p ) return NULL;
+    head = p;
+
+    /* 去除后缀空白字符*/
+    while ( *++p );
+    while ( p != head && isspace(*--p) );
+    *(p+1) = '\0';
+
+    /* 将处理后的字符串复制回text开头*/
+    p = text;
+    p2 = head;
+    if ( p != head )
+        while ( (*p++ = *p2++) );
+
+    strcat ( text, "\n" );
+
+    return text;
+}
+
 /*写数据到管道*/
 void writePipe(char *text, int fd) {
 
-    int writelen;
-    char *p  = NULL;
-
-    /*排除空字符和纯回车字符*/
-    if ( strcmp( text, " ") != 0 && strcmp( text, "\n") != 0 ) {
-
-        writelen = strlen(text);
-        for(int i=0; i<writelen; i++) {
-            if ( text[i] == '\n')
-                text[i] = ' ';
-        }
-
-        p = text;
-        while ( *p ) {
-            if ( *p != ' ' ) {
-                if ( *p == '\0' ) {
-                    shmaddr_google[0] = EMPTYFLAG;
-                    return;
-                }
-            }
-            p++;
-        }
-
-        if ( text[writelen-1] != '\n')  {
-            text = strcat(text, "\n");
-            writelen++;
-        }
-
-        int ret = write( fd, text, writelen );
-
-        if ( ret != writelen ) {
-            fprintf(stderr, "writelen=%d,\
-                    write error in forDetectMouse.c func: writePipe\n", ret);
-            perror("errno");
-            exit(1);
-        }
-    } else {
-        fprintf(stdout, "Null character...\n");
-        shmaddr_google[0] = EMPTYFLAG;
-    }
+    write( fd, text, strlen(text) );
 }
 
 /*获取子进程状态，防止僵尸进程*/

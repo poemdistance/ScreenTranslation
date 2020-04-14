@@ -19,7 +19,7 @@ void simulateKey(int fd,  int key[], int len);
 void *GuiEntrance(void *arg);
 void *DetectMouse(void *arg);
 void notify( int fd[3], ConfigData *cd );
-
+char *adjustSrcText ( char *text );
 int checkApp(char *app);
 char *selectApp();
 int isExist( char *buf,  char *app );
