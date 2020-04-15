@@ -76,8 +76,6 @@ void separateDataForBaidu(int *index, int len, int type);
 void adjustStrForBaidu(int len, char *source, int addSpace, int copy, int *enterNum);
 int getLinesOfGoogleTrans ( int *index_google );
 void separateGoogleData ( int *index_google, int len );
-int countLines ( int len, char *source );
 int countCharNums ( char *source );
-int adjustStrForScrolledWin(int len, char *source);
 
 #endif

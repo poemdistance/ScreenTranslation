@@ -6,7 +6,6 @@
 #include <X11/keysym.h> /* KeySym*/
 #include <ctype.h>
 #include <strings.h>
-#include "shortcutListener.h"
 #include "printWithColor.h"
 #include "configControl.h"
 #include "useful.h"

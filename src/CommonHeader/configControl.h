@@ -26,6 +26,7 @@ typedef struct ConfigData {
     int disableShadowBorder;
     int shrinkShadowBorder;
     int ignoreChinese;
+    int doNotMoveWindow;
 
     volatile int pointerx;
     volatile int pointery;

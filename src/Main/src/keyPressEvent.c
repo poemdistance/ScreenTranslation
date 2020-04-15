@@ -7,7 +7,7 @@
 #include "configControl.h"
 #include "useful.h"
 #include "configControl.h"
-#include "shortcutListener.h"
+#include "strmask.h"
 
 /* 键值掩码在gdk/gdkkeysyms.h*/
 

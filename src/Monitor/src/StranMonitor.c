@@ -19,14 +19,14 @@
 #define EXIT (1)
 #define RESTART (2)
 
-volatile sig_atomic_t PROCESS_EXIT_FLAG = 0;
-volatile sig_atomic_t SIGTERM_NOTIFY = 0;
-static int RESTART_SIGNAL = 0;
+static volatile sig_atomic_t PROCESS_EXIT_FLAG = 0;
+static volatile sig_atomic_t SIGTERM_NOTIFY = 0;
 
-pid_t needWait = 0;
-pid_t pid_mstran = 0;
-pid_t pid_stran = 0;
-pid_t cp_mstran = 0;;
+static int RESTART_SIGNAL = 0;
+static pid_t needWait = 0;
+static pid_t pid_mstran = 0;
+static pid_t pid_stran = 0;
+static pid_t cp_mstran = 0;;
 
 static void handler()  { 
 

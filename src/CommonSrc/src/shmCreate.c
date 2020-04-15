@@ -1,5 +1,10 @@
-#include "common.h"
-#include "cleanup.h"
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <errno.h>
+#include <string.h>
+#include "printWithColor.h"
 #include "sharedMemory.h"
 
 void err( char *str ) {

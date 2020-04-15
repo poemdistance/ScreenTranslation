@@ -18,22 +18,7 @@ extern int shmid_setting;
 extern char *text;
 extern char *previousText;
 
-extern pid_t baidu_translate_pid;
-extern pid_t tranSelect_pid;
-extern pid_t google_translate_pid;
-extern pid_t check_selectionEvent_pid;
-extern pid_t quickSearchProcess_pid;
-extern pid_t fetch_data_from_mysql_pid;
-extern pid_t detect_tran_pic_action_pid;
-
-extern int BAIDU_TRANS_EXIT_FALG;
-extern int GOOGLE_TRANS_EXIT_FLAG;
-
 static int hadCleanUp = 0;
-
-/* TODO:可能会被多次执行，如在终端输入ctrl-c，会被主函数注册的监听SIGINT捕捉到，
- * 之后python翻译程序退出，又接收到SIGCHLD，再被调用一次，最后StranMonitor程序
- * 发送SIGTERM，接收到后又调用一次, 不过影响不大*/
 
 void releaseSharedMemory( char *addr, int shmid, char *comment ) {
 
@@ -48,8 +33,7 @@ void releaseSharedMemory( char *addr, int shmid, char *comment ) {
 
 void quit() {
 
-    if ( hadCleanUp )
-        return;
+    if ( hadCleanUp ) return;
 
     hadCleanUp = 1;
 
@@ -61,7 +45,7 @@ void quit() {
     if ( previousText != NULL )
         free(previousText);
 
-    /* TODO:有时候共享内存会清理不成功*/
+    /* FIXME:有时候共享内存会清理不成功*/
     releaseSharedMemory(shmaddr_google, shmid_google, "google");
     releaseSharedMemory(shmaddr_baidu, shmid_baidu, "baidu");
     releaseSharedMemory(shmaddr_selection, shmid_selection, "selection");
@@ -71,10 +55,8 @@ void quit() {
     releaseSharedMemory(shmaddr_pic, shmid_pic, "pic");
     releaseSharedMemory(shmaddr_setting, shmid_setting, "setting");
 
-
     releaseMemoryGoogle();
     releaseMemoryMysql();
     releaseMemoryTmp();
     releaseLink();
-
 }

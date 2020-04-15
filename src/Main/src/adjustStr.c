@@ -1,7 +1,6 @@
 #include "common.h"
 #include "newWindow.h"
 #include <ctype.h>
-#include "dataStatistics.h"
 
 int theThirdByteOfChinese ( char *c ) {
 

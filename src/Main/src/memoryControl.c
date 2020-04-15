@@ -9,8 +9,6 @@ extern char audioOnline_am[512];
 extern char audioOffline_en[512];
 extern char audioOffline_am[512];
 
-extern volatile sig_atomic_t InNewWin;
-
 /* 初始化离线翻译结果存储空间*/
 void initMemoryMysql() {
 
@@ -202,6 +200,4 @@ void clearMemory () {
     for ( int i=0; i<GOOGLESIZE; i++ )
         if ( google_result[i] != NULL)
             memset( google_result[i], '\0', SHMSIZE / GOOGLESIZE );
-
-    InNewWin = 0;
 }

@@ -8,26 +8,16 @@
 #include "cleanup.h"
 #include "configControl.h"
 
-extern char *shmaddr_google;
-extern char *shmaddr_searchWin;
-extern volatile sig_atomic_t action;
 extern volatile sig_atomic_t destroyIcon;
-extern int timeout_id_1;
-extern int timeout_id_2;
 extern volatile sig_atomic_t CanNewWin;
 extern volatile sig_atomic_t CanNewEntrance;
-
-extern char *google_result[GOOGLESIZE];
-
-extern char *shmaddr_google;
-extern char *shmaddr_baidu;
-
-extern char audioOnline_en[512];
-extern char audioOnline_uk[512];
+extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 volatile sig_atomic_t HadDestroied = 1;
-int quickSearchFlag = 0;
+
 static int aboveWindow = 0;
+static int timeout_id_1;
+static int timeout_id_2;
 
 int quit_entry(void *arg);
 int quit_test(void *arg);
@@ -40,8 +30,6 @@ struct clickDate {
     GtkWidget *button;
 };
 
-extern volatile sig_atomic_t SIGTERM_NOTIFY;
-
 void *GuiEntrance(void *arg) {
 
     pbblue ( "启动线程GuiEntrance" );
@@ -53,22 +41,13 @@ void *GuiEntrance(void *arg) {
     while(1) {
 
         if ( CanNewEntrance ) {
-            printf("\nDetect mouse action, creating icon entry "
-                    "CanNewEntrance = %d action=%d\n", CanNewEntrance, action);
-
-            if ( shmaddr_google[0] == EMPTYFLAG) {
-                printf("空字符串,返回继续等待...\n");
-                shmaddr_google[0] = CLEAR;
-                action = 0;
-                CanNewWin = 0;
-                CanNewEntrance = 0;
-                pthread_exit(NULL);
-                return (void*)0;
-            }
+            pmag ( "创建入口图标" );
             break;
         }
 
-        if ( SIGTERM_NOTIFY ) return NULL;
+        if ( SIGTERM_NOTIFY ) 
+            return NULL;
+
         usleep(1000);
     }
 
@@ -81,7 +60,6 @@ void *GuiEntrance(void *arg) {
     /*入口图标销毁标志置0，表示处于显示状态*/
     HadDestroied = 0;
     CanNewEntrance = 0;
-    /* action = 0; */
 
     gtk_init(NULL, NULL);
 
@@ -156,11 +134,7 @@ void *GuiEntrance(void *arg) {
 
 void setNewWinFlag(GtkWidget *button, GtkWidget *window) {
 
-    if ( shmaddr_google[0] == EMPTYFLAG )
-        CanNewWin = 0;
-    else 
-        CanNewWin = 1;
-
+    CanNewWin = 1;
     HadDestroied = 1;
 
     /*退出时注意注销超时回调函数，否则下一次创建的
@@ -228,7 +202,6 @@ int quit_entry(void *arg) {
 
         clearMemory();
 
-        /* action  = 0; */
         CanNewWin = 0;
         HadDestroied = 1;
 

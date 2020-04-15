@@ -41,34 +41,9 @@ extern char *text;
 
 extern int quickSearchFlag;
 
-pid_t baidu_translate_pid;
-pid_t google_translate_pid;
-pid_t check_selectionEvent_pid;
-pid_t fetch_data_from_mysql_pid;
-pid_t detect_tran_pic_action_pid;
-
 volatile sig_atomic_t action;
 extern volatile sig_atomic_t destroyIcon;
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
-
-int checkBingGoogleProcessStatus () {
-
-    /* 任何一端翻译程序终止即退出取词翻译*/
-    if ( BAIDU_TRANS_EXIT_FALG ) {
-        pbred("百度翻译子进程已退出");
-        pbred("准备退出取词翻译程序");
-        SIGTERM_NOTIFY = 1;
-    } 
-
-    if ( GOOGLE_TRANS_EXIT_FLAG ) {
-
-        pbred("谷歌翻译子进程已退出");
-        pbred("准备退出取词翻译程序");
-        SIGTERM_NOTIFY = 1;
-    }
-
-    return 0;
-}
 
 int checkOtherProcessNotifyEvent ( int fd_python[] ) {
 
@@ -99,6 +74,7 @@ int checkOtherProcessNotifyEvent ( int fd_python[] ) {
 
         shmaddr_pic[0] = CLEAR;
         strcpy ( text,  &shmaddr_pic[ACTUALSTART] );
+        adjustSrcText ( text );
         writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[0] );
         writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[1] );
         writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[2] );
@@ -113,12 +89,12 @@ int checkOtherProcessNotifyEvent ( int fd_python[] ) {
             if (( text = calloc(TEXTSIZE, 1)) == NULL)
                 err_exit("malloc failed in notify.c");
 
-        shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = CLEAR;
-
+        pbcyan ( "Previous Text: %s", text );
         if ( strlen ( text ) ) {
             writePipe ( text, fd_python[0] );
             writePipe ( text, fd_python[1] );
             writePipe ( text, fd_python[2] );
+            pbmag ( "内容送入翻译端" );
             CanNewWin = 1;
         }
         else { pbred ( "上一次翻译内容为空，此次不调出窗口" );}
@@ -139,7 +115,6 @@ void *DetectMouse(void *arg) {
 
     setpgid ( getpid(), getppid() );
 
-    struct sigaction sa;
     struct timeval timer;
     int startTimer = 0;
     int checkTimeout = 1;
@@ -189,8 +164,6 @@ void *DetectMouse(void *arg) {
         /*让子进程中pid_google=-1,防止子进程执行到pid_google>0的代码段*/
         if (pid_baidu == 0)
             pid_google = -1;
-        else if ( pid_baidu > 0 )
-            baidu_translate_pid = pid_baidu;
     }
 
     /* fork一个子进程用于检测剪贴板变化*/
@@ -204,10 +177,6 @@ void *DetectMouse(void *arg) {
             pid_google = -1;
             setproctitle ( "%s", "Check Selection Changed" );
             checkSelectionChanged();
-        }
-        else {
-            /* 用于后期退出时清理进程*/
-            check_selectionEvent_pid = retpid;
         }
     }
 
@@ -223,11 +192,6 @@ void *DetectMouse(void *arg) {
             pid_google = -1;
             pid_mysql = 0;
         }
-        else if ( retpid > 0) {
-            /* 用于后期退出时清理进程*/
-
-            fetch_data_from_mysql_pid = retpid;
-        }
     }
 
     /* fork一个子进程用于检测截图识别*/
@@ -240,22 +204,15 @@ void *DetectMouse(void *arg) {
         if ( retpid == 0 ) {
 
             pid_google = -1;
-            detect_tran_pic_action_pid = 0;
 
             setproctitle ( "%s", "Check Tran Pic Action" );
 
             /* 启动截图识别检测进程*/
             detectTranPicAction();
         }
-        else if ( retpid > 0) {
-            /* 用于后期退出时清理进程*/
-            detect_tran_pic_action_pid = retpid;
-        }
     }
 
     if ( pid_google > 0 ) {
-
-        google_translate_pid = pid_google;
 
         /*父进程:关闭读端口*/
         close(fd_google[0]);
@@ -265,21 +222,12 @@ void *DetectMouse(void *arg) {
         fd_python[1] = fd_baidu[1];
         fd_python[2] = fd_mysql[1];
 
-        sa.sa_handler = handler;
-        sigemptyset(&sa.sa_mask);
-        if ( sigaction(SIGCHLD, &sa, NULL) == -1) {
-            pbred("sigaction exec failed (DetectMouse.c -> SIGTERM)");
-            perror("sigaction");
-            quit();
-        }
-
         while(1) {
 
             usleep ( 1000 );
 
             if ( SIGTERM_NOTIFY ) break;
 
-            checkBingGoogleProcessStatus();
             checkOtherProcessNotifyEvent( fd_python );
 
             if ( checkTimeout ) {

@@ -94,7 +94,6 @@ int setting()
     settingWindowData.shm = shm;
     memset ( shm, '0', 100 );
 
-
     gtk_init(NULL, NULL);
 
     initTrayIcon( &settingWindowData );

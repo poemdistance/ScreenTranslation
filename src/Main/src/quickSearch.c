@@ -4,25 +4,13 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include "shortcutListener.h"
 #include "sharedMemory.h"
+#include "cleanup.h"
 
-/* int fd[2]; */
-char buf[2] = { '\0' };
-int InSearchWin = 0;
-
-/* Byte 0: quick search 快捷键标志位(alt-j) <for newWindow.c>
- * Byte 1: 退出窗口快捷键标志位(ctrl-c) <for newWindow.c, 目前被屏蔽了>
- * Byte 2: 翻译窗口打开标志位
- * Byte 4: 搜索窗口存在标志位
- * */
 char *shmaddr_keyboard = NULL;
-
-pid_t searchWindow_pid;
-pid_t searchWindowMonitor_pid;
 pid_t captureShortcutEvent_pid;
-
 static int SIGTERM_SIGNAL = 0;
+
 
 static void readChild() {
 
@@ -31,7 +19,6 @@ static void readChild() {
 
 void kill_ourselves() {
 
-    /* kill ( captureShortcutEvent_pid, SIGTERM ); */
     SIGTERM_SIGNAL = 1;
 }
 
@@ -45,19 +32,19 @@ void quickSearch()
     sigemptyset ( &sa.sa_mask );
     sa.sa_handler = kill_ourselves;
     if ( sigaction ( SIGTERM, &sa, NULL) != 0 )
-        err_exit_qs("Sigaction error in quickSearch 1");
+        err_exit("Sigaction error in quickSearch 1");
     if ( sigaction ( SIGINT, &sa, NULL) != 0 )
-        err_exit_qs("Sigaction error in quickSearch 1");
+        err_exit("Sigaction error in quickSearch 1");
     sa.sa_handler = readChild;
     if ( sigaction ( SIGCHLD, &sa, NULL) != 0 )
-        err_exit_qs("Sigaction error in quickSearch 1");
+        err_exit("Sigaction error in quickSearch 1");
 
 
     shared_memory_for_keyboard_event(&shmaddr_keyboard);
     memset(shmaddr_keyboard, '0', 100);
 
     if ( (pid = fork()) < 0) 
-        err_exit_qs("Fork error");
+        err_exit("Fork error");
 
     /* 父进程*/
     if ( pid > 0 ) {
@@ -65,7 +52,6 @@ void quickSearch()
         setproctitle ( "%s", "Quick Search" );
 
         captureShortcutEvent_pid = pid;
-        searchWindowMonitor_pid = getpid();
 
         while ( 1 ) {
 
@@ -86,8 +72,6 @@ void quickSearch()
                 } 
                 else {
 
-                    searchWindow_pid = pid;
-
                     pbblue("等待搜索窗口退出");
 
                     /* wait(pid)*/
@@ -103,11 +87,6 @@ void quickSearch()
             if ( SIGTERM_SIGNAL ) break;
         }
     } 
-    /* else { */
-
-    /*     setproctitle ( "%s", "Listening Shortcut" ); */
-    /*     listenShortcut(); */
-    /* } */
 
     pbcyan ( "Quick Search 程序退出: %d", getpid() );
 }

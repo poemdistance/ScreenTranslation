@@ -8,7 +8,6 @@ void show_utf8_prop(Display *dpy, Window w, Atom p, char *text);
 int getClipboard(char *text);
 void delay();
 void writePipe(char *text, int fd);
-void handler(int signo);
 int isApp(char *appName, char *name);
 int previous( int n );
 int isAction(int history[], int last, int action);

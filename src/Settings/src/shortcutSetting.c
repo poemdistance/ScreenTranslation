@@ -7,7 +7,7 @@
 #include "settingList.h"
 #include "settingWindowData.h"
 #include "expanduser.h"
-#include "shortcutListener.h"
+#include "strmask.h"
 #include "gtkLabel.h"
 #include "useful.h"
 #include "printWithColor.h"

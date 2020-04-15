@@ -19,7 +19,7 @@
 #include <sys/signal.h>
 #include <string.h>
 #include "printWithColor.h"
-#include "shortcutListener.h"
+#include "strmask.h"
 #include "configControl.h"
 #include "sharedMemory.h"
 #include "common.h"

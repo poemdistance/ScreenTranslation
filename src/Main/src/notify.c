@@ -16,7 +16,6 @@
 #include "cleanup.h"
 #include "printWithColor.h"
 
-FILE *fp = NULL;
 char *text = NULL;
 char *previousText = NULL;
 
@@ -64,6 +63,8 @@ int waitForSelectionChangedEvent ( ) {
 }
 
 void notify ( int fd[3], ConfigData *cd ) {
+
+    FILE *fp = NULL;
 
     /* 禁止套娃*/
     if ( InNewWin ) {

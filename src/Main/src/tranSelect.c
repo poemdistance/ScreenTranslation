@@ -7,7 +7,7 @@
 #include "configControl.h"
 #include "expanduser.h"
 #include "pointer.h"
-#include "shortcutListener.h"
+#include "strmask.h"
 
 char *shmaddr_google;
 char *shmaddr_baidu;
@@ -18,8 +18,6 @@ char *shmaddr_mysql;
 char *shmaddr_pic;
 char *shmaddr_setting;
 
-int timeout_id_1;
-int timeout_id_2;
 int CanNewWin = 0;
 
 int shmid_google;
@@ -128,9 +126,6 @@ void tranSelect() {
 
     memset(&shmaddr_google[10], '\0', SHMSIZE-10);
     memset(&shmaddr_baidu[10], '\0', SHMSIZE-10);
-
-    arg.addr_google = shmaddr_google;
-    arg.addr_baidu = shmaddr_baidu;
 
     pbblue ( ">>>启动4个线程>>" );
 

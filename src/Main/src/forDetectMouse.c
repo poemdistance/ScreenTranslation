@@ -32,25 +32,6 @@ const static char wantToIgnore[][20] = {
     "gimp-2.10"
 };
 
-volatile sig_atomic_t BAIDU_TRANS_EXIT_FALG  = 0;
-volatile sig_atomic_t GOOGLE_TRANS_EXIT_FLAG = 0;
-
-extern volatile sig_atomic_t action;
-
-extern char *lastText;
-
-extern char *shmaddr_google;
-extern char *shmaddr_baidu;
-
-extern int shmid_google;
-extern int shmid_baidu;
-
-extern pid_t google_translate_pid;
-extern pid_t baidu_translate_pid;
-extern pid_t check_selectionEvent_pid;
-extern pid_t fetch_data_from_mysql_pid;
-extern pid_t detect_tran_pic_action_pid;
-
 TmpIgnore *getLinkHead () {
 
     static TmpIgnore head = { { '\0' }, NULL };
@@ -216,20 +197,6 @@ char *adjustSrcText ( char *text ) {
 void writePipe(char *text, int fd) {
 
     write( fd, text, strlen(text) );
-}
-
-/*获取子进程状态，防止僵尸进程*/
-void handler(int signo) {
-
-    while( waitpid(baidu_translate_pid, NULL, WNOHANG) > 0)
-        BAIDU_TRANS_EXIT_FALG = 1;
-
-    while( waitpid(google_translate_pid, NULL, WNOHANG) > 0)
-        GOOGLE_TRANS_EXIT_FLAG = 1;
-
-    while( waitpid(check_selectionEvent_pid, NULL, WNOHANG) > 0);
-    while( waitpid(fetch_data_from_mysql_pid, NULL, WNOHANG) > 0);
-    while( waitpid(detect_tran_pic_action_pid, NULL, WNOHANG) > 0);
 }
 
 /*判断当前聚焦窗口是否为终端*/

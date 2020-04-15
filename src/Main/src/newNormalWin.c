@@ -5,7 +5,6 @@
 #include "audio.h"
 #include "cleanup.h"
 #include "expanduser.h"
-#include "dataStatistics.h"
 #include "memoryControl.h"
 #include "windowData.h"
 #include "pointer.h"
@@ -266,7 +265,7 @@ int check_pointer_and_window_position ( void *data ) {
     int targetY = cd->pointery - 
         ( cd->pointerOffsetY *1.0 / 252 ) * invisible_win_height;
 
-    if ( ! wd->quickSearchFlag ) {
+    if ( ! wd->quickSearchFlag && ! cd->doNotMoveWindow && !wd->recallPreviousFlag ) {
 
         if ( cd->allowAutoAdjust )
             adjustTargetPosition( &targetX, &targetY, cd->pointerx, cd->pointery, wd );
@@ -430,7 +429,7 @@ int detect_outside_click_action ( void *data ) {
 
     if ( wd->pinEnable ) return TRUE;
 
-    if ( !wd->showLock && lock && (moveDone || wd->quickSearchFlag) ) {
+    if ( !wd->showLock && lock && (moveDone || wd->quickSearchFlag || wd->recallPreviousFlag ) ) {
         printf("Show all widget\n");
         show_all_visible_widget ( wd );
         focus_request((void*)wd);
@@ -440,7 +439,7 @@ int detect_outside_click_action ( void *data ) {
          * 之后只进行一次聚焦请求，而且不移动窗口，
          * 所以需要锁住这里的逻辑，防止不断调用
          * gtk_wiget_show_all()*/
-        if ( wd->quickSearchFlag ) lock = 0;
+        if ( wd->quickSearchFlag || wd->recallPreviousFlag ) lock = 0;
     }
 
     if ( ! action || action == SLIDE ) return TRUE; 
@@ -898,20 +897,12 @@ void on_calibration_button_clicked_cb (
 
 int dataInit(WinData *wd) {
 
-    /*Important: Pay attention to clear the values the global variables*/
-    bw.width = 400; bw.height = 100; bw.lines = 0; bw.maxlen = 0;
-    mw.width = 400; mw.height = 100; mw.lines = 0; mw.maxlen = 0;
-    gw.width = 400; gw.height = 100; gw.lines = 0; gw.maxlen = 0;
-
-    wd->bw = &bw; wd->gw = &gw; wd->mw = &mw;
-
-    wd->gdkwin = NULL;
     wd->width = 400;
     wd->height = 100;
-    wd->hadRedirect = 0;
     wd->calibrationButton = NULL;
 
     wd->quickSearchFlag = FALSE;
+    wd->recallPreviousFlag = FALSE;
     wd->mousePress = FALSE;
     wd->mouseRelease = FALSE;
 
@@ -928,7 +919,6 @@ int dataInit(WinData *wd) {
     shmaddr_keyboard[WINDOW_OPENED_FLAG] = '1';
 
     wd->gotOfflineTran = 0;
-    wd->specific = 0;
 
     wd->tran_max_len = 0;
 
@@ -957,6 +947,7 @@ void makeSegmentationFault (  ) {
     if ( sizeof(buf) )  /* prevent anoying warning (set but not used)*/
         buf[9] = '0';
 }
+
 gboolean 
 on_phonetic_button_clicked_cb ( 
         GtkWidget *button, 
@@ -1488,7 +1479,12 @@ void *newNormalWindow ( void *data ) {
         gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_CENTER);
         wd.quickSearchFlag = TRUE;
     }
-    else 
+    else if (  shmaddr_keyboard[RECALL_PREVIOUS_TRAN] == '1'  ) {
+        shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = CLEAR;
+        gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_CENTER);
+        wd.recallPreviousFlag = TRUE;
+    }
+    else
     {
         gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_MOUSE);
     }
@@ -1507,7 +1503,7 @@ void *newNormalWindow ( void *data ) {
             G_CALLBACK(on_cnfigure_event_cb), &wd );
 
     timeout_id = g_timeout_add(10, focus_request, &wd);
-    if ( ! wd.quickSearchFlag ) {
+    if ( ! wd.quickSearchFlag || !wd.recallPreviousFlag) {
         pgreen ( "启动窗口位置超时检测函数" );
         movewindow_timeout_id  = g_timeout_add ( 50, check_pointer_and_window_position, &wd );
     }
@@ -1716,7 +1712,6 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
     char *p2 = NULL;
 
     wd->who = GOOGLE;
-    wd->specific = 1;
 
     refreshResult ( button, data, GOOGLE );
 
@@ -1741,6 +1736,8 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
         getPosTran ( result[2], &p1, &p2, ':' );
         insertTextContentBox ( p1, p2, wd, "#242783" );
     }
+
+    show_all_visible_widget ( wd );
 }
 
 void displayTrans ( WinData *wd, char ***result  ) {
@@ -1791,7 +1788,6 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
     char ***result = mysql_result;
 
     wd->who = MYSQL;
-    wd->specific = 1;
 
     refreshResult ( button, data, MYSQL );
 
@@ -1865,7 +1861,6 @@ void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
     char ***result = baidu_result;
 
     wd->who = BAIDU;
-    wd->specific = 1;
 
     refreshResult ( button, data, BAIDU );
 

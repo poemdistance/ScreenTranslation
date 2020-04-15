@@ -2,12 +2,7 @@
 #include "cleanup.h"
 #include "quickSearch.h"
 
-pid_t quickSearchProcess_pid = 0;
-pid_t tranSelect_pid = 0;
-
-extern pthread_t t1;
-extern pthread_t t2;
-extern pthread_t t3;
+static pid_t quickSearchProcess_pid = 0;
 
 volatile sig_atomic_t SIGTERM_NOTIFY = 0;
 
@@ -67,7 +62,6 @@ int main(int argc, char **argv)
             exit(1);
         }
         quickSearchProcess_pid = pid;
-        tranSelect_pid = getpid();
         tranSelectProcess();
     }
     else {
