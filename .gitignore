@@ -20,10 +20,10 @@ src/test*
 ./google-translate/files.txt
 ./BingTran/files.txt
 ./baidu-translate/files.txt
-src/CommonSrc/obj
-src/Main/bin
-src/Main/obj
-src/Monitor/bin/
-src/Monitor/obj/
-src/Settings/obj/
-src/lib/
+src/CommonSrc/obj/*
+src/Main/bin/*
+src/Main/obj/*
+src/Monitor/bin/*
+src/Monitor/obj/*
+src/Settings/obj/*
+src/lib/*
