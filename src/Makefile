@@ -60,4 +60,4 @@ uninstall:
 	sudo rm -rf /usr/bin/stoptran
 
 prepare:
-	bash prepare.sh
+	bash Bash/prepare.sh

@@ -1,22 +1,22 @@
 #!/bin/bash
 
-
 YELLOW='\033[0;33m'
 GREEN='\033[0;34m'
 END='\033[0m'
 
+pwd
+
 # bash stop.sh
 echo "Use server for pip: "$specific
 
-sed -i "s/rease/\$USER/g" Mstran.desktop
-sed -i "s/\$USER/$USER/g" Mstran.desktop
+sed -i "s/rease/\$USER/g" DesktopFile/Mstran.desktop
+sed -i "s/\$USER/$USER/g" DesktopFile/Mstran.desktop
 
 #复制文件到家目录
 storage="$HOME/.stran"
-currFile=("../gif_pic/background.jpg" "../gif_pic/tran.png" "../gif_pic/switch.png"\ 
-    "./startup.sh" "./errNotification.sh" "../gif_pic/google.png" "stop.sh");
+currFile=("../gif_pic/tran.png" "../gif_pic/google.png");
 
-resourcesDir=("../ui/")
+resourcesDir=("../ui/" "Bash/")
 
 declare -i len
 len=${#currFile[*]}-1
@@ -47,7 +47,7 @@ do
 done
 
 echo
-python3 ./mergeConfig.py
+python3 Python/mergeConfig.py
 
 cd ../baidu-translate
 git pull origin master
@@ -93,6 +93,6 @@ if [[ $system == deepin || $system == debian || $system == ubuntu ]]; then
 elif [[ $system == arch || $system == manjaro ]]; then
     sudo pacman -S gnome-screenshot
 else
-    cd ../gnome-screenshot
-    sudo bash install.sh
+    echo '未识别的发行版，请自行安装gnome-screenshot'
+    echo '(目前可以不用安装，因截图识别已暂时被禁用)'
 fi
