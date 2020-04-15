@@ -4,8 +4,6 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#define STRING "audioButtonPosition"
-
 /* 函数功能: 替换字符串中的$USE为系统登录用户名
  *
  * 函数返回替换后的静态存储区的字符串，共维护有
