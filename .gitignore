@@ -27,3 +27,4 @@ src/Monitor/bin/*
 src/Monitor/obj/*
 src/Settings/obj/*
 src/lib/*
+*tags
