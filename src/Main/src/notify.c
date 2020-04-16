@@ -40,7 +40,7 @@ enum {
 int waitForSelectionChangedEvent ( ) {
 
     struct timeval tv;
-    int timeout = 300;
+    int timeout = 600;
     double now = 0;
 
     printf("Check selecttion changed event\n");
