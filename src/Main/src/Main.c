@@ -5,9 +5,20 @@
 static pid_t quickSearchProcess_pid = 0;
 
 volatile sig_atomic_t SIGTERM_NOTIFY = 0;
+extern pid_t pid_mysql;
 
 static void readChild() {
-    waitpid ( quickSearchProcess_pid, NULL, WNOHANG);
+
+    pid_t pid;
+    /* waitpid ( quickSearchProcess_pid, NULL, WNOHANG); */
+    while ( ( pid = waitpid ( -1, NULL, WNOHANG ) ) > 0 ) {
+        pbred ( "Child status changed. PID:%d", pid );
+        if ( pid == pid_mysql ) {
+            pbmag ( "Yes!!! mysql exit" );
+        }
+        else
+            SIGTERM_NOTIFY = 1;
+    }
 }
 
 static void sigterm() {
@@ -22,8 +33,11 @@ int main(int argc, char **argv)
 
     pid_t pid;
 
-    if ( (pid = fork()) < 0)
-        err_exit("fork err in main");
+    if ( (pid = fork()) < 0) {
+        /* err_exit("fork err in main"); */
+        pbred ( "Fork error in main" );
+        exit(1);
+    }
 
     void (*quickSearchProcess)(void);
     quickSearchProcess = quickSearch;
@@ -42,7 +56,7 @@ int main(int argc, char **argv)
     sigemptyset ( &sa.sa_mask );
     if ( sigaction ( SIGCHLD, &sa, NULL ) == -1) {
         pbred("sigaction exec failed (Main.c -> SIGCHLD)");
-        perror("sigaction");
+        perror("sigaction:");
         exit(1);
     }
 
@@ -70,6 +84,4 @@ int main(int argc, char **argv)
     }
 
     sleep(2);
-
-    /* 处理函数不要放到这里，父子进程都可以执行到这*/
 }
