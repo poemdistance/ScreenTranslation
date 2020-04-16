@@ -36,6 +36,7 @@ typedef struct ConfigData {
     volatile int buttonPress;
     volatile int buttonRelease;
     volatile int startSlide;
+    int recallPreviousFlag;
 
 }ConfigData;
 
