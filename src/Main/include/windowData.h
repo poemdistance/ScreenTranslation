@@ -15,6 +15,20 @@
 #define WHO(addr)     ( ( addr ) == shmaddr_mysql ? MYSQL : \
         (addr == shmaddr_google ? GOOGLE : BAIDU))
 
+typedef struct {
+
+    volatile int pointerx;
+    volatile int pointery;
+    volatile int previousx;
+    volatile int previousy;
+    int buttonState;
+    volatile int buttonPress;
+    volatile int buttonRelease;
+    volatile int startSlide;
+    int recallPreviousFlag;
+
+}CommunicationData;
+
 typedef struct WinData{
 
     int who;
@@ -42,6 +56,7 @@ typedef struct WinData{
     gboolean recallPreviousFlag;
 
     ConfigData *cd;
+    CommunicationData *md;
     gboolean mousePress;;
     gboolean mouseRelease;
 
@@ -119,17 +134,14 @@ typedef struct WinData{
 
 }WinData;
 
-typedef struct {
-
-}CommunicationData;
-
 GtkWidget *newCalibrationButton ( WinData *win );
 
-struct Arg {
+typedef struct {
 
     int argc;
     char **argv;
     ConfigData *cd;
-};
+    CommunicationData *md;
+}Arg ;
 
 #endif

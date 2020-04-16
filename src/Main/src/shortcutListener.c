@@ -26,6 +26,7 @@
 #include "useful.h"
 #include "cleanup.h"
 #include "expanduser.h"
+#include "windowData.h"
 
 extern char modifier[7][10];
 extern int modifier2maskTable[7];
@@ -44,7 +45,7 @@ static char *shmaddr_keyboard = NULL;
 static char *shmaddr_setting = NULL;
 static XRecordContext  rc;
 static XRecordRange  *rr;
-ConfigData *cd = NULL;
+CommunicationData *md = NULL;
 
 
 /* for this struct, refer to libxnee */
@@ -207,20 +208,20 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
 
         case KeyRelease: break;
         case ButtonPress:
-                         if ( detail == 1 ){ cd->buttonPress = 1; }
+                         if ( detail == 1 ){ md->buttonPress = 1; }
                          break;
         case ButtonRelease:
-                         if ( detail == 1 ) { cd->buttonRelease=1; }
+                         if ( detail == 1 ) { md->buttonRelease=1; }
                          break;
         case MotionNotify:
-                         if ( cd ) {
-                             cd->pointerx = cur_x = rootx;
-                             cd->pointery = cur_y = rooty;
+                         if ( md ) {
+                             md->pointerx = cur_x = rootx;
+                             md->pointery = cur_y = rooty;
                          } 
                          if ( motionState & Button1Mask ) {
-                             if ( cd && !(cd->startSlide) ) {
+                             if ( md && !(md->startSlide) ) {
                                  printf("Start Slide\n");
-                                 cd->startSlide = 1;
+                                 md->startSlide = 1;
                              }
                          }
                          break;
@@ -258,11 +259,11 @@ void initSharedMemory() {
 
 void *listenShortcut ( void *data )
 {
-    cd = (ConfigData*)data;
+    md = ((Arg*)data)->md;
 
-    cd->startSlide = 0;
-    cd->buttonPress = 0;
-    cd->buttonRelease = 0;
+    md->startSlide = 0;
+    md->buttonPress = 0;
+    md->buttonRelease = 0;
 
     XInitThreads();
     ctrl_display = XOpenDisplay (NULL);

@@ -62,14 +62,13 @@ void *newNormalWindowThread( void *data ) {
 
     pbblue ( "启动线程 newNormalWindowThread" );
 
-    ConfigData *cd = data;
     pthread_t t3;
 
     while ( 1 ) {
 
         if ( CanNewWin ) {
 
-            pthread_create(&t3, NULL, newNormalWindow, cd);
+            pthread_create(&t3, NULL, newNormalWindow, data);
             pthread_join(t3, NULL);
             CanNewWin = 0;
         }
@@ -85,9 +84,11 @@ void *newNormalWindowThread( void *data ) {
 
 void tranSelect() {
 
-    struct Arg arg;
+    Arg arg;
     ConfigData cd;
+    CommunicationData md;
     arg.cd = &cd;
+    arg.md = &md;
 
     pthread_t t1 = 0;
     pthread_t t2 = 0;
@@ -124,9 +125,9 @@ void tranSelect() {
 
     /*启动鼠标动作检测线程*/
     pthread_create(&t2, NULL, DetectMouse, (void*)&arg);
-    pthread_create( &t3, NULL, newNormalWindowThread, (void*)&cd );
+    pthread_create( &t3, NULL, newNormalWindowThread, (void*)&arg );
     pthread_create( &t4, NULL, updateConfigData, (void*)&cd );
-    pthread_create( &t5, NULL, listenShortcut, (void*)&cd );
+    pthread_create( &t5, NULL, listenShortcut, (void*)&arg );
 
     void *thread_ret;
 

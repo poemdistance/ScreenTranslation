@@ -34,7 +34,7 @@ void *GuiEntrance(void *arg) {
 
     pbblue ( "启动线程GuiEntrance" );
 
-    ConfigData *config = ((struct Arg*)arg)->cd;
+    ConfigData *config = ((Arg*)arg)->cd;
     aboveWindow = 0;
 
     /*等待鼠标事件到来创建入口图标*/

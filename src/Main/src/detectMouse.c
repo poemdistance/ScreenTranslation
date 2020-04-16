@@ -51,7 +51,7 @@ pid_t pid_bing = -1;
 pid_t pid_tranpic = -1;
 pid_t pid_selection = -1;
 
-int checkOtherProcessNotifyEvent ( int fd_python[], ConfigData *cd ) {
+int checkOtherProcessNotifyEvent ( int fd_python[], CommunicationData *md ) {
 
     if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
 
@@ -90,7 +90,7 @@ int checkOtherProcessNotifyEvent ( int fd_python[], ConfigData *cd ) {
 
         pbcyan ( "打开上一次翻译内容" );
         shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = '0';
-        cd->recallPreviousFlag = 1;
+        md->recallPreviousFlag = 1;
         if ( text == NULL )
             if (( text = calloc(TEXTSIZE, 1)) == NULL)
                 err_exit("calloc failed in notify.c");
@@ -117,7 +117,8 @@ int checkOtherProcessNotifyEvent ( int fd_python[], ConfigData *cd ) {
 void *DetectMouse(void *arg) {
 
     pbblue ( "启动线程DetectMouse" );
-    ConfigData *cd = ((struct Arg*)arg)->cd;
+    ConfigData *cd = ((Arg*)arg)->cd;
+    CommunicationData *md = ((Arg*)arg)->md;
 
     setpgid ( getpid(), getppid() );
 
@@ -135,7 +136,6 @@ void *DetectMouse(void *arg) {
     int fd_python[3];
     int status;
     pid_t pid_google = -1;
-    pid_t retpid;
 
     if ( (status = pipe(fd_google)) != 0 ) {
         fprintf(stderr, "create pipe fail (google)\n");
@@ -231,27 +231,27 @@ void *DetectMouse(void *arg) {
             usleep ( 1000 );
 
             if ( SIGTERM_NOTIFY ) break;
-            checkOtherProcessNotifyEvent( fd_python, cd );
+            checkOtherProcessNotifyEvent( fd_python, md );
 
             if ( checkTimeout ) {
                 gettimeofday ( &timer, NULL );
                 now = (timer.tv_usec + timer.tv_sec*1e6) / 1e3;
                 if ( abs ( now-start ) > DOUBLE_CLICK_TIMEOUT ) {
                     pred ( "超时 action asign value: NO_ACTION" );
-                    if ( !cd->startSlide ) action = NO_ACTION;
+                    if ( !md->startSlide ) action = NO_ACTION;
                     checkTimeout = 0;
                 }
             }
 
-            if ( cd->buttonPress ) {
+            if ( md->buttonPress ) {
                 pgreen ( "................Button Press..............." );
-                cd->buttonState = BUTTON_PRESS;
-                cd->buttonPress = 0;
+                md->buttonState = BUTTON_PRESS;
+                md->buttonPress = 0;
                 buttonPress = 1;
             }
 
             static int printLock = 1;
-            if ( cd->startSlide ) {
+            if ( md->startSlide ) {
                 if ( printLock ) {
                     printf("Action to start slide\n");
                     printLock = 0;
@@ -261,14 +261,14 @@ void *DetectMouse(void *arg) {
                 buttonPress = 0;
             }
 
-            if ( cd->buttonRelease ) {
-                cd->buttonState = BUTTON_RELEASE;
-                cd->buttonRelease = 0;
+            if ( md->buttonRelease ) {
+                md->buttonState = BUTTON_RELEASE;
+                md->buttonRelease = 0;
                 if ( action != DOUBLE_CLICK )
                     buttonPress = 0;
                 if ( action == START_SLIDE ) {
                     buttonPress = 1;
-                    cd->startSlide = 0;
+                    md->startSlide = 0;
                     printLock = 1;
                 } 
             }
@@ -299,14 +299,14 @@ void *DetectMouse(void *arg) {
                     case SINGLE_CLICK:
                         pbmag("~~~~~~~~~~~~~~~~Double click~~~~~~~~~~~~~~~~");
                         action = DOUBLE_CLICK;
-                        cd->previousx = cd->pointerx;
-                        cd->previousy = cd->pointery;
+                        md->previousx = md->pointerx;
+                        md->previousy = md->pointery;
                         notify ( fd_python, cd );
                         break;
                     case DOUBLE_CLICK:
                         pbmag("~~~~~~~~~~~~~~~~Trible click~~~~~~~~~~~~~~~~");
-                        if ( abs(cd->pointerx-cd->previousx) > 10 
-                                || abs ( cd->pointery-cd->previousy ) > 10 ){
+                        if ( abs(md->pointerx-md->previousx) > 10 
+                                || abs ( md->pointery-md->previousy ) > 10 ){
                             action = SINGLE_CLICK;
                             destroyIcon = 1;
                             break;

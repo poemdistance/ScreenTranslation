@@ -167,10 +167,10 @@ static inline gboolean isPointerInOurWin
              ( int x0, int y0, int x1, int y1, WinData *wd ) {
 
                  return 
-                     wd->cd->pointerx >= x0 && 
-                     wd->cd->pointery >= y0 &&
-                     wd->cd->pointerx <= x1 &&
-                     wd->cd->pointery <= y1;
+                     wd->md->pointerx >= x0 && 
+                     wd->md->pointery >= y0 &&
+                     wd->md->pointerx <= x1 &&
+                     wd->md->pointery <= y1;
              }
 
 /* 
@@ -189,6 +189,7 @@ int check_pointer_and_window_position ( void *data ) {
 
     WinData *wd = data;
     ConfigData *cd = wd->cd;
+    CommunicationData *md = wd->md;
 
     int invisible_win_root_x = 0;
     int invisible_win_root_y = 0;
@@ -258,17 +259,17 @@ int check_pointer_and_window_position ( void *data ) {
     wd->moveWindowNotify = FALSE;
 
     pcyan ( "Window Invisible Right Down Position: %d %d Pointer Position: %d %d",
-            invisible_right_down_x, invisible_right_down_y, cd->pointerx, cd->pointery );
+            invisible_right_down_x, invisible_right_down_y, md->pointerx, md->pointery );
 
-    int targetX = cd->pointerx -
+    int targetX = md->pointerx -
         ( cd->pointerOffsetX *1.0 / 400 ) * invisible_win_width;;
-    int targetY = cd->pointery - 
+    int targetY = md->pointery - 
         ( cd->pointerOffsetY *1.0 / 252 ) * invisible_win_height;
 
-    if ( ! wd->quickSearchFlag && ! cd->doNotMoveWindow && !cd->recallPreviousFlag ) {
+    if ( ! wd->quickSearchFlag && ! cd->doNotMoveWindow && !md->recallPreviousFlag ) {
 
         if ( cd->allowAutoAdjust )
-            adjustTargetPosition( &targetX, &targetY, cd->pointerx, cd->pointery, wd );
+            adjustTargetPosition( &targetX, &targetY, md->pointerx, md->pointery, wd );
 
         pbcyan ( "Move window, Win size: %d %d", wd->width, wd->height );
         gdk_window_move ( 
@@ -384,6 +385,7 @@ int detect_outside_click_action ( void *data ) {
 
     WinData *wd = data;
     ConfigData *cd = WINDATA(data)->cd;
+    CommunicationData *md = WINDATA(data)->md;
     static gboolean block = FALSE;
     static int lock = 1;
     static int reCheck = 0;
@@ -401,7 +403,7 @@ int detect_outside_click_action ( void *data ) {
         tick = 0;
     }
 
-    if ( cd->buttonState == BUTTON_RELEASE ) {
+    if ( md->buttonState == BUTTON_RELEASE ) {
         wd->beginDrag = FALSE;
         block = FALSE;
         resizeAction = FALSE;
@@ -429,7 +431,7 @@ int detect_outside_click_action ( void *data ) {
 
     if ( wd->pinEnable ) return TRUE;
 
-    if ( !wd->showLock && lock && (moveDone || wd->quickSearchFlag || cd->recallPreviousFlag ) ) {
+    if ( !wd->showLock && lock && (moveDone || wd->quickSearchFlag || md->recallPreviousFlag ) ) {
         printf("Show all widget\n");
         show_all_visible_widget ( wd );
         focus_request((void*)wd);
@@ -439,7 +441,7 @@ int detect_outside_click_action ( void *data ) {
          * 之后只进行一次聚焦请求，而且不移动窗口，
          * 所以需要锁住这里的逻辑，防止不断调用
          * gtk_wiget_show_all()*/
-        if ( wd->quickSearchFlag || cd->recallPreviousFlag ) lock = 0;
+        if ( wd->quickSearchFlag || md->recallPreviousFlag ) lock = 0;
     }
 
     if ( ! action || action == SLIDE ) return TRUE; 
@@ -455,7 +457,7 @@ int detect_outside_click_action ( void *data ) {
      *
      * 此处解决办法不是监听鼠标release事件是因为drag窗口动作导致
      * 此事件的回调函数没办法被执行到,应该是信号被阻断了*/
-    if ( block && cd->buttonState == BUTTON_PRESS ) { 
+    if ( block && md->buttonState == BUTTON_PRESS ) { 
         return TRUE;
     }
 
@@ -467,8 +469,8 @@ int detect_outside_click_action ( void *data ) {
     gtk_window_get_position ( 
             GTK_WINDOW(wd->window), &wx, &wy);
 
-    gint pointerX = cd->pointerx;
-    gint pointerY = cd->pointery;
+    gint pointerX = md->pointerx;
+    gint pointerY = md->pointery;
     gint w = 0;
     gint h = 0;
     gtk_window_get_size ( GTK_WINDOW(wd->window), &w, &h );
@@ -478,14 +480,14 @@ int detect_outside_click_action ( void *data ) {
         pointerX >= wx && pointerX <= wx+w &&
         pointerY >= wy && pointerY <= wy+h;
 
-    if ( condition && cd->buttonState == BUTTON_PRESS ) {
+    if ( condition && md->buttonState == BUTTON_PRESS ) {
         pgreen ( "Block -> TRUE" );
         block = TRUE;
         action = 0;
         return TRUE;
     }
 
-    if ( action == SINGLE_CLICK && cd->buttonState == BUTTON_RELEASE)  {
+    if ( action == SINGLE_CLICK && md->buttonState == BUTTON_RELEASE)  {
         /* printf("begignDrag and resizeAction to False\n"); */
         wd->beginDrag = FALSE;
         resizeAction = FALSE;
@@ -1453,9 +1455,11 @@ void *newNormalWindow ( void *data ) {
 
     /* makeSegmentationFault(); */
 
-    ConfigData *cd = data;
+    ConfigData *cd = ((Arg*) data )->cd;
+    CommunicationData *md = ((Arg*) data )->md;
     static WinData wd;
     wd.cd = cd;
+    wd.md = md;
 
     dataInit(&wd);
 
@@ -1478,7 +1482,7 @@ void *newNormalWindow ( void *data ) {
         gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_CENTER);
         wd.quickSearchFlag = TRUE;
     }
-    else if ( wd.cd->recallPreviousFlag == TRUE) {
+    else if ( wd.md->recallPreviousFlag == TRUE) {
         gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_CENTER);
     }
     else
@@ -1538,7 +1542,7 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
     /* 已退出翻译结果窗口，重置标志变量*/
     InNewWin = 0;
 
-    wd->cd->recallPreviousFlag = FALSE;
+    wd->md->recallPreviousFlag = FALSE;
 
     gtk_widget_destroy(wd->window);
     gtk_main_quit();

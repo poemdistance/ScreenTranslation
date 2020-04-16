@@ -28,16 +28,6 @@ typedef struct ConfigData {
     int ignoreChinese;
     int doNotMoveWindow;
 
-    volatile int pointerx;
-    volatile int pointery;
-    volatile int previousx;
-    volatile int previousy;
-    int buttonState;
-    volatile int buttonPress;
-    volatile int buttonRelease;
-    volatile int startSlide;
-    int recallPreviousFlag;
-
 }ConfigData;
 
 int writeToConfig( char *keyName, char *value  );
