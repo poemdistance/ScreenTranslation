@@ -45,8 +45,9 @@ volatile sig_atomic_t action;
 extern volatile sig_atomic_t destroyIcon;
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
-int checkOtherProcessNotifyEvent ( int fd_python[] ) {
+pid_t pid_mysql = -1;
 
+int checkOtherProcessNotifyEvent ( int fd_python[], ConfigData *cd ) {
 
     if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
 
@@ -54,7 +55,7 @@ int checkOtherProcessNotifyEvent ( int fd_python[] ) {
 
         if ( text == NULL )
             if (( text = calloc(TEXTSIZE, 1)) == NULL)
-                err_exit("malloc failed in notify.c");
+                err_exit("calloc failed in notify.c");
 
         shmaddr_searchWin[TEXT_SUBMIT_FLAG] = '0';
         strcpy ( text,  &shmaddr_searchWin[SUBMIT_TEXT] );
@@ -70,7 +71,7 @@ int checkOtherProcessNotifyEvent ( int fd_python[] ) {
 
         if ( text == NULL )
             if (( text = calloc(TEXTSIZE, 1)) == NULL)
-                err_exit("malloc failed in notify.c");
+                err_exit("calloc failed in notify.c");
 
         shmaddr_pic[0] = CLEAR;
         strcpy ( text,  &shmaddr_pic[ACTUALSTART] );
@@ -84,10 +85,11 @@ int checkOtherProcessNotifyEvent ( int fd_python[] ) {
     if ( shmaddr_keyboard[RECALL_PREVIOUS_TRAN] == '1' ) {
 
         pbcyan ( "打开上一次翻译内容" );
-
+        shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = '0';
+        cd->recallPreviousFlag = 1;
         if ( text == NULL )
             if (( text = calloc(TEXTSIZE, 1)) == NULL)
-                err_exit("malloc failed in notify.c");
+                err_exit("calloc failed in notify.c");
 
         pbcyan ( "Previous Text: %s", text );
         if ( strlen ( text ) ) {
@@ -130,7 +132,6 @@ void *DetectMouse(void *arg) {
     int status;
     pid_t pid_google = -1;
     pid_t pid_baidu = -1;
-    pid_t pid_mysql = -1;
     pid_t retpid;
 
     if ( (status = pipe(fd_google)) != 0 ) {
@@ -192,6 +193,8 @@ void *DetectMouse(void *arg) {
             pid_google = -1;
             pid_mysql = 0;
         }
+        else
+            pid_mysql = retpid;
     }
 
     /* fork一个子进程用于检测截图识别*/
@@ -227,8 +230,7 @@ void *DetectMouse(void *arg) {
             usleep ( 1000 );
 
             if ( SIGTERM_NOTIFY ) break;
-
-            checkOtherProcessNotifyEvent( fd_python );
+            checkOtherProcessNotifyEvent( fd_python, cd );
 
             if ( checkTimeout ) {
                 gettimeofday ( &timer, NULL );
