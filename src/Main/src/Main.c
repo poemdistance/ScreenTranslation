@@ -6,18 +6,34 @@ static pid_t quickSearchProcess_pid = 0;
 
 volatile sig_atomic_t SIGTERM_NOTIFY = 0;
 extern pid_t pid_mysql;
+extern pid_t pid_mysql;
+extern pid_t pid_google;
+extern pid_t pid_bing;
+extern pid_t pid_tranpic;
+extern pid_t pid_selection;
 
 static void readChild() {
 
     pid_t pid;
-    /* waitpid ( quickSearchProcess_pid, NULL, WNOHANG); */
-    while ( ( pid = waitpid ( -1, NULL, WNOHANG ) ) > 0 ) {
-        pbred ( "Child status changed. PID:%d", pid );
-        if ( pid == pid_mysql ) {
-            pbmag ( "Yes!!! mysql exit" );
+    while ( ( pid = waitpid ( -getpid(), NULL, WNOHANG ) ) > 0 ) {
+        if ( pid == pid_mysql ) 
+        {
+            pbmag ( "fetchDict exit" );
+        }
+        else if (
+                pid == pid_selection ||
+                pid == pid_bing      ||
+                pid == pid_google    ||
+                pid == pid_tranpic   ) 
+        {
+
+            pbred ( "Our child process exit" );
+            SIGTERM_NOTIFY = 1;
         }
         else
-            SIGTERM_NOTIFY = 1;
+        {
+            pbred ( "Unknow child precess exit" );
+        }
     }
 }
 
