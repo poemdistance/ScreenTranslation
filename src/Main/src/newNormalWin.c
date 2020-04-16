@@ -265,7 +265,7 @@ int check_pointer_and_window_position ( void *data ) {
     int targetY = cd->pointery - 
         ( cd->pointerOffsetY *1.0 / 252 ) * invisible_win_height;
 
-    if ( ! wd->quickSearchFlag && ! cd->doNotMoveWindow && !wd->recallPreviousFlag ) {
+    if ( ! wd->quickSearchFlag && ! cd->doNotMoveWindow && !cd->recallPreviousFlag ) {
 
         if ( cd->allowAutoAdjust )
             adjustTargetPosition( &targetX, &targetY, cd->pointerx, cd->pointery, wd );
@@ -429,7 +429,7 @@ int detect_outside_click_action ( void *data ) {
 
     if ( wd->pinEnable ) return TRUE;
 
-    if ( !wd->showLock && lock && (moveDone || wd->quickSearchFlag || wd->recallPreviousFlag ) ) {
+    if ( !wd->showLock && lock && (moveDone || wd->quickSearchFlag || cd->recallPreviousFlag ) ) {
         printf("Show all widget\n");
         show_all_visible_widget ( wd );
         focus_request((void*)wd);
@@ -439,7 +439,7 @@ int detect_outside_click_action ( void *data ) {
          * 之后只进行一次聚焦请求，而且不移动窗口，
          * 所以需要锁住这里的逻辑，防止不断调用
          * gtk_wiget_show_all()*/
-        if ( wd->quickSearchFlag || wd->recallPreviousFlag ) lock = 0;
+        if ( wd->quickSearchFlag || cd->recallPreviousFlag ) lock = 0;
     }
 
     if ( ! action || action == SLIDE ) return TRUE; 
@@ -902,7 +902,6 @@ int dataInit(WinData *wd) {
     wd->calibrationButton = NULL;
 
     wd->quickSearchFlag = FALSE;
-    wd->recallPreviousFlag = FALSE;
     wd->mousePress = FALSE;
     wd->mouseRelease = FALSE;
 
@@ -1479,10 +1478,8 @@ void *newNormalWindow ( void *data ) {
         gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_CENTER);
         wd.quickSearchFlag = TRUE;
     }
-    else if (  shmaddr_keyboard[RECALL_PREVIOUS_TRAN] == '1'  ) {
-        shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = CLEAR;
+    else if ( wd.cd->recallPreviousFlag == TRUE) {
         gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_CENTER);
-        wd.recallPreviousFlag = TRUE;
     }
     else
     {
@@ -1541,6 +1538,7 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
     /* 已退出翻译结果窗口，重置标志变量*/
     InNewWin = 0;
 
+    wd->cd->recallPreviousFlag = FALSE;
 
     gtk_widget_destroy(wd->window);
     gtk_main_quit();
