@@ -11,13 +11,10 @@
 
 #define TIMEOUT ( 700 )
 
-pid_t tranPicActionDetect_pid = 0;
-pid_t child_pid;
-Display *display = NULL;
+static pid_t child_pid;
+static int SIGTERM_SIGNAL = 0;
 
 extern char *shmaddr_keyboard;
-
-static int SIGTERM_SIGNAL = 0;
 
 static void exitNotify() {
     SIGTERM_SIGNAL = 1;
@@ -32,30 +29,30 @@ void readChild() {
 
 int detectTranPicAction () {
 
-    display = XOpenDisplay(NULL);
-
-    struct sigaction sa;
-    sa.sa_handler = exitNotify;
-    sigemptyset ( &sa.sa_mask );
-    if ( sigaction ( SIGTERM, &sa, NULL ) != 0 )
-        err_exit("Sigaction for SIGTERM failed <tranPicActionDetect.c>");
-    if ( sigaction ( SIGINT, &sa, NULL ) != 0 )
-        err_exit("Sigaction for SIGTERM failed <tranPicActionDetect.c>");
-
-    tranPicActionDetect_pid = getpid();
-
     int retpid = -1;
-    if ( ( retpid  = fork() ) == 0 ) {
+    if ( ( retpid = fork() ) == 0 ) {
 
         char *const cmd[2] = { "extractPic", (char*)0 };
-        if ( execv("/usr/bin/extractPic", cmd) < 0 )
-            err_exit("execv extractPic error");
-    }
+        if ( execv("/usr/bin/extractPic", cmd) < 0 ){
+            pbred ( "Execv error in tranPicActionDetect" );
+            perror("errno");
+        }
+    } 
 
     char *shmaddr_pic = NULL;
     shared_memory_for_pic ( & shmaddr_pic );
 
     if ( retpid > 0 ) {
+
+
+        struct sigaction sa;
+        sa.sa_handler = exitNotify;
+        sigemptyset ( &sa.sa_mask );
+        if ( sigaction ( SIGTERM, &sa, NULL ) != 0 )
+            err_exit("Sigaction for SIGTERM failed <tranPicActionDetect.c>");
+
+        if ( sigaction ( SIGINT, &sa, NULL ) != 0 )
+            err_exit("Sigaction for SIGTERM failed <tranPicActionDetect.c>");
 
         sa.sa_handler = readChild;
         sigemptyset ( &sa.sa_mask );
