@@ -4,7 +4,6 @@ SRC_DIR = src
 BIN_DIR = bin
 OBJ_DIR = obj
 INCLUDE_DIR = -Iinclude
-COMMON_LIB_DIR = ../lib
 COMMON_HEADER = -I../CommonHeader/
 SHARED_LIB = -L../lib -lshared
 
@@ -23,7 +22,7 @@ all: $(MAIN)
 
 $(MAIN) : $(OBJS)
 	@echo 生成可执行目标文件
-	$(CC) $(CFLAGS) $(LDLIBS) $(SHARED_LIB) $(OBJS) -o $(MAIN)
+	$(CC) $(OBJS) -o $(MAIN) $(CFLAGS) $(LDLIBS) $(SHARED_LIB) 
 
 $(OBJ_DIR)/%.o : ${SRC_DIR}/%.c
 	@echo 编译.o文件
@@ -31,5 +30,3 @@ $(OBJ_DIR)/%.o : ${SRC_DIR}/%.c
 
 clean:
 	rm -rf $(OBJ_DIR)/*
-	rm -rf $(COMMON_LIB_DIR)/*
-	rm -rf $(COMMON_LIB_DIR)/libshared.so

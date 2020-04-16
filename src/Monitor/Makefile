@@ -26,7 +26,7 @@ all: $(MAIN)
 
 $(MAIN) : $(OBJS)
 	@echo 生成可执行目标文件
-	$(CC) $(CFLAGS) $(LDLIBS) $(OBJS) $(LIB) -o $(MAIN)
+	$(CC) $(OBJS) -o $(MAIN) $(LIB) $(CFLAGS) $(LDLIBS)
 
 $(OBJ_DIR)/%.o : ${SRC_DIR}/%.c
 	@echo 编译.o文件
