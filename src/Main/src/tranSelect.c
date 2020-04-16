@@ -30,14 +30,8 @@ int shmid_pic;
 int shmid_setting;
 
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
-
 extern volatile sig_atomic_t InNewWin;
 
-
-void sigterm_notify_cb() {
-
-    SIGTERM_NOTIFY = 1;
-}
 
 void *updateConfigData ( void* data ) {
 
