@@ -25,14 +25,12 @@ static void exitNotify() {
 
 void readChild() {
 
-    while ( waitpid ( child_pid, NULL, WNOHANG ) > 0 );
+    while ( waitpid ( child_pid, NULL, WNOHANG ) > 0 ) {
+        SIGTERM_SIGNAL = 1;
+    }
 }
 
 int detectTranPicAction () {
-
-    unsigned int mask; 
-    int root_x = -1, root_y = -1; 
-    Window root_window; 
 
     display = XOpenDisplay(NULL);
 
@@ -47,12 +45,12 @@ int detectTranPicAction () {
     tranPicActionDetect_pid = getpid();
 
     int retpid = -1;
-    //if ( ( retpid  = fork() ) == 0 ) {
+    if ( ( retpid  = fork() ) == 0 ) {
 
-    //    char *const cmd[2] = { "extractPic", (char*)0 };
-    //    if ( execv("/usr/bin/extractPic", cmd) < 0 )
-    //        err_exit("execv extractPic error");
-    //}
+        char *const cmd[2] = { "extractPic", (char*)0 };
+        if ( execv("/usr/bin/extractPic", cmd) < 0 )
+            err_exit("execv extractPic error");
+    }
 
     char *shmaddr_pic = NULL;
     shared_memory_for_pic ( & shmaddr_pic );
@@ -67,11 +65,6 @@ int detectTranPicAction () {
         child_pid = retpid;
 
         while ( 1 ) {
-
-            /* 获取指针坐标, 暂时未使用*/
-            XQueryPointer(display, DefaultRootWindow(display), &root_window,\
-                    &root_window, &root_x, &root_y, &root_x, &root_y, &mask); 
-
 
             if ( shmaddr_pic[1] == SCREEN_SHOT ) {
 
