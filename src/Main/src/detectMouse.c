@@ -46,6 +46,10 @@ extern volatile sig_atomic_t destroyIcon;
 extern volatile sig_atomic_t SIGTERM_NOTIFY;
 
 pid_t pid_mysql = -1;
+pid_t pid_google = -1;
+pid_t pid_bing = -1;
+pid_t pid_tranpic = -1;
+pid_t pid_selection = -1;
 
 int checkOtherProcessNotifyEvent ( int fd_python[], ConfigData *cd ) {
 
@@ -131,7 +135,6 @@ void *DetectMouse(void *arg) {
     int fd_python[3];
     int status;
     pid_t pid_google = -1;
-    pid_t pid_baidu = -1;
     pid_t retpid;
 
     if ( (status = pipe(fd_google)) != 0 ) {
@@ -157,23 +160,23 @@ void *DetectMouse(void *arg) {
     /*只能放在主进程中执行*/
     if ( pid_google > 0 ) {
 
-        if ( ( pid_baidu = fork() ) == -1 ) {
+        if ( ( pid_bing = fork() ) == -1 ) {
             fprintf(stderr, "fork fail\n");
             exit(1);
         }
 
         /*让子进程中pid_google=-1,防止子进程执行到pid_google>0的代码段*/
-        if (pid_baidu == 0)
+        if (pid_bing == 0)
             pid_google = -1;
     }
 
     /* fork一个子进程用于检测剪贴板变化*/
     if ( pid_google > 0 ) {
 
-        if ( ( retpid = fork() ) == -1) 
+        if ( ( pid_selection = fork() ) == -1) 
             err_exit ("Fork check_selectionEvent failed");
 
-        if ( retpid == 0) {
+        if ( pid_selection == 0) {
 
             pid_google = -1;
             setproctitle ( "%s", "Check Selection Changed" );
@@ -184,27 +187,25 @@ void *DetectMouse(void *arg) {
     /* 再fork一个用于离线翻译*/
     if ( pid_google > 0 ) {
 
-        if ( ( retpid = fork() ) == -1) 
+        if ( ( pid_mysql = fork() ) == -1) 
             err_exit ("Fork check_selectionEvent failed");
 
         /* In child process*/
-        if ( retpid == 0 ) {
+        if ( pid_mysql == 0 ) {
 
             pid_google = -1;
             pid_mysql = 0;
         }
-        else
-            pid_mysql = retpid;
     }
 
     /* fork一个子进程用于检测截图识别*/
     if ( pid_google > 0 ) {
 
-        if ( ( retpid = fork() ) == -1) 
+        if ( ( pid_tranpic = fork() ) == -1) 
             err_exit ("Fork detectTranPicAction() failed");
 
         /* In child process*/
-        if ( retpid == 0 ) {
+        if ( pid_tranpic == 0 ) {
 
             pid_google = -1;
 
@@ -362,7 +363,7 @@ void *DetectMouse(void *arg) {
         exit(1);
     }
 
-    if ( pid_baidu == 0 ) {
+    if ( pid_bing == 0 ) {
 
         close(fd_baidu[1]); /*关闭写端口*/
 
