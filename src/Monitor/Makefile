@@ -2,7 +2,6 @@ CC = gcc
 
 SRC_DIR = src
 BIN_DIR = bin
-LIB_DIR = lib
 OBJ_DIR = obj
 INCLUDE_DIR = -I../CommonHeader
 LIB = -L../lib/ -lui -lshared
@@ -26,12 +25,13 @@ all: $(MAIN)
 
 $(MAIN) : $(OBJS)
 	@echo 生成可执行目标文件
+	@mkdir -p $(BIN_DIR)
 	$(CC) $(OBJS) -o $(MAIN) $(LIB) $(CFLAGS) $(LDLIBS)
 
 $(OBJ_DIR)/%.o : ${SRC_DIR}/%.c
 	@echo 编译.o文件
+	@mkdir -p $(OBJ_DIR)
 	$(CC) -c $(CFLAGS) $(LDLIBS) $(INCLUDE_DIR) $< -o $@
 
 clean:
 	rm -rf $(OBJ_DIR)/*
-	rm -rf $(LIB_DIR)/*

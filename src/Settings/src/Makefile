@@ -1,7 +1,6 @@
 CC = gcc
 
 SRC_DIR = ../src
-BIN_DIR = ../bin
 LIB_DIR = ../../lib
 OBJ_DIR = ../obj
 INCLUDE_DIR = -I../include 
@@ -22,9 +21,9 @@ $(SHARED_LIB) : $(OBJS)
 	$(CC) $(CFLAGS) $(LDLIBS) $(OBJS) -L$(LIB_DIR) -lshared -shared -o $(SHARED_LIB)
 
 $(OBJ_DIR)/%.o : ${SRC_DIR}/%.c
+	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(LDLIBS) $(INCLUDE_DIR) $(COMMON_HEADER) -fPIC -c $< -o $@
 
 clean:
 	rm -rf $(OBJ_DIR)/*
 	rm -rf $(LIB_DIR)/libui.so
-	rm -rf $(BIN_DIR)/*

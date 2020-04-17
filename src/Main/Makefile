@@ -22,9 +22,11 @@ all: $(MAIN)
 
 $(MAIN) : $(OBJS)
 	@echo 生成可执行目标文件
+	@mkdir -p $(BIN_DIR)
 	$(CC) $(OBJS) -o $(MAIN) $(CFLAGS) $(LDLIBS) $(SHARED_LIB) 
 
 $(OBJ_DIR)/%.o : ${SRC_DIR}/%.c
+	@mkdir -p $(OBJ_DIR)
 	@echo 编译.o文件
 	$(CC) -c $(CFLAGS) $(LDLIBS) $(INCLUDE_DIR) $(COMMON_HEADER) -fPIC $< -o $@
 
