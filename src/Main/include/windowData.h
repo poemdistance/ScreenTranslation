@@ -2,18 +2,31 @@
 #define __WINDOW_DATA__
 
 #include "configControl.h"
+#include "shmData.h"
+#include "shmidData.h"
+#include "memory.h"
 
-#define GET_SHMADDR(who)  ( ( who ) == BAIDU ? (shmaddr_baidu) : \
-        ( (who) == MYSQL ? shmaddr_mysql : shmaddr_google))
+#define GET_SHMADDR(shmData, who)  ( ( who ) == BING ? (shmData->shmaddr_bing) : \
+        ( (who) == MYSQL ? shmData->shmaddr_mysql : shmData->shmaddr_google))
 
-#define GET_BUTTON(win,who)  ( ( who ) == BAIDU ? (WINDATA(win)->baiduButton) :\
+#define GET_BUTTON(win,who)  ( ( who ) == BING ? (WINDATA(win)->baiduButton) :\
         ( (who) == MYSQL ? WINDATA(win)->mysqlButton : WINDATA(win)->googleButton))
 
-#define TYPE(who)     ( ( who ) == BAIDU ? ( ONLINE ) :\
+#define TYPE(who)     ( ( who ) == BING ? ( ONLINE ) :\
         ( ( who ) == MYSQL ? OFFLINE : -1 ))
 
 #define WHO(addr)     ( ( addr ) == shmaddr_mysql ? MYSQL : \
-        (addr == shmaddr_google ? GOOGLE : BAIDU))
+        (addr == shmaddr_google ? GOOGLE : BING))
+
+typedef struct {
+
+    char audioOnline_en[512];
+    char audioOnline_am[512];
+
+    char audioOffline_en[512];
+    char audioOffline_am[512];
+
+}AudioData;
 
 typedef struct {
 
@@ -27,7 +40,26 @@ typedef struct {
     volatile int startSlide;
     int recallPreviousFlag;
 
+    volatile sig_atomic_t action;
+    volatile sig_atomic_t inNewWin;
+    volatile sig_atomic_t canNewEntrance;
+    volatile sig_atomic_t canNewWin;
+    volatile sig_atomic_t destroyIcon;
+    volatile sig_atomic_t iconShowing;
+    volatile sig_atomic_t sigtermNotify;
+
 }CommunicationData;
+
+typedef struct {
+
+    int argc;
+    char **argv;
+    ConfigData *cd;
+    CommunicationData *md;
+    ShmData *sd;
+    ShmIdData *sid;
+    MemoryData *med;
+}Arg ;
 
 typedef struct WinData{
 
@@ -55,8 +87,13 @@ typedef struct WinData{
     gboolean quickSearchFlag;
     gboolean recallPreviousFlag;
 
+    Arg *arg;
     ConfigData *cd;
     CommunicationData *md;
+    ShmData *sd;
+    AudioData *ad;
+    MemoryData *med;
+
     gboolean mousePress;;
     gboolean mouseRelease;
 
@@ -135,13 +172,5 @@ typedef struct WinData{
 }WinData;
 
 GtkWidget *newCalibrationButton ( WinData *win );
-
-typedef struct {
-
-    int argc;
-    char **argv;
-    ConfigData *cd;
-    CommunicationData *md;
-}Arg ;
 
 #endif
