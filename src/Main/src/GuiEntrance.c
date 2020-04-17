@@ -171,7 +171,7 @@ int quit_test(void *arg) {
     /*不在窗口上的单击定义为销毁窗口命令*/
     if ( md->iconShowing && !aboveWindow ) {
 
-        if ( md->destroyIcon && !aboveWindow) {
+        if ( md->destroyIcon && !aboveWindow && !md->tranPicAction ) {
 
             printf("GuiEntrance: 单击销毁\n");
 
@@ -214,6 +214,8 @@ int quit_entry(void *arg) {
 
         md->canNewWin = 0;
         md->iconShowing = 0;
+        md->tranPicAction = 0;
+        md->destroyIcon = 0;
 
         g_source_remove(timeout_id_1);
         g_source_remove(timeout_id_2);

@@ -89,6 +89,11 @@ int checkOtherProcessNotifyEvent ( int fd_python[], Arg *arg ) {
         sd->shmaddr_keyboard[SELECT_EXCLUDE_FLAG] = '0';
     }
 
+    if ( sd->shmaddr_pic[2] == SCREEN_SHOT ) {
+        md->tranPicAction = 1;
+        sd->shmaddr_pic[2] = CLEAR;
+    }
+
     return 0;
 }
 
