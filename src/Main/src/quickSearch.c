@@ -7,8 +7,8 @@
 #include "sharedMemory.h"
 #include "cleanup.h"
 
-char *shmaddr_keyboard = NULL;
-pid_t captureShortcutEvent_pid;
+static char *shmaddr_keyboard = NULL;
+static pid_t captureShortcutEvent_pid;
 static int SIGTERM_SIGNAL = 0;
 
 

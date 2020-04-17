@@ -2,50 +2,37 @@
 #include "newWindow.h"
 #include "cleanup.h"
 
-extern char *shmaddr_baidu;
-extern char *shmaddr_google;
-extern char *shmaddr_mysql;
+void separateDataForBaidu(int *index, int len, int type, WinData *wd) {
 
-extern char **baidu_result[BAIDUSIZE] ;
-extern char *google_result[GOOGLESIZE] ;
-extern char **mysql_result[MYSQLSIZE] ;
-
-extern char *text;
-
-char audioOnline_en[512] = { '\0' };
-char audioOnline_am[512] = { '\0' };
-
-char audioOffline_en[512] = { '\0' };
-char audioOffline_am[512] = { '\0' };
-
-void separateDataForBaidu(int *index, int len, int type) {
+    AudioData *ad = wd->ad;
+    MemoryData *med = wd->arg->med;
 
     char ***result = NULL;
     char *tmpBuffer = NULL;
     int enterNum = 0;
     int k = 0;
-    tmpBuffer = tmp;
+    tmpBuffer = med->tmp;
     enterNum = 0;
 
     /* 根据类型设置操作地址*/
     if ( type == ONLINE )
-        result = baidu_result;
+        result = med->bing_result;
     else if ( type ==  OFFLINE )
-        result = mysql_result;
+        result = med->mysql_result;
 
-    clearBaiduMysqlResultMemory();
+    clearBingMysqlResultMemory ( med->bing_result,  med->mysql_result);
 
     if ( index[0] == 0) return;
 
     if ( result[0] == NULL)
         err_exit("Doesn't init memory yet\n");
 
-    if ( strlen ( text ) < 130 ) {
+    if ( strlen ( med->text ) < 130 ) {
 
         char tmp[130];
         char *p = tmp;
 
-        strcpy ( tmp, text ); /* text含回车符*/
+        strcpy ( tmp, med->text ); /* med->text含回车符*/
 
         /* 去除回车符*/
         while ( *p ) {
@@ -54,17 +41,17 @@ void separateDataForBaidu(int *index, int len, int type) {
             p++;
         }
 
-        if ( strcmp ( tmp, SourceInput(type) ) != 0 ) {
+        if ( strcmp ( tmp, SourceInput(med, type) ) != 0 ) {
 
-            strcat ( SourceInput(type), tmp );
-            adjustStrForBaidu(len, SourceInput(type), 0, 0, &enterNum);
+            strcat ( SourceInput(med, type), tmp );
+            adjustStrForBaidu(len, SourceInput(med, type), 0, 0, &enterNum);
         }
     }
 
     /*分离相应数据到特定功能内存区域*/
-    for ( int n=1, i=0, count=0; n<=BAIDUSIZE; n++ ) {
+    for ( int n=1, i=0, count=0; n<=BING_SIZE; n++ ) {
 
-        /*shmaddr_baidu[] 中0~BAIDUSIZE各字节的含义见gif_pic/protocol.png*/
+        /*shmaddr_bing[] 中0~BING_SIZE各字节的含义见gif_pic/protocol.png*/
         if ( tmpBuffer[n] - '0' == 0) 
         {
             i++;
@@ -74,10 +61,10 @@ void separateDataForBaidu(int *index, int len, int type) {
         /* 提取音频链接*/
         if ( n == 5 ) {
 
-            strcpy ( AUDIO_AM(type), &tmpBuffer[index[i++]] );
-            pbgreen("copy audio:%s", AUDIO_AM(type));
-            strcpy ( AUDIO_EN(type), &tmpBuffer[index[i++]] );
-            pbgreen("copy audio:%s", AUDIO_EN(type));
+            strcpy ( AUDIO_AM(ad, type), &tmpBuffer[index[i++]] );
+            pbgreen("copy audio:%s", AUDIO_AM(ad, type));
+            strcpy ( AUDIO_EN(ad, type), &tmpBuffer[index[i++]] );
+            pbgreen("copy audio:%s", AUDIO_EN(ad, type));
             continue;
         }
 
@@ -110,13 +97,15 @@ void separateDataForBaidu(int *index, int len, int type) {
      * 这里以8个回车符为界限，如果超过则适当增加每行
      * 显示的计数长度以此减少行数降低窗口高度.*/
     if ( enterNum > 8 ) 
-        separateDataForBaidu ( index, len+8, type );
+        separateDataForBaidu ( index, len+8, type, wd );
 }
 
 
-void separateGoogleData ( int *index, int len ) {
+void separateGoogleData ( int *index, int len, WinData *wd ) {
 
     int enterNum = 0;
+    ShmData *sd = wd->sd;
+    MemoryData *med = wd->arg->med;
 
     if ( index[0] == 0 ) {
         pred("索引首值为0，无数据 (separateGoogleData)");
@@ -124,21 +113,21 @@ void separateGoogleData ( int *index, int len ) {
     }
 
     /*主要完成步骤:加入回车符使单行句子不至于太长*/
-    if ( shmaddr_google[0]  != ERRCHAR ) {
+    if ( sd->shmaddr_google[0]  != ERRCHAR ) {
 
         char *p[3];
-        p[0] = &tmp[ACTUALSTART];
-        p[1] = index[0] != 0 ? &tmp[index[0]] : NULL;
-        p[2] = index[1] != 0 ? &tmp[index[1]] : NULL;
+        p[0] = &med->tmp[ACTUALSTART];
+        p[1] = index[0] != 0 ? &med->tmp[index[0]] : NULL;
+        p[2] = index[1] != 0 ? &med->tmp[index[1]] : NULL;
 
-        adjustStrForGoogle(p, len, google_result, &enterNum);
+        adjustStrForGoogle(p, len, med->google_result, &enterNum);
     }
     else  {
-        shmaddr_google[0] = CLEAR;
-        strcpy(google_result[0], "翻译超时或出现其他错误");
+        sd->shmaddr_google[0] = CLEAR;
+        strcpy(med->google_result[0], "翻译超时或出现其他错误");
     }
 
     if ( enterNum > 8 && len < 100 )
-        separateGoogleData ( index, len+8 );
+        separateGoogleData ( index, len+8, wd );
 }
 

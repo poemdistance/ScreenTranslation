@@ -9,6 +9,7 @@
 #include "windowData.h"
 #include "pointer.h"
 #include "configControl.h"
+#include "shmData.h"
 
 #define BOLD_TYPE (1)
 #define NOT_BOLD (0)
@@ -19,28 +20,17 @@
 
 #define UI_SRC ("/home/$USER/.stran/sure.ui")
 
-typedef void (*Display_func)(GtkWidget *, gpointer *);
-
-char **baidu_result[BAIDUSIZE] = { NULL };
-char *google_result[GOOGLESIZE] = { NULL };
-char **mysql_result[MYSQLSIZE] = { NULL };
-char *tmp;
-
-/* 用于和detectMouse通信，当已经新建翻译结果显示窗口时，
- * 不再检测鼠标动作*/
-volatile sig_atomic_t InNewWin = 0;
-
-/* 鼠标动作标志位*/
-extern volatile sig_atomic_t action;
-extern volatile sig_atomic_t CanNewWin;
 static int focustimes = 0;
-int timeout_id = 0;
-int movewindow_timeout_id = 0;
+static int timeout_id = 0;
+static int movewindow_timeout_id = 0;
 static int moveDone = 1;
-gboolean resizeAction = FALSE;
+static int resizeAction = FALSE;
+
+typedef void (*Display_func)(GtkWidget *, gpointer *);
 
 GtkWidget *setWidgetProperties ( GtkWidget *widget, double fontSizeScale ,
         const char *rgb, int bold, int alpha);
+
 GtkWidget *addUnderline ( GtkWidget *widget, const char *rgb, guint type);
 
 void clearContentListBox ( GtkWidget *listbox  );
@@ -71,7 +61,7 @@ static inline int previousWindow ( int who ) {
 
 static inline Display_func choice_display( int who ) {
 
-    return ( who == BAIDU ? displayBaiduTrans : \
+    return ( who == BING ? displayBaiduTrans : \
             ( who == GOOGLE ? displayGoogleTrans :\
               displayOfflineTrans) );
 }
@@ -79,7 +69,7 @@ static inline Display_func choice_display( int who ) {
 void selectDisplay( WinData *wd ) {
 
     if ( wd->gotBaiduTran )
-        wd->who = BAIDU;
+        wd->who = BING;
     else if ( wd->gotOfflineTran )
         wd->who = MYSQL;
     else
@@ -143,7 +133,7 @@ void on_win_size_allocate_cb (
             alloc->x, alloc->y, alloc->width, alloc->height );
 
     if ( wd->doubleClickAction ) {
-        pred ( "Double click action , will not send notify to move window" );
+        pred ( "Double click md->action , will not send notify to move window" );
         return;
     }
 
@@ -444,7 +434,7 @@ int detect_outside_click_action ( void *data ) {
         if ( wd->quickSearchFlag || md->recallPreviousFlag ) lock = 0;
     }
 
-    if ( ! action || action == SLIDE ) return TRUE; 
+    if ( ! md->action || md->action == SLIDE ) return TRUE; 
 
     if ( ! cd->alwaysDisplay ) return FALSE;
 
@@ -483,11 +473,11 @@ int detect_outside_click_action ( void *data ) {
     if ( condition && md->buttonState == BUTTON_PRESS ) {
         pgreen ( "Block -> TRUE" );
         block = TRUE;
-        action = 0;
+        md->action = 0;
         return TRUE;
     }
 
-    if ( action == SINGLE_CLICK && md->buttonState == BUTTON_RELEASE)  {
+    if ( md->action == SINGLE_CLICK && md->buttonState == BUTTON_RELEASE)  {
         /* printf("begignDrag and resizeAction to False\n"); */
         wd->beginDrag = FALSE;
         resizeAction = FALSE;
@@ -499,7 +489,7 @@ int detect_outside_click_action ( void *data ) {
             ! wd->beginDrag &&
             ! wd->doubleClickAction) {
 
-        pbmag ( "区域外点击销毁窗口. Action=%d", action );
+        pbmag ( "区域外点击销毁窗口. Action=%d", md->action );
         destroyNormalWin ( NULL, wd );
         return FALSE;
     }
@@ -606,7 +596,7 @@ void on_pin_button_clicked_cb (
 int getIdByButton ( WinData *wd, GtkWidget *button ) {
 
     if ( button == wd->baiduButton || button == wd->selectedBing )
-        return BAIDU;
+        return BING;
     else if ( button == wd->mysqlButton || button == wd->selectedOffline )
         return OFFLINE;
     else if ( button == wd->googleButton || button == wd->selectedGoogle )
@@ -899,6 +889,9 @@ void on_calibration_button_clicked_cb (
 
 int dataInit(WinData *wd) {
 
+    CommunicationData *md = wd->md;
+    ShmData *sd = wd->sd;
+
     wd->width = 400;
     wd->height = 100;
     wd->calibrationButton = NULL;
@@ -914,10 +907,10 @@ int dataInit(WinData *wd) {
     memset ( wd->needToBeHiddenWidget, '\0', sizeof(wd->needToBeHiddenWidget) );
 
     focustimes = 1;
-    InNewWin = 1;
+    md->inNewWin = 1;
 
     /* 窗口打开标志位 changed in captureShortcutEvent.c <变量shmaddr>*/
-    shmaddr_keyboard[WINDOW_OPENED_FLAG] = '1';
+    sd->shmaddr_keyboard[WINDOW_OPENED_FLAG] = '1';
 
     wd->gotOfflineTran = 0;
 
@@ -995,7 +988,7 @@ static gboolean expose_draw(GtkWidget *widget, GdkEventExpose *event, WinData *w
     return FALSE;
 }
 
-gboolean supports_alpha = FALSE;
+static gboolean supports_alpha = FALSE;
 static void screen_changed(GtkWidget *widget, GdkScreen *old_screen, WinData *wd ) {
 
     GdkScreen *screen = gtk_widget_get_screen(widget);
@@ -1457,15 +1450,20 @@ void *newNormalWindow ( void *data ) {
 
     ConfigData *cd = ((Arg*) data )->cd;
     CommunicationData *md = ((Arg*) data )->md;
+    ShmData *sd = ((Arg*)data)->sd;
+    static AudioData ad;
     static WinData wd;
     wd.cd = cd;
     wd.md = md;
+    wd.sd = sd;
+    wd.ad = &ad;
+    wd.arg = data;
 
     dataInit(&wd);
 
     if ( waitForContinue( &wd ) ) 
     {
-        InNewWin = 0;
+        md->inNewWin = 0;
         return (void*)0;
     }
 
@@ -1476,9 +1474,9 @@ void *newNormalWindow ( void *data ) {
     /* setBackground( &wd ); */
 
     /* quickSearch快捷键标志位, 在shortcutListener中置位*/
-    if ( shmaddr_keyboard[QUICK_SEARCH_NOTIFY] == '1') {
+    if ( sd->shmaddr_keyboard[QUICK_SEARCH_NOTIFY] == '1') {
 
-        shmaddr_keyboard[QUICK_SEARCH_NOTIFY] = '0';
+        sd->shmaddr_keyboard[QUICK_SEARCH_NOTIFY] = '0';
         gtk_window_set_position(GTK_WINDOW(wd.window), GTK_WIN_POS_CENTER);
         wd.quickSearchFlag = TRUE;
     }
@@ -1491,12 +1489,6 @@ void *newNormalWindow ( void *data ) {
     }
 
     /* printDebugInfo(); */
-
-    /*初始化百度以及离线翻译结果存储空间*/
-    initMemoryBaidu();
-    initMemoryMysql();
-    initMemoryTmp();
-    initMemoryGoogle();
 
     g_signal_connect (wd.window, "button-press-event", 
             G_CALLBACK(on_button_press_cb), &wd);
@@ -1524,23 +1516,31 @@ void *newNormalWindow ( void *data ) {
 int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
 
     pbblue ( "Destroy window" );
+    CommunicationData *md = wd->md;
+    ShmData *sd = wd->sd;
+    AudioData *ad = wd->ad;
 
-    clearMemory();
+    memset ( AUDIO_EN(ad, ONLINE), '\0', 512 );
+    memset ( AUDIO_AM(ad, ONLINE), '\0', 512 );
+    memset ( AUDIO_EN(ad, OFFLINE), '\0', 512 );
+    memset ( AUDIO_AM(ad, OFFLINE), '\0', 512 );
+
+    clearMemory ( wd->arg );
 
     /* 窗口关闭标志位*/
-    shmaddr_keyboard[WINDOW_OPENED_FLAG] = '0';
-    shmaddr_keyboard[CTRL_C_PRESSED_FLAG] = '0';
+    sd->shmaddr_keyboard[WINDOW_OPENED_FLAG] = '0';
+    sd->shmaddr_keyboard[CTRL_C_PRESSED_FLAG] = '0';
 
     /*清除相关标记*/
-    shmaddr_baidu[0] = CLEAR;
-    shmaddr_google[0] = CLEAR;
+    sd->shmaddr_bing[0] = CLEAR;
+    sd->shmaddr_google[0] = CLEAR;
 
-    action = 0;
+    md->action = 0;
 
-    pbcyan ( "InNewWin 置零" );
+    pbcyan ( "md->inNewWin 置零" );
 
     /* 已退出翻译结果窗口，重置标志变量*/
-    InNewWin = 0;
+    md->inNewWin = 0;
 
     wd->md->recallPreviousFlag = FALSE;
 
@@ -1551,18 +1551,21 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
 }
 
 /*Get index of separate symbols*/
-int getIndex(int *index, char *src) {
+int getIndex ( int *index, char *src, WinData *wd ) {
 
-    if ( ! tmp ){
+    ShmData *sd = wd->sd;
+    MemoryData *med = wd->arg->med;
+
+    if ( ! med->tmp ){
         pbred ( "临时内存未初始化" );
         return -1;
     }
 
     pbyellow ( "getindex:%s", src );
-    clearBaiduMysqlResultMemory();
+    clearBingMysqlResultMemory ( wd->arg->med->bing_result, wd->arg->med->mysql_result );
 
-    strcpy ( tmp, src );
-    char *p = &tmp[ACTUALSTART];
+    strcpy ( med->tmp, src );
+    char *p = &med->tmp[ACTUALSTART];
     int i = ACTUALSTART;  /*同p一致指向同一个下标字符*/
     int charNum = 0;
 
@@ -1576,7 +1579,7 @@ int getIndex(int *index, char *src) {
             *p = '\0';
 
             /*截取到第三个分隔符*/
-            if ( src == shmaddr_google && charNum >= 2 )
+            if ( src == sd->shmaddr_google && charNum >= 2 )
                 break;
 
             index[charNum++] = i + 1; /*记录字符串下标*/
@@ -1589,24 +1592,27 @@ int getIndex(int *index, char *src) {
 
 int waitForContinue(WinData *wd) {
 
+    CommunicationData *md = wd->md;
+    ShmData *sd = wd->sd;
+
     pgreen("准备接收共享内存数据... ( WaitForContinue )");
 
     int time = 0;
 
     /*等待任意一方python端的翻译数据全部写入共享内存*/
     while( (
-                shmaddr_google[0] != FINFLAG && 
-                shmaddr_baidu [0] != FINFLAG &&
-                shmaddr_mysql [0] != FINFLAG )) {
+                sd->shmaddr_google[0] != FINFLAG && 
+                sd->shmaddr_bing [0] != FINFLAG &&
+                sd->shmaddr_mysql [0] != FINFLAG )) {
 
         /*长时间未检测到共享内存里的数据进行双击取消本次窗口显示*/
-        if ( action == DOUBLE_CLICK ) {
+        if ( md->action == DOUBLE_CLICK ) {
 
             pred("双击退出. ( WaitForContinue )");
-            action = 0;
+            md->action = 0;
             return 1;
         }
-        if ( shmaddr_google[0] == ERRCHAR) {
+        if ( sd->shmaddr_google[0] == ERRCHAR) {
             pred("翻译过程出现错误 ( WaitForContinue )");
             break;
         }
@@ -1616,53 +1622,55 @@ int waitForContinue(WinData *wd) {
         /* 超时时间1.6S ( 2 * 400000ms )*/
         if ( ++time >= 2 ) {
             pred("超时退出");
-            shmaddr_google[0] = ERRCHAR;
-            shmaddr_baidu[0] = ERRCHAR;
+            sd->shmaddr_google[0] = ERRCHAR;
+            sd->shmaddr_bing[0] = ERRCHAR;
             break;
         }
     }
 
-    if ( text == NULL )
-        text = calloc(TEXTSIZE, 1);
-
-    action = 0;
-    wd->gotOfflineTran = ( shmaddr_mysql [0] == FINFLAG ) ? 1 : 0;
-    wd->gotGoogleTran  = ( shmaddr_google[0] == FINFLAG ) ? 1 : 0;
-    wd->gotBaiduTran   = ( shmaddr_baidu [0] == FINFLAG ) ? 1 : 0;
+    md->action = 0;
+    wd->gotOfflineTran = ( sd->shmaddr_mysql [0] == FINFLAG ) ? 1 : 0;
+    wd->gotGoogleTran  = ( sd->shmaddr_google[0] == FINFLAG ) ? 1 : 0;
+    wd->gotBaiduTran   = ( sd->shmaddr_bing [0] == FINFLAG ) ? 1 : 0;
 
     return 0;
 }
 /* 重新从共享内存获取百度翻译结果并设置窗口大小*/
 int reGetBaiduTrans (gpointer *data, int who ) {
 
+    WinData *wd = WINDATA(data);
+    ShmData *sd = wd->sd;
+
     int index[INDEX_SIZE] = { 0 };
     int ret = 0;
-    ret = getIndex(index, GET_SHMADDR(who) );
+    ret = getIndex(index, GET_SHMADDR(sd, who), WINDATA(data) );
     if ( ret ) return ret;
 
     int len = 30;
-    separateDataForBaidu(index, len, TYPE(who) );
+    separateDataForBaidu(index, len, TYPE(who), wd );
 
     return 0;
 }
 
 int refreshResult(GtkWidget *button, gpointer *data, int who ) {
 
+    WinData *wd = WINDATA(data);
+    ShmData *sd = wd->sd;
     int ret = 0;
 
     if ( who == GOOGLE ) 
     {
         int index[2] = { 0 };
-        ret = getIndex(index, shmaddr_google);
+        ret = getIndex(index, GET_SHMADDR(sd, who), WINDATA(data));
         if ( ret ) return ret;
 
         /* 找到分割符，数据分离提取才有意义*/
         if ( index[0] != 0 )
-            separateGoogleData ( index, 28 );
+            separateGoogleData ( index, 28, wd );
         else
             pred("未找到分隔符(refreshResult)");
     }
-    else if ( who == BAIDU || who == MYSQL)
+    else if ( who == BING || who == MYSQL)
     {
         ret = reGetBaiduTrans ( data, who );
         if ( ret ) return ret;
@@ -1709,7 +1717,8 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
     pyellow("显示谷歌翻译结果:\n");
 
     WinData *wd = WINDATA(data);
-    char **result = google_result;
+    MemoryData *med = wd->arg->med;
+    char **result = med->google_result;
     char *p1 = NULL;
     char *p2 = NULL;
 
@@ -1719,8 +1728,8 @@ void displayGoogleTrans(GtkWidget *button, gpointer *data) {
 
     clearContentListBox ( wd->content_listbox );
 
-    if ( strlen( text )  < 30 )
-        gtk_label_set_text ( GTK_LABEL(wd->src_label), removeTrailCR(text) );
+    if ( strlen( med->text )  < 30 )
+        gtk_label_set_text ( GTK_LABEL(wd->src_label), removeTrailCR(med->text) );
 
     setWidgetProperties ( wd->src_label, 1.3, "#000000", BOLD_TYPE, NOT_TRANSPARENT );
 
@@ -1787,7 +1796,8 @@ void displayOfflineTrans ( GtkWidget *button, gpointer *data ) {
     pmag("显示离线翻译:\n");
 
     WinData *wd = WINDATA(data);
-    char ***result = mysql_result;
+    MemoryData *med = wd->arg->med;
+    char ***result = med->mysql_result;
 
     wd->who = MYSQL;
 
@@ -1860,11 +1870,12 @@ void getPosTran ( char *src, char **pos, char **tran, char split ) {
 void displayBaiduTrans(GtkWidget *button,  gpointer *data ) {
 
     WinData *wd = WINDATA(data);
-    char ***result = baidu_result;
+    MemoryData *med = wd->arg->med;
+    char ***result = med->bing_result;
 
-    wd->who = BAIDU;
+    wd->who = BING;
 
-    refreshResult ( button, data, BAIDU );
+    refreshResult ( button, data, BING );
 
     displayTrans ( wd, result );
 }
@@ -1980,25 +1991,4 @@ void setFontProperties(GtkTextBuffer *buf, GtkTextIter *iter) {
     gtk_text_buffer_create_tag(buf, "underline", "underline", PANGO_UNDERLINE_SINGLE, NULL);
 
     gtk_text_buffer_get_iter_at_offset(buf, iter, 0);
-}
-
-void printDebugInfo() {
-
-    pcyan("Finish标志位: %c", shmaddr_baidu[0]);
-    pcyan("Phonetic(ONLINE)标志位: %c", shmaddr_baidu[1]);
-    pcyan("Numbers of zhTrans标志位: %c", shmaddr_baidu[2]);
-    pcyan("Numbers of enTrans标志位: %c", shmaddr_baidu[3]);
-    pcyan("Other forms of word标志位: %c", shmaddr_baidu[4]);
-    pcyan("Numbers of audio links标志位: %c\n", shmaddr_baidu[5]);
-
-    pcyan("Finish标志位: %c", shmaddr_mysql[0]);
-    pcyan("Phonetic(ONLINE)标志位: %c", shmaddr_mysql[1]);
-    pcyan("Numbers of zhTrans标志位: %c", shmaddr_mysql[2]);
-    pcyan("Numbers of enTrans标志位: %c", shmaddr_mysql[3]);
-    pcyan("Other forms of word标志位: %c", shmaddr_mysql[4]);
-    pcyan("Numbers of audio links标志位: %c\n", shmaddr_mysql[5]);
-
-    pcyan("离线翻译结果: %s\n", &shmaddr_mysql[ACTUALSTART]);
-    pcyan("百度翻译结果: %s\n", &shmaddr_baidu[ACTUALSTART]);
-    pcyan("谷歌翻译结果: %s\n", &shmaddr_google[ACTUALSTART]);
 }

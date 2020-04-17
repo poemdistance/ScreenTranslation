@@ -155,7 +155,6 @@ char *selectApp() {
 void err_exit(char *buf) {
     fprintf(stderr, "%s\n", buf);
     perror("errno");
-    quit();
 }
 
 char *adjustSrcText ( char *text ) {

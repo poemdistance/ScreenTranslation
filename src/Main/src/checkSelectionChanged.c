@@ -3,19 +3,17 @@
 #include <poll.h>
 #include <X11/extensions/Xfixes.h>
 #include "cleanup.h"
-
-extern char *shmaddr_selection;
-extern volatile sig_atomic_t action;
+#include "shmData.h"
 
 static int SIGTERM_SIGNAL = 0;
 
-void WatchSelection(Display *display, const char *bufname);
+void WatchSelection(Display *display, const char *bufname, Arg *arg);
 
 static void exitNotify ( ) {
     SIGTERM_SIGNAL = 1;
 }
 
-void checkSelectionChanged(int writefd, int readfd)
+void checkSelectionChanged ( void *arg )
 {
     Display *display = XOpenDisplay(NULL);
     unsigned long color = BlackPixel(display, DefaultScreen(display));
@@ -29,22 +27,23 @@ void checkSelectionChanged(int writefd, int readfd)
         pred ( "function: checkSelectionChanged" );
         perror("sigaction");
         XCloseDisplay ( display );
-        quit();
+        quit ( arg );
     }
 
     if ( sigaction(SIGINT, &sa, NULL) == -1) {
         pred("sigaction err(checkSelectionChanged -> SIGTERM)");
         perror("sigaction");
         XCloseDisplay ( display );
-        quit();
+        quit ( arg );
     }
 
     const char buf[] = "PRIMARY";
-    WatchSelection ( display, buf);
+    WatchSelection ( display, buf, arg);
 }
 
-void WatchSelection(Display *display, const char *bufname)
+void WatchSelection(Display *display, const char *bufname, Arg *arg)
 {
+    ShmData *sd = arg->sd;
     int event_base, error_base;
     XEvent event;
     Atom bufid = XInternAtom(display, bufname, False);
@@ -74,9 +73,9 @@ void WatchSelection(Display *display, const char *bufname)
         if (event.type == event_base + XFixesSelectionNotify &&
                 ((XFixesSelectionNotifyEvent*)&event)->selection == bufid) {
 
-            if ( shmaddr_selection[0] != '1' ) {
+            if ( sd->shmaddr_selection[0] != '1' ) {
 
-                shmaddr_selection[0] = '1';
+                sd->shmaddr_selection[0] = '1';
                 pgreen("Selection change: write finish flag: 1");
             }
         }

@@ -14,8 +14,6 @@
 static pid_t child_pid;
 static int SIGTERM_SIGNAL = 0;
 
-extern char *shmaddr_keyboard;
-
 static void exitNotify() {
     SIGTERM_SIGNAL = 1;
 }

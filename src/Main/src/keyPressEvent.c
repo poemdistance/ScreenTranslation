@@ -11,11 +11,6 @@
 
 /* 键值掩码在gdk/gdkkeysyms.h*/
 
-extern char audioOnline_en[512];
-extern char audioOnline_am[512];
-extern char audioOffline_en[512];
-extern char audioOffline_am[512];
-
 gboolean on_key_press_cb ( 
         GtkWidget *window,
         GdkEventKey *event,
@@ -29,6 +24,7 @@ gboolean on_key_press_cb (
 
     gboolean enableCtrlCToClose = FALSE;
     ConfigData *cd = wd->cd;
+    AudioData *ad = wd->ad;
 
     enableCtrlCToClose = cd->ctrlCToClose;
 
@@ -52,8 +48,8 @@ gboolean on_key_press_cb (
     if ( (cd->playAudioKeyval == keyval || cd->playAudioKeyval == upperKeyval  ) &&
             ((cd->playAudioKeyval & mask) || mask == cd->playAudioMask) ) {
 
-        if ( (strlen(audioOnline_en)==0 && strlen(audioOnline_am)==0) \
-                && (strlen(audioOffline_en)==0 && strlen(audioOffline_am)==0) ) {
+        if ( (strlen(ad->audioOnline_en)==0 && strlen(ad->audioOnline_am)==0) \
+                && (strlen(ad->audioOffline_en)==0 && strlen(ad->audioOffline_am)==0) ) {
 
             g_print ("No audio (keyPress.c)\n");
             return TRUE;

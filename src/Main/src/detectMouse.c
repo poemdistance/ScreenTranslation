@@ -1,7 +1,7 @@
 /*
  * 程序功能：
  * 1. 检测鼠标动作，捕捉双击，单击和区域选择事件，
- *    并设置action为相应的值:DOUBLE_CLICK,SINGLE_CLICK, SLIDE
+ *    并设置md->action为相应的值:DOUBLE_CLICK,SINGLE_CLICK, SLIDE
  *
  * 2. Fork一个子进程，父进程通过管道将剪贴板内容送入子进程
  *
@@ -23,92 +23,70 @@
 
 #define DOUBLE_CLICK_TIMEOUT  ( 450 )
 
-extern char *shmaddr;
-extern char *shmaddr_selection;
-extern volatile sig_atomic_t InNewWin;
-extern volatile sig_atomic_t BAIDU_TRANS_EXIT_FALG;
-extern volatile sig_atomic_t GOOGLE_TRANS_EXIT_FLAG;
-extern volatile sig_atomic_t CanNewWin;
-extern volatile sig_atomic_t CanNewEntrance;
+int checkOtherProcessNotifyEvent ( int fd_python[], Arg *arg ) {
 
-extern char *shmaddr_searchWin;
-extern char *shmaddr_keyboard;
-extern char *shmaddr_pic;
-extern int shmid_searchWin ;
+    CommunicationData *md = arg->md;
+    ShmData *sd = arg->sd;
+    MemoryData *med = arg->med;
 
-/* 来自notify.c text是从剪贴板直接复制过来的字符串*/
-extern char *text; 
-
-extern int quickSearchFlag;
-
-volatile sig_atomic_t action;
-extern volatile sig_atomic_t destroyIcon;
-extern volatile sig_atomic_t SIGTERM_NOTIFY;
-
-pid_t pid_mysql = -1;
-pid_t pid_google = -1;
-pid_t pid_bing = -1;
-pid_t pid_tranpic = -1;
-pid_t pid_selection = -1;
-
-int checkOtherProcessNotifyEvent ( int fd_python[], CommunicationData *md ) {
-
-    if ( shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
+    if ( sd->shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
 
         pbcyan ( "Quick Search 完毕" );
 
-        if ( text == NULL )
-            if (( text = calloc(TEXTSIZE, 1)) == NULL)
+        if ( med->text == NULL )
+            if (( med->text = calloc(TEXTSIZE, 1)) == NULL)
                 err_exit("calloc failed in notify.c");
 
-        shmaddr_searchWin[TEXT_SUBMIT_FLAG] = '0';
-        strcpy ( text,  &shmaddr_searchWin[SUBMIT_TEXT] );
-        writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[0] );
-        writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
-        writePipe ( &shmaddr_searchWin[SUBMIT_TEXT], fd_python[2] );
-        CanNewWin = 1;
+        sd->shmaddr_searchWin[TEXT_SUBMIT_FLAG] = '0';
+        strcpy ( med->text,  &sd->shmaddr_searchWin[SUBMIT_TEXT] );
+        adjustSrcText ( med->text );
+        writePipe ( &sd->shmaddr_searchWin[SUBMIT_TEXT], fd_python[0] );
+        writePipe ( &sd->shmaddr_searchWin[SUBMIT_TEXT], fd_python[1] );
+        writePipe ( &sd->shmaddr_searchWin[SUBMIT_TEXT], fd_python[2] );
+        md->canNewWin = 1;
     }
 
-    if ( shmaddr_pic[0] == FINFLAG ) {
+    if ( sd->shmaddr_pic[0] == FINFLAG ) {
 
         pbcyan ( "Tran pic 完毕" );
 
-        if ( text == NULL )
-            if (( text = calloc(TEXTSIZE, 1)) == NULL)
+        if ( med->text == NULL )
+            if (( med->text = calloc(TEXTSIZE, 1)) == NULL)
                 err_exit("calloc failed in notify.c");
 
-        shmaddr_pic[0] = CLEAR;
-        strcpy ( text,  &shmaddr_pic[ACTUALSTART] );
-        adjustSrcText ( text );
-        writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[0] );
-        writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[1] );
-        writePipe ( &shmaddr_pic[ACTUALSTART], fd_python[2] );
-        CanNewEntrance = 1;
+        sd->shmaddr_pic[0] = CLEAR;
+        strcpy ( med->text,  &sd->shmaddr_pic[ACTUALSTART] );
+        adjustSrcText ( med->text );
+        writePipe ( &sd->shmaddr_pic[ACTUALSTART], fd_python[0] );
+        writePipe ( &sd->shmaddr_pic[ACTUALSTART], fd_python[1] );
+        writePipe ( &sd->shmaddr_pic[ACTUALSTART], fd_python[2] );
+        md->canNewEntrance = 1;
     }
 
-    if ( shmaddr_keyboard[RECALL_PREVIOUS_TRAN] == '1' ) {
+    if ( sd->shmaddr_keyboard[RECALL_PREVIOUS_TRAN] == '1' ) {
 
         pbcyan ( "打开上一次翻译内容" );
-        shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = '0';
+        sd->shmaddr_keyboard[RECALL_PREVIOUS_TRAN] = '0';
         md->recallPreviousFlag = 1;
-        if ( text == NULL )
-            if (( text = calloc(TEXTSIZE, 1)) == NULL)
+        if ( med->text == NULL )
+            if (( med->text = calloc(TEXTSIZE, 1)) == NULL)
                 err_exit("calloc failed in notify.c");
 
-        pbcyan ( "Previous Text: %s", text );
-        if ( strlen ( text ) ) {
-            writePipe ( text, fd_python[0] );
-            writePipe ( text, fd_python[1] );
-            writePipe ( text, fd_python[2] );
+        pbcyan ( "Previous med->text: %s", med->text );
+        if ( strlen ( med->text ) ) {
+            adjustSrcText ( med->text );
+            writePipe ( med->text, fd_python[0] );
+            writePipe ( med->text, fd_python[1] );
+            writePipe ( med->text, fd_python[2] );
             pbmag ( "内容送入翻译端" );
-            CanNewWin = 1;
+            md->canNewWin = 1;
         }
         else { pbred ( "上一次翻译内容为空，此次不调出窗口" );}
     }
 
-    if ( shmaddr_keyboard[SELECT_EXCLUDE_FLAG] == '1' ) {
+    if ( sd->shmaddr_keyboard[SELECT_EXCLUDE_FLAG] == '1' ) {
         checkApp ( selectApp() );
-        shmaddr_keyboard[SELECT_EXCLUDE_FLAG] = '0';
+        sd->shmaddr_keyboard[SELECT_EXCLUDE_FLAG] = '0';
     }
 
     return 0;
@@ -117,8 +95,10 @@ int checkOtherProcessNotifyEvent ( int fd_python[], CommunicationData *md ) {
 void *DetectMouse(void *arg) {
 
     pbblue ( "启动线程DetectMouse" );
-    ConfigData *cd = ((Arg*)arg)->cd;
+    /* ConfigData *cd = ((Arg*)arg)->cd; */
     CommunicationData *md = ((Arg*)arg)->md;
+    ShmData *sd = ((Arg*)arg)->sd;
+    ShmIdData *sid = ((Arg*)arg)->sid;
 
     setpgid ( getpid(), getppid() );
 
@@ -160,52 +140,52 @@ void *DetectMouse(void *arg) {
     /*只能放在主进程中执行*/
     if ( pid_google > 0 ) {
 
-        if ( ( pid_bing = fork() ) == -1 ) {
+        if ( ( sid->pid_bing = fork() ) == -1 ) {
             fprintf(stderr, "fork fail\n");
             exit(1);
         }
 
         /*让子进程中pid_google=-1,防止子进程执行到pid_google>0的代码段*/
-        if (pid_bing == 0)
+        if (sid->pid_bing == 0)
             pid_google = -1;
     }
 
     /* fork一个子进程用于检测剪贴板变化*/
     if ( pid_google > 0 ) {
 
-        if ( ( pid_selection = fork() ) == -1) 
+        if ( ( sid->pid_selection = fork() ) == -1) 
             err_exit ("Fork check_selectionEvent failed");
 
-        if ( pid_selection == 0) {
+        if ( sid->pid_selection == 0) {
 
             pid_google = -1;
             setproctitle ( "%s", "Check Selection Changed" );
-            checkSelectionChanged();
+            checkSelectionChanged( arg );
         }
     }
 
     /* 再fork一个用于离线翻译*/
     if ( pid_google > 0 ) {
 
-        if ( ( pid_mysql = fork() ) == -1) 
+        if ( ( sid->pid_mysql = fork() ) == -1) 
             err_exit ("Fork check_selectionEvent failed");
 
         /* In child process*/
-        if ( pid_mysql == 0 ) {
+        if ( sid->pid_mysql == 0 ) {
 
             pid_google = -1;
-            pid_mysql = 0;
+            sid->pid_mysql = 0;
         }
     }
 
     /* fork一个子进程用于检测截图识别*/
     if ( pid_google > 0 ) {
 
-        if ( ( pid_tranpic = fork() ) == -1) 
+        if ( ( sid->pid_tranpic = fork() ) == -1) 
             err_exit ("Fork detectTranPicAction() failed");
 
         /* In child process*/
-        if ( pid_tranpic == 0 ) {
+        if ( sid->pid_tranpic == 0 ) {
 
             pid_google = -1;
 
@@ -217,6 +197,8 @@ void *DetectMouse(void *arg) {
     }
 
     if ( pid_google > 0 ) {
+
+        pbmag ( "DetectMouse main process: %d", getpid() );
 
         /*父进程:关闭读端口*/
         close(fd_google[0]);
@@ -230,15 +212,19 @@ void *DetectMouse(void *arg) {
 
             usleep ( 1000 );
 
-            if ( SIGTERM_NOTIFY ) break;
-            checkOtherProcessNotifyEvent( fd_python, md );
+            if ( md->sigtermNotify ) {
+                pbred ( "Detect Mouse 接收到退出信号 !!!" );
+                break;
+            }
+
+            checkOtherProcessNotifyEvent( fd_python, arg );
 
             if ( checkTimeout ) {
                 gettimeofday ( &timer, NULL );
                 now = (timer.tv_usec + timer.tv_sec*1e6) / 1e3;
                 if ( abs ( now-start ) > DOUBLE_CLICK_TIMEOUT ) {
-                    pred ( "超时 action asign value: NO_ACTION" );
-                    if ( !md->startSlide ) action = NO_ACTION;
+                    pred ( "超时 md->action asign value: NO_ACTION" );
+                    if ( !md->startSlide ) md->action = NO_ACTION;
                     checkTimeout = 0;
                 }
             }
@@ -257,16 +243,16 @@ void *DetectMouse(void *arg) {
                     printLock = 0;
                 }
                 slideCount++;
-                action = START_SLIDE;
+                md->action = START_SLIDE;
                 buttonPress = 0;
             }
 
             if ( md->buttonRelease ) {
                 md->buttonState = BUTTON_RELEASE;
                 md->buttonRelease = 0;
-                if ( action != DOUBLE_CLICK )
+                if ( md->action != DOUBLE_CLICK )
                     buttonPress = 0;
-                if ( action == START_SLIDE ) {
+                if ( md->action == START_SLIDE ) {
                     buttonPress = 1;
                     md->startSlide = 0;
                     printLock = 1;
@@ -281,47 +267,47 @@ void *DetectMouse(void *arg) {
 
                 pbyellow ( "Switch Action" );
 
-                switch ( action ) {
+                switch ( md->action ) {
                     case TRIBLE_CLICK:
                     case SLIDE:
                     case NO_ACTION: 
                         pbmag("~~~~~~~~~~~~~~~~Single click~~~~~~~~~~~~~~~~");
-                        action = SINGLE_CLICK;
-                        shmaddr_selection[0] = '0';
-                        if ( slideCount > 16 || slideCount == 1 ) destroyIcon = 1;
+                        md->action = SINGLE_CLICK;
+                        sd->shmaddr_selection[0] = '0';
+                        if ( slideCount > 16 || slideCount == 1 ) md->destroyIcon = 1;
                         else {
                             pbyellow("^^^^^^ 忽略两次单击中的轻微滑动，视为双击^^^^^^");
-                            action = DOUBLE_CLICK;
-                            notify ( fd_python, cd );
+                            md->action = DOUBLE_CLICK;
+                            notify ( fd_python, arg );
                         }
                         slideCount = 1;
                         break;
                     case SINGLE_CLICK:
                         pbmag("~~~~~~~~~~~~~~~~Double click~~~~~~~~~~~~~~~~");
-                        action = DOUBLE_CLICK;
+                        md->action = DOUBLE_CLICK;
                         md->previousx = md->pointerx;
                         md->previousy = md->pointery;
-                        notify ( fd_python, cd );
+                        notify ( fd_python, arg );
                         break;
                     case DOUBLE_CLICK:
                         pbmag("~~~~~~~~~~~~~~~~Trible click~~~~~~~~~~~~~~~~");
                         if ( abs(md->pointerx-md->previousx) > 10 
                                 || abs ( md->pointery-md->previousy ) > 10 ){
-                            action = SINGLE_CLICK;
-                            destroyIcon = 1;
+                            md->action = SINGLE_CLICK;
+                            md->destroyIcon = 1;
                             break;
                         }
-                        action = TRIBLE_CLICK;
-                        notify ( fd_python, cd );
+                        md->action = TRIBLE_CLICK;
+                        notify ( fd_python, arg );
                         break;
                     case START_SLIDE:
-                        action = SLIDE;
+                        md->action = SLIDE;
                         pbmag ( ">>>>>>>>>>>>>>>>> SLIDE <<<<<<<<<<<<<<<<<<<<<<" );
-                        notify ( fd_python, cd );
+                        notify ( fd_python, arg );
                         break;
 
                     default:
-                        pred ( "Unknow action" );
+                        pred ( "Unknow md->action" );
                         break;
                 }
             }
@@ -363,7 +349,7 @@ void *DetectMouse(void *arg) {
         exit(1);
     }
 
-    if ( pid_bing == 0 ) {
+    if ( sid->pid_bing == 0 ) {
 
         close(fd_baidu[1]); /*关闭写端口*/
 
@@ -388,7 +374,7 @@ void *DetectMouse(void *arg) {
 
     }
 
-    if ( pid_mysql == 0 ) {
+    if ( sid->pid_mysql == 0 ) {
 
         close(fd_mysql[1]); /*关闭写端口*/
 

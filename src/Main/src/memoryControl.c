@@ -3,19 +3,13 @@
 #include "cleanup.h"
 #include <assert.h>
 
-extern char audioOnline_en[512];
-extern char audioOnline_am[512];
-
-extern char audioOffline_en[512];
-extern char audioOffline_am[512];
-
 /* 初始化离线翻译结果存储空间*/
-void initMemoryMysql() {
+void initMemoryMysql ( char ***mysql_result ) {
 
     if (mysql_result[0] != NULL)
         return;
 
-    for (int i=0; i<MYSQLSIZE; i++) {
+    for (int i=0; i<MYSQL_SIZE; i++) {
 
         if ( i == 2  || i == 3 ) {
 
@@ -31,16 +25,16 @@ void initMemoryMysql() {
         mysql_result[i] = calloc(1, sizeof ( char* ) );
         assert(mysql_result[i] != NULL);
 
-        mysql_result[i][0] = calloc ( SHMSIZE / MYSQLSIZE, sizeof(char) );
+        mysql_result[i][0] = calloc ( SHMSIZE / MYSQL_SIZE, sizeof(char) );
         assert(mysql_result[i][0] != NULL);
     }
 }
 
-void releaseMemoryMysql() {
+void releaseMemoryMysql ( char ***mysql_result ) {
 
     /* 释放翻译结果存储空间 <Mysql>*/
     if ( mysql_result[0] != NULL)
-        for (int i=0; i<MYSQLSIZE; i++) {
+        for (int i=0; i<MYSQL_SIZE; i++) {
 
             if ( i == 2 || i == 3 ) {
                 for ( int j=0; j<ZH_EN_TRAN_SIZE; j++ )
@@ -58,146 +52,149 @@ void releaseMemoryMysql() {
         }
 }
 
-void initMemoryTmp() {
+void initMemoryTmp ( char **tmp ) {
 
-    if (tmp != NULL)
-        return;
+    pbmag ( "初始化翻译结果临时存储空间" );
 
-    tmp = calloc ( SHMSIZE , sizeof(char) );
+    if ( *tmp != NULL) return;
+
+    *tmp = calloc ( SHMSIZE , sizeof(char) );
+
+    if ( *tmp )
+        pbmag ( "翻译结果临时存储空间 初始化成功!" );
 }
 
-void releaseMemoryTmp() {
+void releaseMemoryTmp ( char *tmp ) {
 
     /* 临时缓冲区释放*/
     if ( tmp != NULL )
         free ( tmp );
 }
 
-void releaseMemoryBaidu() {
+void releaseMemoryBing ( char ***bing_result ) {
 
     /* 释放翻译结果存储空间 <Mysql>*/
-    if ( baidu_result[0] != NULL)
-        for (int i=0; i<MYSQLSIZE; i++) {
+    if ( bing_result[0] != NULL)
+        for (int i=0; i<MYSQL_SIZE; i++) {
 
             if ( i == 2 || i == 3 ) {
                 for ( int j=0; j<ZH_EN_TRAN_SIZE; j++ )
-                    if ( baidu_result[i][j] ) 
-                        free ( baidu_result[i][j] );
+                    if ( bing_result[i][j] ) 
+                        free ( bing_result[i][j] );
             }
             else {
 
-                if ( baidu_result[i][0] )
-                    free ( baidu_result[i][0] );
+                if ( bing_result[i][0] )
+                    free ( bing_result[i][0] );
             }
 
-            if ( baidu_result[i] )
-                free ( baidu_result[i] );
+            if ( bing_result[i] )
+                free ( bing_result[i] );
         }
 }
 
 /* 初始化百度翻译结果存储空间*/
-void initMemoryBaidu() {
+void initMemoryBing ( char ***bing_result ) {
 
-    if (baidu_result[0] != NULL)
+    if (bing_result[0] != NULL)
         return;
 
-    for (int i=0; i<BAIDUSIZE; i++) {
+    for (int i=0; i<BING_SIZE; i++) {
 
         if ( i == 2  || i == 3 ) {
 
-            baidu_result[i] = calloc(ZH_EN_TRAN_SIZE, sizeof ( char* ) );
-            assert(baidu_result[i] != NULL);
+            bing_result[i] = calloc(ZH_EN_TRAN_SIZE, sizeof ( char* ) );
+            assert(bing_result[i] != NULL);
 
             for ( int j=0; j<ZH_EN_TRAN_SIZE; j++ ) {
-                baidu_result[i][j] = calloc ( PER_SENTENCE_SIZE, sizeof(char) );
-                assert(baidu_result[i][j] != NULL);
+                bing_result[i][j] = calloc ( PER_SENTENCE_SIZE, sizeof(char) );
+                assert(bing_result[i][j] != NULL);
             }
             continue;
         }
-        baidu_result[i] = calloc(1, sizeof ( char* ) );
-        assert(baidu_result[i] != NULL);
+        bing_result[i] = calloc(1, sizeof ( char* ) );
+        assert(bing_result[i] != NULL);
 
-        baidu_result[i][0] = calloc ( SHMSIZE / BAIDUSIZE, sizeof(char) );
-        assert(baidu_result[i][0] != NULL);
+        bing_result[i][0] = calloc ( SHMSIZE / BING_SIZE, sizeof(char) );
+        assert(bing_result[i][0] != NULL);
     }
 
 }
 
 /* 类上*/
-void initMemoryGoogle() {
+void initMemoryGoogle ( char **google_result ) {
 
     if (google_result[0] != NULL)
         return;
 
-    for (int i=0; i<GOOGLESIZE; i++) {
+    for (int i=0; i<GOOGLE_SIZE; i++) {
 
-        google_result[i] = calloc(SHMSIZE / GOOGLESIZE, sizeof ( char ) );
+        google_result[i] = calloc(SHMSIZE / GOOGLE_SIZE, sizeof ( char ) );
         if (google_result[i] == NULL)
             err_exit("Error occured when calloc memory in initMemoryGoogle");
     }
 }
 
-void releaseMemoryGoogle() {
+void releaseMemoryGoogle ( char **google_result ) {
 
     /* 释放翻译结果存储空间 <Google>*/
     if ( google_result[0] != NULL)
-        for (int i=0; i<GOOGLESIZE; i++)
+        for (int i=0; i<GOOGLE_SIZE; i++)
             free(google_result[i]);
 }
 
-void clearBaiduMysqlResultMemory() {
+void clearBingMysqlResultMemory ( char ***bing_result, char ***mysql_result ) {
 
-    if ( ! baidu_result[0] )
+    if ( ! bing_result[0] )
         return;
 
-    for ( int i=0; i<BAIDUSIZE; i++ ) {
+    for ( int i=0; i<BING_SIZE; i++ ) {
         if ( i == 2 || i == 3 ) {
             for ( int j=0; j<ZH_EN_TRAN_SIZE; j++ ) {
-                if ( baidu_result[i] && baidu_result[i][j] )
-                    memset ( baidu_result[i][j], '\0',  PER_SENTENCE_SIZE );
+                if ( bing_result[i] && bing_result[i][j] )
+                    memset ( bing_result[i][j], '\0',  PER_SENTENCE_SIZE );
                 if ( mysql_result[i] && mysql_result[i][j] )
                     memset ( mysql_result[i][j], '\0',  PER_SENTENCE_SIZE );
             }
         }
         else {
-            if ( baidu_result[i] && baidu_result[i][0] ) {
-                memset ( baidu_result[i][0], '\0', SHMSIZE / BAIDUSIZE );
+            if ( bing_result[i] && bing_result[i][0] ) {
+                memset ( bing_result[i][0], '\0', SHMSIZE / BING_SIZE );
             }
             if ( mysql_result[i] && mysql_result[i][0] ) {
 
-                memset ( mysql_result[i][0], '\0', SHMSIZE / MYSQLSIZE );
+                memset ( mysql_result[i][0], '\0', SHMSIZE / MYSQL_SIZE );
             }
         }
     }
 }
 
-void clearMemory () {
+void clearMemory ( void *data ) {
 
-    if ( tmp ) {
-        memset ( tmp, '0', 10 );
-        memset ( &tmp[10], '\0', SHMSIZE-10);
+    Arg *arg = data;
+    ShmData *sd = arg->sd;
+    MemoryData *med = arg->med;
+
+    if ( med->tmp ) {
+        memset ( med->tmp, '0', 10 );
+        memset ( &med->tmp[10], '\0', SHMSIZE-10);
     }
 
     /* 标志位空间用字符0填充*/
-    memset(shmaddr_baidu, '0', 10);
-    memset(shmaddr_mysql, '0', 10);
-    memset(shmaddr_pic, '0', 10);
-    memset(shmaddr_keyboard, '0', 10);
-    memset(shmaddr_google, '0', 10);
+    memset(sd->shmaddr_bing, '0', 10);
+    memset(sd->shmaddr_mysql, '0', 10);
+    memset(sd->shmaddr_pic, '0', 10);
+    memset(sd->shmaddr_keyboard, '0', 10);
+    memset(sd->shmaddr_google, '0', 10);
 
-    memset(&shmaddr_google[10], '\0', SHMSIZE-10);
-    memset(&shmaddr_baidu[10], '\0', SHMSIZE-10);
-    memset(&shmaddr_mysql[10], '\0', SHMSIZE-10);
-    memset(&shmaddr_pic[10], '\0', SHMSIZE-10);
+    memset(&sd->shmaddr_google[10], '\0', SHMSIZE-10);
+    memset(&sd->shmaddr_bing[10], '\0', SHMSIZE-10);
+    memset(&sd->shmaddr_mysql[10], '\0', SHMSIZE-10);
+    memset(&sd->shmaddr_pic[10], '\0', SHMSIZE-10);
 
-    memset ( AUDIO_EN(ONLINE), '\0', 512 );
-    memset ( AUDIO_AM(ONLINE), '\0', 512 );
-    memset ( AUDIO_EN(OFFLINE), '\0', 512 );
-    memset ( AUDIO_AM(OFFLINE), '\0', 512 );
+    clearBingMysqlResultMemory ( med->bing_result, med->mysql_result );
 
-    clearBaiduMysqlResultMemory();
-
-    for ( int i=0; i<GOOGLESIZE; i++ )
-        if ( google_result[i] != NULL)
-            memset( google_result[i], '\0', SHMSIZE / GOOGLESIZE );
+    for ( int i=0; i<GOOGLE_SIZE; i++ )
+        if ( med->google_result[i] != NULL)
+            memset( med->google_result[i], '\0', SHMSIZE / GOOGLE_SIZE );
 }

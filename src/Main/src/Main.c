@@ -1,34 +1,31 @@
 #include "common.h"
 #include "cleanup.h"
 #include "quickSearch.h"
+#include "windowData.h"
+#include "shmData.h"
 
-static pid_t quickSearchProcess_pid = 0;
+static volatile sig_atomic_t *sigterm_variable_pointer = NULL;
 
-volatile sig_atomic_t SIGTERM_NOTIFY = 0;
-extern pid_t pid_mysql;
-extern pid_t pid_mysql;
-extern pid_t pid_google;
-extern pid_t pid_bing;
-extern pid_t pid_tranpic;
-extern pid_t pid_selection;
+static Arg *arg_global = NULL;
+static ShmIdData *sid_global = NULL;
 
 static void readChild() {
 
     pid_t pid;
     while ( ( pid = waitpid ( -getpid(), NULL, WNOHANG ) ) > 0 ) {
-        if ( pid == pid_mysql ) 
+        if ( pid == sid_global->pid_mysql ) 
         {
             pbmag ( "fetchDict exit" );
         }
         else if (
-                pid == pid_selection ||
-                pid == pid_bing      ||
-                pid == pid_google    ||
-                pid == pid_tranpic   ) 
+                pid == sid_global->pid_selection ||
+                pid == sid_global->pid_bing      ||
+                pid == sid_global->pid_google    ||
+                pid == sid_global->pid_tranpic   ) 
         {
 
-            pbred ( "Our child process exit" );
-            SIGTERM_NOTIFY = 1;
+            pbred ( "---------- Our child process exit !!!! --------------" );
+            *sigterm_variable_pointer = 1;
         }
         else
         {
@@ -38,12 +35,35 @@ static void readChild() {
 }
 
 static void sigterm() {
-    SIGTERM_NOTIFY = 1;
-    quit();
+
+    *sigterm_variable_pointer = 1;
+    quit ( arg_global );
 }
 
 int main(int argc, char **argv)
 {
+    Arg arg;
+    ConfigData cd;
+    CommunicationData md;
+    ShmData sd;
+    ShmIdData sid;
+    MemoryData med;
+
+    memset ( (void*)&cd, 0, sizeof(cd) );
+    memset ( (void*)&md, 0, sizeof(md) );
+    memset ( (void*)&sd, 0, sizeof(sd) );
+    memset ( (void*)&sid, 0, sizeof(sid) );
+    memset ( (void*)&med, '\0', sizeof(med) );
+
+    arg.cd = &cd;
+    arg.md = &md;
+    arg.sd = &sd;
+    arg.sid = &sid;
+    arg.med = &med;
+
+    sigterm_variable_pointer = &(md.sigtermNotify);
+    arg_global = &arg;
+    sid_global = &sid;
 
     setpgid ( getpid(), getpid() );
 
@@ -58,7 +78,7 @@ int main(int argc, char **argv)
     void (*quickSearchProcess)(void);
     quickSearchProcess = quickSearch;
 
-    void (*tranSelectProcess)(void);
+    void (*tranSelectProcess)( Arg* );
     tranSelectProcess = tranSelect;
 
     /* 由于是多线程，程序接收到SIGTERM信号只会发给其中
@@ -91,8 +111,7 @@ int main(int argc, char **argv)
             perror("sigaction");
             exit(1);
         }
-        quickSearchProcess_pid = pid;
-        tranSelectProcess();
+        tranSelectProcess ( &arg );
     }
     else {
 

@@ -15,30 +15,17 @@
 #include "detectMouse.h"
 #include "cleanup.h"
 #include "printWithColor.h"
-
-char *text = NULL;
-char *previousText = NULL;
-
-volatile sig_atomic_t CanNewEntrance = 0;
-volatile sig_atomic_t destroyIcon = 0;
-
-extern char *shmaddr_google;
-extern char *shmaddr_baidu;
-extern char *shmaddr_selection;
-extern char *shmaddr_keyboard;
-extern volatile sig_atomic_t action;
-extern volatile sig_atomic_t InNewWin;
-
-extern volatile sig_atomic_t HadDestroied;
+#include "windowData.h"
 
 enum {
-
     CONTINUE,
     RETURN,
 };
 
-int waitForSelectionChangedEvent ( ) {
+int waitForSelectionChangedEvent ( Arg *arg ) {
 
+    CommunicationData *md = arg->md;
+    ShmData *sd = arg->sd;
     struct timeval tv;
     int timeout = 600;
     double now = 0;
@@ -49,11 +36,11 @@ int waitForSelectionChangedEvent ( ) {
     double start =  ( tv.tv_sec*1e6 + tv.tv_usec ) / 1e3; /* ms*/
 
     /* 等待剪贴板变化事件，超时直接返回*/
-    while ( shmaddr_selection[0] != '1' ) {
+    while ( sd->shmaddr_selection[0] != '1' ) {
         gettimeofday( &tv, NULL );
         now = (tv.tv_sec*1e6+tv.tv_usec)/1e3;
         if ( abs ( start - now ) > timeout )  {
-            if ( action == TRIBLE_CLICK ) return CONTINUE;
+            if ( md->action == TRIBLE_CLICK ) return CONTINUE;
             pbred ( "剪贴板检测超时" );
             return RETURN;
         }
@@ -62,36 +49,41 @@ int waitForSelectionChangedEvent ( ) {
     return -1;
 }
 
-void notify ( int fd[3], ConfigData *cd ) {
+void notify ( int fd[3], Arg *arg ) {
 
     FILE *fp = NULL;
 
+    ConfigData *cd = arg->cd;
+    CommunicationData *md = arg->md;
+    ShmData *sd = arg->sd;
+    MemoryData *med = arg->med;
+
     /* 禁止套娃*/
-    if ( InNewWin ) {
+    if ( md->inNewWin ) {
         pbred ( "Notify: window already opened, return." );
-        pbred ( "Flag: InNewWin=%d shmaddr_keyboard:%c",
-                InNewWin, shmaddr_keyboard[WINDOW_OPENED_FLAG] );
+        pbred ( "Flag: inNewWin=%d shmaddr_keyboard:%c",
+                md->inNewWin, sd->shmaddr_keyboard[WINDOW_OPENED_FLAG] );
         return;
     }
 
     char appName[100];
     int go = 0;
 
-    switch ( waitForSelectionChangedEvent() ) {
+    switch ( waitForSelectionChangedEvent( arg ) ) {
         case RETURN: return;
         case CONTINUE: break;
         default: break;
     }
 
-    if ( shmaddr_selection[0] == '1') {
+    if ( sd->shmaddr_selection[0] == '1') {
         pbgreen ( "剪贴板已发生变化" );
-        shmaddr_selection[0] = '0';
+        sd->shmaddr_selection[0] = '0';
         go = 1;
     }
 
-    if ( ! go && !(action==TRIBLE_CLICK)) {
+    if ( ! go && !(md->action==TRIBLE_CLICK)) {
         pred ( "剪贴板未变化, 返回" );
-        CanNewEntrance = 0;
+        md->canNewEntrance = 0;
         return;
     }
 
@@ -120,49 +112,43 @@ void notify ( int fd[3], ConfigData *cd ) {
         return;
     }
 
-    if ( text == NULL )
-        text = calloc(TEXTSIZE, 1);
-
-    if ( previousText == NULL )
-        previousText = calloc(TEXTSIZE, 1);
-
-    memset(text, 0, TEXTSIZE);
+    memset(med->text, 0, TEXTSIZE);
 
     /* FIXME:剪贴板标志位可能已经被置位，可能影响到下一次
      * 检测的正确性.*/
-    if ( cd->buttonPress ) {
+    if ( md->buttonPress ) {
         pbmag ( "处理双击时检测到三击事件" );
-        cd->buttonPress = 0;
-        pbmag ( "Button Press: %d", cd->buttonPress );
-        if ( abs(cd->pointerx-cd->previousx) > 10 
-                || abs ( cd->pointery-cd->previousy ) > 10 ){
-            action = SINGLE_CLICK;
-            if ( !HadDestroied ) destroyIcon = 1;
+        md->buttonPress = 0;
+        pbmag ( "Button Press: %d", md->buttonPress );
+        if ( abs(md->pointerx-md->previousx) > 10 
+                || abs ( md->pointery-md->previousy ) > 10 ){
+            md->action = SINGLE_CLICK;
+            if ( md->iconShowing ) md->destroyIcon = 1;
             return;
         }
     }
 
-    if ( getClipboard(text) || isEmpty(text)) {
-        printf("Not copy event or empty text\n");
-        previousText[0] = '\0';
-        CanNewEntrance = 0;
+    if ( getClipboard(med->text) || isEmpty(med->text)) {
+        printf("Not copy event or empty med->text\n");
+        med->previousText[0] = '\0';
+        md->canNewEntrance = 0;
         return ;
     }
 
-    char *p = text;
+    char *p = med->text;
     if ( cd->ignoreChinese && ((*p>>6)&0x03) == 3 ) {
         pbcyan ( "非Ascii码. 忽略取词. 返回" );
         return;
     }
 
-    adjustSrcText ( text );
+    adjustSrcText ( med->text );
 
-    if ( action == TRIBLE_CLICK ) {
-        pyellow ( "text:%s<", text );
-        pyellow ( "previousText:%s<", previousText );
-        if ( strcmp ( text, previousText ) == 0 ) {
+    if ( md->action == TRIBLE_CLICK ) {
+        pyellow ( "med->text:%s<", med->text );
+        pyellow ( "med->previousText:%s<", med->previousText );
+        if ( strcmp ( med->text, med->previousText ) == 0 ) {
             pmag ( "三击获取到的文本与上次相同，关闭弹出图标" );
-            if ( !HadDestroied ) destroyIcon = 1;
+            if ( md->iconShowing ) md->destroyIcon = 1;
             return;
         }
     }
@@ -170,26 +156,30 @@ void notify ( int fd[3], ConfigData *cd ) {
     /* 只能减小结果获取错误的概率，如果两边翻译都不够快，清零发生在百度谷歌翻译写1之前，
      * 这句是没有意义的，之后点开翻译结果界面获取到的就会有上一次点击文本的内容，不过
      * 一般按切换按钮后是可以重新加载出想要的结果的*/
-    memset(shmaddr_google, '0', 10);
-    memset(shmaddr_baidu, '0', 10);
+    memset(sd->shmaddr_google, '0', 10);
+    memset(sd->shmaddr_bing, '0', 10);
 
-    writePipe(text, fd[0]);
-    writePipe(text, fd[1]);
-    writePipe(text, fd[2]);
+    writePipe(med->text, fd[0]);
+    writePipe(med->text, fd[1]);
+    writePipe(med->text, fd[2]);
 
-    if ( HadDestroied ) {
-        CanNewEntrance = 1;
-        destroyIcon = 0;
+    if ( !md->iconShowing ) {
+        md->canNewEntrance = 1;
+        md->destroyIcon = 0;
+    }
+    else
+    {
+        pbred ( "----- 图标未销毁 ----- 不能重复启动 ---- " );
     }
 
-    strcpy ( previousText, text );
+    strcpy ( med->previousText, med->text );
 
-    pbmag ( "Return from notify. Button Press: %d", cd->buttonPress );
+    pbmag ( "Return from notify. Button Press: %d", md->buttonPress );
 
-    if ( cd->buttonPress ) {
-        cd->buttonPress = 0;
+    if ( md->buttonPress ) {
+        md->buttonPress = 0;
         pbmag ( "Button Press 再次置零" );
-        shmaddr_selection[0] = '0';
+        sd->shmaddr_selection[0] = '0';
     }
 }
 

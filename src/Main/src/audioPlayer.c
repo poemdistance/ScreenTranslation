@@ -5,27 +5,23 @@
 #include "audio.h"
 #include "expanduser.h"
 
-extern char audioOnline_en[512];
-extern char audioOnline_am[512];
-
-extern char audioOffline_en[512];
-extern char audioOffline_am[512];
-
 char *getAudioSrcByButton ( GtkWidget *button, int *type, WinData *wd ) {
+
+    AudioData *ad = wd->ad;
 
     static int source = -1;
     char *notEmptyEnSrc = NULL;
     char *notEmptyAmSrc = NULL;
 
-    if ( strlen ( audioOffline_am )+strlen(audioOnline_en)
+    if ( strlen ( ad->audioOffline_am )+strlen(ad->audioOnline_en)
             && ( (*type=OFFLINE) || 1 ) )  {
-        notEmptyAmSrc = audioOffline_am;
-        notEmptyEnSrc = audioOffline_en;
+        notEmptyAmSrc = ad->audioOffline_am;
+        notEmptyEnSrc = ad->audioOffline_en;
     }
-    else if ( strlen ( audioOnline_am ) + strlen(audioOnline_am)
+    else if ( strlen ( ad->audioOnline_am ) + strlen(ad->audioOnline_am)
             && ( (*type=ONLINE) || 1 )) {
-        notEmptyAmSrc = audioOnline_am;
-        notEmptyEnSrc = audioOnline_en;
+        notEmptyAmSrc = ad->audioOnline_am;
+        notEmptyEnSrc = ad->audioOnline_en;
     }
 
 
@@ -34,20 +30,20 @@ char *getAudioSrcByButton ( GtkWidget *button, int *type, WinData *wd ) {
         if ( wd->who == GOOGLE ) return notEmptyAmSrc;
 
         *type = ONLINE;
-        if ( wd->who == BAIDU ) return audioOnline_am;
+        if ( wd->who == BING ) return ad->audioOnline_am;
 
         *type = OFFLINE;
-        if ( wd->who == MYSQL ) return audioOffline_am;
+        if ( wd->who == MYSQL ) return ad->audioOffline_am;
     }
     else if ( button == wd->audio_button_en ) {
 
         if ( wd->who == GOOGLE ) return notEmptyEnSrc;
 
         *type = ONLINE;
-        if ( wd->who == BAIDU ) return audioOnline_en;
+        if ( wd->who == BING ) return ad->audioOnline_en;
 
         *type = OFFLINE;
-        if ( wd->who == MYSQL ) return audioOffline_en;
+        if ( wd->who == MYSQL ) return ad->audioOffline_en;
     }
 
     source = ~ source;

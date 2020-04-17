@@ -3,21 +3,6 @@
 #include "newWindow.h"
 #include "memoryControl.h"
 
-extern char *shmaddr_selection;
-extern char *shmaddr_searchWin;
-
-extern int shmid_google;
-extern int shmid_baidu;
-extern int shmid_selection;
-extern int shmid_searchWin;
-extern int shmid_keyboard;
-extern int shmid_mysql;
-extern int shmid_pic;
-extern int shmid_setting;
-
-extern char *text;
-extern char *previousText;
-
 static int hadCleanUp = 0;
 
 void releaseSharedMemory( char *addr, int shmid, char *comment ) {
@@ -31,7 +16,10 @@ void releaseSharedMemory( char *addr, int shmid, char *comment ) {
         pbgreen("remove shared memory identifier successful (%s)", comment);
 }
 
-void quit() {
+void quit ( Arg *arg ) {
+
+    ShmData *sd = arg->sd;
+    MemoryData *med = arg->med;
 
     if ( hadCleanUp ) return;
 
@@ -39,24 +27,26 @@ void quit() {
 
     pbgreen ( "启动清理程序: %d", getpid() );
 
-    if ( text != NULL )
-        free(text);
+    if ( med->text != NULL )
+        free(med->text);
 
-    if ( previousText != NULL )
-        free(previousText);
+    if ( med->previousText != NULL )
+        free(med->previousText);
 
     /* FIXME:有时候共享内存会清理不成功*/
-    releaseSharedMemory(shmaddr_google, shmid_google, "google");
-    releaseSharedMemory(shmaddr_baidu, shmid_baidu, "baidu");
-    releaseSharedMemory(shmaddr_selection, shmid_selection, "selection");
-    releaseSharedMemory(shmaddr_searchWin, shmid_searchWin, "searchWin");
-    releaseSharedMemory(shmaddr_keyboard, shmid_keyboard, "keyboard");
-    releaseSharedMemory(shmaddr_mysql, shmid_mysql, "mysql");
-    releaseSharedMemory(shmaddr_pic, shmid_pic, "pic");
-    releaseSharedMemory(shmaddr_setting, shmid_setting, "setting");
+    releaseSharedMemory(sd->shmaddr_google, sd->shmid_google, "google");
+    releaseSharedMemory(sd->shmaddr_bing, sd->shmid_bing, "baidu");
+    releaseSharedMemory(sd->shmaddr_selection, sd->shmid_selection, "selection");
+    releaseSharedMemory(sd->shmaddr_searchWin, sd->shmid_searchWin, "searchWin");
+    releaseSharedMemory(sd->shmaddr_keyboard, sd->shmid_keyboard, "keyboard");
+    releaseSharedMemory(sd->shmaddr_mysql, sd->shmid_mysql, "mysql");
+    releaseSharedMemory(sd->shmaddr_pic, sd->shmid_pic, "pic");
+    releaseSharedMemory(sd->shmaddr_setting, sd->shmid_setting, "setting");
 
-    releaseMemoryGoogle();
-    releaseMemoryMysql();
-    releaseMemoryTmp();
-    releaseLink();
+    releaseMemoryGoogle ( med->google_result );
+    releaseMemoryMysql ( med->mysql_result );
+    releaseMemoryBing ( med->bing_result );
+    releaseMemoryTmp ( med->tmp );
+
+    releaseLink ();
 }

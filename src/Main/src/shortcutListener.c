@@ -35,8 +35,6 @@ extern int numlock_mask;
 extern int scrolllock_mask;
 extern int capslock_mask;
 
-extern volatile sig_atomic_t SIGTERM_NOTIFY;
-
 static char shortcutName[MAX_SHORTCUT_NUM][SHORTCUT_CONTENT_LEN] = { '\0' };
 static char shortcutValue[MAX_SHORTCUT_NUM][SHORTCUT_CONTENT_LEN] = { '\0' };
 
@@ -45,7 +43,7 @@ static char *shmaddr_keyboard = NULL;
 static char *shmaddr_setting = NULL;
 static XRecordContext  rc;
 static XRecordRange  *rr;
-CommunicationData *md = NULL;
+static CommunicationData *md = NULL;
 
 
 /* for this struct, refer to libxnee */
@@ -62,8 +60,8 @@ typedef union {
  * FIXME: We need define a private struct for callback function,
  * to store cur_x, cur_y, data_display, ctrl_display etc.
  */
-Display *data_display = NULL;
-Display *ctrl_display = NULL;
+static Display *data_display = NULL;
+static Display *ctrl_display = NULL;
 
 char *getShortcutName ( char *shortcut ) {
 
@@ -234,11 +232,11 @@ void event_callback(XPointer priv, XRecordInterceptData *hook )
 
     XRecordFreeData (hook);
 
-    if ( SIGTERM_NOTIFY )
+    if ( md->sigtermNotify )
         XRecordDisableContext (ctrl_display, rc);
 }
 
-void initSharedMemory() {
+void initSharedMemory ( Arg *arg ) {
 
     shmaddr_pic = NULL;
     shmaddr_keyboard = NULL;
@@ -248,7 +246,7 @@ void initSharedMemory() {
     shared_memory_for_setting ( &shmaddr_setting );
     if ( ! shmaddr_pic || ! shmaddr_keyboard || !shmaddr_setting) {
         pred ( "Got shared memory failed in shortcutListener!!!" );
-        quit();
+        quit ( arg );
     }
 
     pbcyan ( "Get shared memory address successful" );
@@ -259,7 +257,8 @@ void initSharedMemory() {
 
 void *listenShortcut ( void *data )
 {
-    md = ((Arg*)data)->md;
+    Arg *arg = (Arg*)data;
+    md = arg->md;
 
     md->startSlide = 0;
     md->buttonPress = 0;
@@ -300,7 +299,7 @@ void *listenShortcut ( void *data )
     }
 
 
-    initSharedMemory();
+    initSharedMemory ( arg );
     readFromConfigByKeyword ( shortcutValue, "Shortcut" );
     readNameByKeyword ( shortcutName, "Shortcut" );
 
