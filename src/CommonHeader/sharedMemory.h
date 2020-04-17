@@ -10,7 +10,7 @@
 
 
 int shared_memory_for_google_translate(char **addr);
-int shared_memory_for_baidu_translate(char **addr);
+int shared_memory_for_bing_translate(char **addr);
 int shared_memory_for_selection(char **addr);
 int shared_memory_for_mysql(char **addr);
 int shared_memory_for_pic(char **addr);

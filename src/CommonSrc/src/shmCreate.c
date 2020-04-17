@@ -61,7 +61,7 @@ int shared_memory_for_google_translate(char **addr) {
 }
 
 
-int shared_memory_for_baidu_translate(char **addr) {
+int shared_memory_for_bing_translate(char **addr) {
 
     return shared_memory_new ( addr, PROJECTID2, SHMSIZE, "baidu" );
 }
