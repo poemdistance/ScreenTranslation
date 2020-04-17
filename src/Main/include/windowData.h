@@ -39,6 +39,7 @@ typedef struct {
     volatile int buttonRelease;
     volatile int startSlide;
     int recallPreviousFlag;
+    int tranPicAction;
 
     volatile sig_atomic_t action;
     volatile sig_atomic_t inNewWin;
