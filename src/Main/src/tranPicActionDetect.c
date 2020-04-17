@@ -66,6 +66,7 @@ int detectTranPicAction () {
                 printf("启动区域截图\n");
                 system("gnome-screenshot -a -B -f /home/$USER/.stran/pic/1.png");
                 shmaddr_pic[1] = CLEAR;
+                shmaddr_pic[2] = SCREEN_SHOT;
             }
 
             if ( SIGTERM_SIGNAL ) break;
