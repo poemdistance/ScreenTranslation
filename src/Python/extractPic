@@ -28,13 +28,12 @@ class PicUtils(object):
         try:
             while True:
                 time.sleep(0.2);
-                with os.scandir(absDir) as entries:
-                    for entry in entries :
-                        if entry.is_file():
-                            attrs = entry.stat()
-                            if attrs.st_mtime > inTime:
-                                print('\nFound new file, ', end='')
-                                return absDir+entry.name
+                for entry in os.scandir(absDir):
+                    if entry.is_file():
+                        attrs = entry.stat()
+                        if attrs.st_mtime > inTime:
+                            print('\nFound new file, ', end='')
+                            return absDir+entry.name
 
         except FileNotFoundError as err:
             print(str(err))
