@@ -34,7 +34,6 @@
 
 #include "printWithColor.h"
 #include "sharedMemory.h"
-
 #include "memoryControl.h"
 
 #define TEXTSIZE (1024*1024)
@@ -64,16 +63,16 @@ enum {
 
 #define ACTUALSTART (10)
 
-#define BAIDUSIZE (6)
-#define GOOGLESIZE (3)
-#define MYSQLSIZE (BAIDUSIZE)
+#define BING_SIZE (6)
+#define GOOGLE_SIZE (3)
+#define MYSQL_SIZE (BING_SIZE)
 #define LINE_LEN (28)
 
 #define BOTTOM_OFFSET ( 45 )
 #define RIGHT_BORDER_OFFSET ( 50 )
 #define INDICATE_OFFSET ( 80 )
 
-#define BAIDU (3)
+#define BING (3)
 #define GOOGLE (2)
 #define MYSQL (1)
 
@@ -92,7 +91,7 @@ enum {
 };
 
 void tranSelect();
-void checkSelectionChanged();
+void checkSelectionChanged ( void *arg );
 int isEmpty( char *buf );
 int detectTranPicAction ();
 
