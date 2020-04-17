@@ -2,10 +2,6 @@
 	path = google-translate
 	url = https://github.com/poemdistance/google-translate
     ignore = dirty
-[submodule "baidu-translate"]
-	path = baidu-translate
-	url = https://github.com/poemdistance/baidu-translate
-    ignore = dirty
 [submodule "bar1"]
 	branch = master
 [submodule "BingTran"]
