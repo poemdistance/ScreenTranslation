@@ -24,6 +24,8 @@ $(SHARED_LIB) : $(OBJS)
 	$(CC) $(INCLUDE_DIR) $(COMMON_HEADER) $(OBJS) -shared -o $(SHARED_LIB)
 
 $(OBJ_DIR)/%.o : ${SRC_DIR}/%.c
+	@mkdir -p $(COMMON_LIB_DIR)
+	@mkdir -p $(OBJ_DIR)
 	@echo 编译.o文件
 	$(CC) -c $(CFLAGS) $(LDLIBS) $(INCLUDE_DIR) $(COMMON_HEADER) -fPIC $< -o $@
 
