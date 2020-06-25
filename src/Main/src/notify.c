@@ -119,13 +119,17 @@ void notify ( int fd[3], Arg *arg ) {
     if ( md->buttonPress ) {
         pbmag ( "处理双击时检测到三击事件" );
         md->buttonPress = 0;
-        pbmag ( "Button Press: %d", md->buttonPress );
-        if ( abs(md->pointerx-md->previousx) > 10 
-                || abs ( md->pointery-md->previousy ) > 10 ){
-            md->action = SINGLE_CLICK;
-            if ( md->iconShowing ) md->destroyIcon = 1;
-            return;
-        }
+        pbyellow ( "%d %d", abs(md->pointerx-md->previousx), abs ( md->pointery-md->previousy ) );
+        /* if ( abs(md->pointerx-md->previousx) > 130 */ 
+        /*         || abs ( md->pointery-md->previousy ) > 130 ){ */
+        /*     md->action = SINGLE_CLICK; */
+        /*     if ( md->iconShowing ) { */
+        /*         pbyellow ( "md->destroyIcon = 1" ); */
+        /*         md->destroyIcon = 1; */
+        /*     } */
+        /*     pbyellow ( "Return from notify in line 130" ); */
+        /*     return; */
+        /* } */
     }
 
     if ( getClipboard(med->text) || isEmpty(med->text)) {
