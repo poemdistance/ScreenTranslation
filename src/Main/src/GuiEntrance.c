@@ -54,7 +54,7 @@ void *GuiEntrance(void *arg) {
         if ( md->sigtermNotify ) 
             return NULL;
 
-        usleep(500000);
+        usleep(5000);
     }
 
 
@@ -65,12 +65,14 @@ void *GuiEntrance(void *arg) {
 
     pbmag ( "Icon offset: %d %d", config->iconOffsetX, config->iconOffsetY );
 
+    pbyellow ( "标志 iconShowing = 1" );
     /*入口图标销毁标志置0，表示处于显示状态*/
     md->iconShowing = 1;
     md->canNewEntrance = 0;
 
     gtk_init(NULL, NULL);
 
+    pbyellow ( "New gui entrance window" );
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
 
@@ -87,6 +89,7 @@ void *GuiEntrance(void *arg) {
     /*TODO:添加文件存在性检测*/
     /*添加图标*/
 
+    pbyellow ( "new pixbuf from file" );
     GdkPixbuf *src = gdk_pixbuf_new_from_file(expanduser("/home/$USER/.stran/tran.png"), NULL);
     GdkPixbuf *dst = gdk_pixbuf_scale_simple(src, 30, 30, GDK_INTERP_BILINEAR);
     GtkWidget *image = gtk_image_new_from_pixbuf(dst);
@@ -110,12 +113,15 @@ void *GuiEntrance(void *arg) {
     gint cx, cy;
     gtk_window_get_position(GTK_WINDOW(window), &cx, &cy);
 
+    pbyellow ( "Move Entrance icon" );
+
     gtk_window_move(
             GTK_WINDOW(window), 
             cx+iconOffsetX, 
             cy+iconOffsetY
             );
 
+    pbyellow ( "Show all" );
     gtk_widget_show_all(window);
 
     timeout_id_1 = g_timeout_add(
@@ -173,7 +179,7 @@ int quit_test(void *arg) {
 
         if ( md->destroyIcon && !aboveWindow && !md->tranPicAction ) {
 
-            printf("GuiEntrance: 单击销毁\n");
+            pbyellow("GuiEntrance: 单击销毁 icnoshow = 0\n");
 
             clearMemory ( cd->arg );
 
@@ -208,7 +214,7 @@ int quit_entry(void *arg) {
 
     if ( button &&  window &&  md->iconShowing && !aboveWindow) {
 
-        printf("GuiEntrance: 超时销毁\n");
+        pbyellow("GuiEntrance: 超时销毁 icon show = 0\n");
 
         clearMemory ( cd->arg );
 
@@ -229,11 +235,11 @@ int quit_entry(void *arg) {
 }
 
 void leave_event() {
-    printf("Leaved window\n");
+    printf("Leaved entrance\n");
     aboveWindow = 0;
 }
 
 void enter_event() {
-    printf("Enter window\n");
+    printf("Enter entrance\n");
     aboveWindow = 1;
 }
