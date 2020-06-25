@@ -228,7 +228,8 @@ void *DetectMouse(void *arg) {
                 gettimeofday ( &timer, NULL );
                 now = (timer.tv_usec + timer.tv_sec*1e6) / 1e3;
                 if ( abs ( now-start ) > DOUBLE_CLICK_TIMEOUT ) {
-                    pred ( "超时 md->action asign value: NO_ACTION" );
+                    static int i = 0;
+                    pred ( "超时 md->action asign value: NO_ACTION");
                     if ( !md->startSlide ) md->action = NO_ACTION;
                     checkTimeout = 0;
                 }
@@ -244,19 +245,23 @@ void *DetectMouse(void *arg) {
             static int printLock = 1;
             if ( md->startSlide ) {
                 if ( printLock ) {
-                    printf("Action to start slide\n");
+                    printf("Action: start slide\n");
                     printLock = 0;
                 }
                 slideCount++;
                 md->action = START_SLIDE;
                 buttonPress = 0;
+                md->buttonPress = 0;
             }
 
             if ( md->buttonRelease ) {
                 md->buttonState = BUTTON_RELEASE;
                 md->buttonRelease = 0;
-                if ( md->action != DOUBLE_CLICK )
-                    buttonPress = 0;
+
+                /* 防止上一次双击后，再双击其他文本时第一次点击被视为关闭
+                 * 入口图标的动作，然后action被设置为SINBLE_CLICK*/
+                if ( md->action != DOUBLE_CLICK ) 
+                    buttonPress = 0; 
                 if ( md->action == START_SLIDE ) {
                     buttonPress = 1;
                     md->startSlide = 0;
