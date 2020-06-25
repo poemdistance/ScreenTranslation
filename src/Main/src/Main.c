@@ -11,6 +11,8 @@ static ShmIdData *sid_global = NULL;
 
 static void readChild() {
 
+#if 0
+
     pid_t pid;
     while ( ( pid = waitpid ( -getpid(), NULL, WNOHANG ) ) > 0 ) {
         if ( pid == sid_global->pid_mysql ) 
@@ -32,6 +34,15 @@ static void readChild() {
             pbred ( "Unknow child precess exit" );
         }
     }
+#endif
+
+#if 1
+    while ( waitpid ( sid_global->pid_selection, NULL, WNOHANG ) > 0 );
+    while ( waitpid ( sid_global->pid_bing, NULL, WNOHANG ) > 0 );
+    while ( waitpid ( sid_global->pid_google, NULL, WNOHANG ) > 0 );
+    while ( waitpid ( sid_global->pid_tranpic, NULL, WNOHANG ) > 0 );
+    while ( waitpid ( sid_global->pid_mysql, NULL, WNOHANG ) > 0 );
+#endif
 }
 
 static void sigterm() {
