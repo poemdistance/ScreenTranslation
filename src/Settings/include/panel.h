@@ -22,6 +22,8 @@ void windowPosSetting ( SettingWindowData *settingWindow );
 
 void windowPrefSetting ( SettingWindowData *swd );
 
+void mouseActionSetting ( SettingWindowData *swd );
+
 
 gboolean on_configure_event_cb ( 
         GtkWindow *window,

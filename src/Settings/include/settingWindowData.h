@@ -115,6 +115,12 @@ typedef struct ShortcutSettingWindowData {
 
 }ShortcutSettingWindowData;
 
+typedef struct MouseActionSettingWindowData {
+
+    GtkWidget *listBox;
+
+}MouseActionSettingWindowData;
+
 
 typedef struct SettingWindowData {
 
@@ -135,6 +141,7 @@ typedef struct SettingWindowData {
     IconPositionSettingWindowData *iconPositionSettingWindowData;
     WinPosSettingWindowData *winPosSettingWindowData;
     WinPrefSettingWindowData *winPrefSettingWindowData;
+    MouseActionSettingWindowData *mouseActionSettingWindowData;
 
     gint width;
     gint height;

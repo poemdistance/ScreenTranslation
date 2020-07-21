@@ -17,6 +17,7 @@ char settingItems[][128] = {
     "Icon Position",
     "Window Position",
     "Window Preferences",
+    "Mouse Action",
 };
 
 char settingItemsIcon[][128] = {
@@ -25,7 +26,7 @@ char settingItemsIcon[][128] = {
     "location",
     "window-position",
     "window-preference",
-    /* "emblem-system", */
+    "mouse-action",
 };
 
 int getListBoxItemsNum() {

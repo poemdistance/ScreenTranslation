@@ -38,6 +38,7 @@ ContentDisplayFunc contentDisplayFunc[] = {
     iconPositionSetting,
     windowPosSetting,
     windowPrefSetting,
+    mouseActionSetting,
 };
 
 ContentDisplayFunc getFuncBySelectedRow ( int row ) {
