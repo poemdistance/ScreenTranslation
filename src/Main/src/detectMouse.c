@@ -228,7 +228,6 @@ void *DetectMouse(void *arg) {
                 gettimeofday ( &timer, NULL );
                 now = (timer.tv_usec + timer.tv_sec*1e6) / 1e3;
                 if ( abs ( now-start ) > DOUBLE_CLICK_TIMEOUT ) {
-                    static int i = 0;
                     pred ( "超时 md->action asign value: NO_ACTION");
                     if ( !md->startSlide ) md->action = NO_ACTION;
                     checkTimeout = 0;
