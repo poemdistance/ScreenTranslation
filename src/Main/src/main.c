@@ -48,7 +48,7 @@ static void readChild() {
 static void sigterm() {
 
     *sigterm_variable_pointer = 1;
-    quit ( arg_global );
+     quit ( arg_global );
 }
 
 int main(int argc, char **argv)

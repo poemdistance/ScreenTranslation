@@ -159,9 +159,9 @@ void err_exit(char *buf) {
 
 char *adjustSrcText ( char *text ) {
 
-    char *p = text;
-    char *head = NULL;
-    char *p2 = NULL;
+    char *p      = text;
+    char *head   = NULL;
+    char *p2     = NULL;
 
     /* 替换回车符为空格字符*/
     while ( *p ) {

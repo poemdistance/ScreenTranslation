@@ -14,7 +14,7 @@
 
 char *expanduser ( const char *str ) {
 
-    static char result[1024] = { '\0' };
+    static char result[1024]        = { '\0' };
     static char storage[1024][1024] = { '\0' };
 
     strcpy ( result, str );

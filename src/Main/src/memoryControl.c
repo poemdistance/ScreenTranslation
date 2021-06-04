@@ -171,9 +171,9 @@ void clearBingMysqlResultMemory ( char ***bing_result, char ***mysql_result ) {
 
 void clearMemory ( void *data ) {
 
-    Arg *arg = data;
-    ShmData *sd = arg->sd;
-    MemoryData *med = arg->med;
+    Arg         *arg = data;
+    ShmData     *sd  = arg->sd;
+    MemoryData  *med = arg->med;
 
     if ( med->tmp ) {
         memset ( med->tmp, '0', 10 );
@@ -181,16 +181,16 @@ void clearMemory ( void *data ) {
     }
 
     /* 标志位空间用字符0填充*/
-    memset(sd->shmaddr_bing, '0', 10);
-    memset(sd->shmaddr_mysql, '0', 10);
-    memset(sd->shmaddr_pic, '0', 10);
-    memset(sd->shmaddr_keyboard, '0', 10);
-    memset(sd->shmaddr_google, '0', 10);
+    memset(sd->shmaddr_bing,    '0', 10);
+    memset(sd->shmaddr_mysql,   '0', 10);
+    memset(sd->shmaddr_pic,     '0', 10);
+    memset(sd->shmaddr_keyboard,'0', 10);
+    memset(sd->shmaddr_google,  '0', 10);
 
     memset(&sd->shmaddr_google[10], '\0', SHMSIZE-10);
-    memset(&sd->shmaddr_bing[10], '\0', SHMSIZE-10);
-    memset(&sd->shmaddr_mysql[10], '\0', SHMSIZE-10);
-    memset(&sd->shmaddr_pic[10], '\0', SHMSIZE-10);
+    memset(&sd->shmaddr_bing[10],   '\0', SHMSIZE-10);
+    memset(&sd->shmaddr_mysql[10],  '\0', SHMSIZE-10);
+    memset(&sd->shmaddr_pic[10],    '\0', SHMSIZE-10);
 
     clearBingMysqlResultMemory ( med->bing_result, med->mysql_result );
 

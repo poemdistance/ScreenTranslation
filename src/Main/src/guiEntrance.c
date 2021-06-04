@@ -1,4 +1,4 @@
-/*GuiEntrance.c
+/*guiEntrance.c
  * 程序功能:
  *  创建翻译入口图标*/
 
@@ -28,18 +28,19 @@ void setNewWinFlag(GtkWidget *button, ClickData *cd );
 void leave_event();
 void enter_event();
 
-void *GuiEntrance(void *arg) {
+void *guiEntrance(void *arg) {
 
-    pbblue ( "启动线程GuiEntrance" );
+    pbblue ( "启动线程guiEntrance" );
 
     /*添加超时和单击销毁图标回调函数*/
-    ClickData cd;
-    ConfigData *config = ((Arg*)arg)->cd;
-    CommunicationData *md = ((Arg*)arg)->md;
-    ShmData *sd = ((Arg*)arg)->sd;
-    cd.md = md;
-    cd.sd = sd;
-    cd.arg = arg;
+    ClickData           cd;
+    ConfigData          *config = ((Arg*)arg)->cd;
+    CommunicationData   *md     = ((Arg*)arg)->md;
+    ShmData             *sd     = ((Arg*)arg)->sd;
+
+    cd.md   = md;
+    cd.sd   = sd;
+    cd.arg  = arg;
 
     aboveWindow = 0;
 
@@ -66,9 +67,10 @@ void *GuiEntrance(void *arg) {
     pbmag ( "Icon offset: %d %d", config->iconOffsetX, config->iconOffsetY );
 
     pbyellow ( "标志 iconShowing = 1" );
+
     /*入口图标销毁标志置0，表示处于显示状态*/
-    md->iconShowing = 1;
-    md->canNewEntrance = 0;
+    md->iconShowing     = 1;
+    md->canNewEntrance  = 0;
 
     gtk_init(NULL, NULL);
 
@@ -78,26 +80,25 @@ void *GuiEntrance(void *arg) {
 
     /*设置窗口基本属性*/
     gtk_window_set_title(GTK_WINDOW(window), "");
-    gtk_window_set_default_size(GTK_WINDOW(window), 15,15);
+    gtk_window_set_default_size(GTK_WINDOW(window), 15, 15);
     gtk_window_set_deletable(GTK_WINDOW(window), FALSE); 
     gtk_window_set_type_hint(GTK_WINDOW(window), GDK_WINDOW_TYPE_HINT_TOOLBAR); 
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_MOUSE);
     gtk_window_set_decorated(GTK_WINDOW(window), FALSE); 
-    GtkWidget *button = gtk_button_new();
 
+    GtkWidget *button = gtk_button_new();
 
     /*TODO:添加文件存在性检测*/
     /*添加图标*/
 
     pbyellow ( "new pixbuf from file" );
-    GdkPixbuf *src = gdk_pixbuf_new_from_file(expanduser("/home/$USER/.stran/tran.png"), NULL);
-    GdkPixbuf *dst = gdk_pixbuf_scale_simple(src, 30, 30, GDK_INTERP_BILINEAR);
+    GdkPixbuf *src   = gdk_pixbuf_new_from_file(expanduser("/home/$USER/.stran/tran.png"), NULL);
+    GdkPixbuf *dst   = gdk_pixbuf_scale_simple(src, 30, 30, GDK_INTERP_BILINEAR);
     GtkWidget *image = gtk_image_new_from_pixbuf(dst);
 
     g_object_unref(src);
     g_object_unref(dst);
 
-    //GtkWidget *image = gtk_image_new_from_file("/home/usernamee/.stran/tran.png");
     gtk_button_set_image(GTK_BUTTON(button), image);
     gtk_container_add(GTK_CONTAINER(window), button);
     gtk_widget_set_app_paintable(window, TRUE);
@@ -132,7 +133,7 @@ void *GuiEntrance(void *arg) {
     timeout_id_2 = g_timeout_add(100, quit_test, &cd);
 
     /*连接鼠标点击事件*/
-    g_signal_connect(button, "clicked",G_CALLBACK(setNewWinFlag), &cd);
+    g_signal_connect(button, "clicked", G_CALLBACK(setNewWinFlag), &cd);
 
     /*监听鼠标进入和离开窗口事件*/
     g_signal_connect(GTK_BUTTON(button), "leave", G_CALLBACK(leave_event), NULL);
@@ -148,10 +149,11 @@ void setNewWinFlag(GtkWidget *button, ClickData *cd ) {
 
     pbmag ( "------------- 点击入口图标 -------------" );
 
-    GtkWidget *window = cd->window;
-    CommunicationData *md = cd->md;
-    md->canNewWin = 1;
-    md->iconShowing = 0;
+    GtkWidget           *window = cd->window;
+    CommunicationData   *md     = cd->md;
+    md->canNewWin               = 1;
+    md->iconShowing             = 0;
+    pbyellow("iconShowing set to zero");
 
     /*退出时注意注销超时回调函数，否则下一次创建的
      * 入口图标可能刚好创建就超时导致不显示*/
@@ -160,15 +162,16 @@ void setNewWinFlag(GtkWidget *button, ClickData *cd ) {
 
     gtk_widget_destroy(button);
     gtk_widget_destroy(window);
+
     gtk_main_quit();
 }
 
 int quit_test(void *arg) {
 
-    ClickData *cd = (ClickData*)arg;
-    CommunicationData *md = cd->md;
-    GtkWidget *button = cd->button;
-    GtkWidget *window = cd->window;
+    ClickData           *cd     = (ClickData*)arg;
+    CommunicationData   *md     = cd->md;
+    GtkWidget           *button = cd->button;
+    GtkWidget           *window = cd->window;
 
     /*入口图标已在quit_entry中销毁,返回FALSE不再调用此函数*/
     if ( !md->iconShowing )
@@ -179,20 +182,22 @@ int quit_test(void *arg) {
 
         if ( md->destroyIcon && !aboveWindow && !md->tranPicAction ) {
 
-            pbyellow("GuiEntrance: 单击销毁 icnoshow = 0\n");
+            pbyellow("guiEntrance: 单击销毁 icnoshow = 0\n");
 
             clearMemory ( cd->arg );
-
-            md->canNewWin = 0;
-            md->destroyIcon = 0;
-            md->iconShowing = 0;
 
             g_source_remove(timeout_id_1);
             g_source_remove(timeout_id_2);
 
             gtk_widget_destroy(button);
             gtk_widget_destroy(window);
+
             gtk_main_quit();
+
+            md->canNewWin   = 0;
+            md->destroyIcon = 0;
+            md->iconShowing = 0;
+            pbyellow("iconShowing set to zero");
 
             return FALSE;
         }
@@ -203,10 +208,10 @@ int quit_test(void *arg) {
 
 int quit_entry(void *arg) {
 
-    ClickData *cd = (ClickData*)arg;
-    CommunicationData *md = cd->md;
-    GtkWidget *button = cd->button;
-    GtkWidget *window = cd->window;
+    ClickData           *cd     = (ClickData*)arg;
+    CommunicationData   *md     = cd->md;
+    GtkWidget           *button = cd->button;
+    GtkWidget           *window = cd->window;
 
     /*入口图标已经在quit_test中销毁时返回FALSE不再调用*/
     if ( !md->iconShowing )
@@ -214,20 +219,23 @@ int quit_entry(void *arg) {
 
     if ( button &&  window &&  md->iconShowing && !aboveWindow) {
 
-        pbyellow("GuiEntrance: 超时销毁 icon show = 0\n");
+        pbyellow("guiEntrance: 超时销毁 icon show = 0\n");
 
         clearMemory ( cd->arg );
-
-        md->canNewWin = 0;
-        md->iconShowing = 0;
-        md->tranPicAction = 0;
-        md->destroyIcon = 0;
 
         g_source_remove(timeout_id_1);
         g_source_remove(timeout_id_2);
         gtk_widget_destroy(button);
         gtk_widget_destroy(window);
+
+        md->canNewWin     = 0;
+        md->iconShowing   = 0;
+        pbyellow("iconShowing set to zero");
+        md->tranPicAction = 0;
+        md->destroyIcon   = 0;
+
         gtk_main_quit();
+
         return FALSE;
     }
 

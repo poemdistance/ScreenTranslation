@@ -490,6 +490,7 @@ int detect_outside_click_action ( void *data ) {
             ! wd->doubleClickAction) {
 
         pbmag ( "区域外点击销毁窗口. Action=%d", md->action );
+        g_source_remove(timeout_id);
         destroyNormalWin ( NULL, wd );
         return FALSE;
     }
@@ -515,6 +516,8 @@ int focus_request(void *data) {
                 10,
                 detect_outside_click_action,
                 wd);
+
+        return FALSE;
     }
 
     return TRUE;

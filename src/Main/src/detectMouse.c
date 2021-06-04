@@ -25,9 +25,9 @@
 
 int checkOtherProcessNotifyEvent ( int fd_python[], Arg *arg ) {
 
-    CommunicationData *md = arg->md;
-    ShmData *sd = arg->sd;
-    MemoryData *med = arg->med;
+    CommunicationData   *md  = arg->md;
+    ShmData             *sd  = arg->sd;
+    MemoryData          *med = arg->med;
 
     if ( sd->shmaddr_searchWin[TEXT_SUBMIT_FLAG] == '1') {
 
@@ -97,29 +97,30 @@ int checkOtherProcessNotifyEvent ( int fd_python[], Arg *arg ) {
     return 0;
 }
 
-void *DetectMouse(void *arg) {
+void *detectMouse(void *arg) {
 
-    pbblue ( "启动线程DetectMouse" );
-    /* ConfigData *cd = ((Arg*)arg)->cd; */
-    CommunicationData *md = ((Arg*)arg)->md;
-    ShmData *sd = ((Arg*)arg)->sd;
-    ShmIdData *sid = ((Arg*)arg)->sid;
+    pbblue ( "启动线程detectMouse" );
+
+    CommunicationData   *md  = ((Arg*)arg)->md;
+    ShmData             *sd  = ((Arg*)arg)->sd;
+    ShmIdData           *sid = ((Arg*)arg)->sid;
 
     setpgid ( getpid(), getppid() );
 
-    struct timeval timer;
-    int startTimer = 0;
-    int checkTimeout = 1;
-    int slideCount = 1;
-    double start = 0;
-    double now = 0;
-    int buttonPress = 0;
+    struct  timeval      timer;
+    int     startTimer   = 0;
+    int     checkTimeout = 1;
+    int     slideCount   = 1;
+    double  start        = 0;
+    double  now          = 0;
+    int     buttonPress  = 0;
 
     int fd_google[2];
     int fd_baidu[2];
     int fd_mysql[2];
     int fd_python[3];
     int status;
+
     pid_t pid_google = -1;
 
     if ( (status = pipe(fd_google)) != 0 ) {
@@ -161,7 +162,7 @@ void *DetectMouse(void *arg) {
         if ( ( sid->pid_selection = fork() ) == -1) 
             err_exit ("Fork check_selectionEvent failed");
 
-        if ( sid->pid_selection == 0) {
+        if ( sid->pid_selection == 0 ) {
 
             pid_google = -1;
             setproctitle ( "%s", "Check Selection Changed" );
@@ -178,8 +179,8 @@ void *DetectMouse(void *arg) {
         /* In child process*/
         if ( sid->pid_mysql == 0 ) {
 
-            pid_google = -1;
-            sid->pid_mysql = 0;
+            pid_google      = -1;
+            sid->pid_mysql  = 0;
         }
     }
 
@@ -203,7 +204,7 @@ void *DetectMouse(void *arg) {
 
     if ( pid_google > 0 ) {
 
-        pbmag ( "DetectMouse main process: %d", getpid() );
+        pbmag ( "detectMouse main process: %d", getpid() );
 
         /*父进程:关闭读端口*/
         close(fd_google[0]);
@@ -228,7 +229,6 @@ void *DetectMouse(void *arg) {
                 gettimeofday ( &timer, NULL );
                 now = (timer.tv_usec + timer.tv_sec*1e6) / 1e3;
                 if ( abs ( now-start ) > DOUBLE_CLICK_TIMEOUT ) {
-                    static int i = 0;
                     pred ( "超时 md->action asign value: NO_ACTION");
                     if ( !md->startSlide ) md->action = NO_ACTION;
                     checkTimeout = 0;
@@ -241,6 +241,9 @@ void *DetectMouse(void *arg) {
                 md->buttonPress = 0;
                 buttonPress = 1;
             }
+
+            if ( md->iconShowing )
+                printf("iconShowing=%d\n", md->iconShowing);
 
             static int printLock = 1;
             if ( md->startSlide ) {

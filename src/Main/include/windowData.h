@@ -34,12 +34,12 @@ typedef struct {
     volatile int pointery;
     volatile int previousx;
     volatile int previousy;
-    int buttonState;
+    int          buttonState;
     volatile int buttonPress;
     volatile int buttonRelease;
     volatile int startSlide;
-    int recallPreviousFlag;
-    int tranPicAction;
+    int          recallPreviousFlag;
+    int          tranPicAction;
 
     volatile sig_atomic_t action;
     volatile sig_atomic_t inNewWin;

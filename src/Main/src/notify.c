@@ -25,10 +25,12 @@ enum {
 int waitForSelectionChangedEvent ( Arg *arg ) {
 
     CommunicationData *md = arg->md;
-    ShmData *sd = arg->sd;
-    struct timeval tv;
-    int timeout = 600;
-    double now = 0;
+    ShmData           *sd = arg->sd;
+
+    struct             timeval tv;
+
+    int                timeout = 600;
+    double             now     = 0;
 
     printf("Check selecttion changed event\n");
 
@@ -53,10 +55,10 @@ void notify ( int fd[3], Arg *arg ) {
 
     FILE *fp = NULL;
 
-    ConfigData *cd = arg->cd;
-    CommunicationData *md = arg->md;
-    ShmData *sd = arg->sd;
-    MemoryData *med = arg->med;
+    ConfigData          *cd  = arg->cd;
+    CommunicationData   *md  = arg->md;
+    ShmData             *sd  = arg->sd;
+    MemoryData          *med = arg->med;
 
     /* 禁止套娃*/
     if ( md->inNewWin ) {
@@ -67,11 +69,11 @@ void notify ( int fd[3], Arg *arg ) {
     }
 
     char appName[100];
-    int go = 0;
+    int  go = 0;
 
     switch ( waitForSelectionChangedEvent( arg ) ) {
-        case RETURN: return;
-        case CONTINUE: break;
+        case RETURN:    return;
+        case CONTINUE:  break;
         default: break;
     }
 
@@ -120,16 +122,6 @@ void notify ( int fd[3], Arg *arg ) {
         pbmag ( "处理双击时检测到三击事件" );
         md->buttonPress = 0;
         pbyellow ( "%d %d", abs(md->pointerx-md->previousx), abs ( md->pointery-md->previousy ) );
-        /* if ( abs(md->pointerx-md->previousx) > 130 */ 
-        /*         || abs ( md->pointery-md->previousy ) > 130 ){ */
-        /*     md->action = SINGLE_CLICK; */
-        /*     if ( md->iconShowing ) { */
-        /*         pbyellow ( "md->destroyIcon = 1" ); */
-        /*         md->destroyIcon = 1; */
-        /*     } */
-        /*     pbyellow ( "Return from notify in line 130" ); */
-        /*     return; */
-        /* } */
     }
 
     if ( getClipboard(med->text) || isEmpty(med->text)) {
@@ -160,16 +152,16 @@ void notify ( int fd[3], Arg *arg ) {
     /* 只能减小结果获取错误的概率，如果两边翻译都不够快，清零发生在百度谷歌翻译写1之前，
      * 这句是没有意义的，之后点开翻译结果界面获取到的就会有上一次点击文本的内容，不过
      * 一般按切换按钮后是可以重新加载出想要的结果的*/
-    memset(sd->shmaddr_google, '0', 10);
-    memset(sd->shmaddr_bing, '0', 10);
+    memset(sd->shmaddr_google,  '0', 10);
+    memset(sd->shmaddr_bing,    '0', 10);
 
     writePipe(med->text, fd[0]);
     writePipe(med->text, fd[1]);
     writePipe(med->text, fd[2]);
 
     if ( !md->iconShowing ) {
-        md->canNewEntrance = 1;
-        md->destroyIcon = 0;
+        md->canNewEntrance  = 1;
+        md->destroyIcon     = 0;
     }
     else
     {
