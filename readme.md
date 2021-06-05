@@ -128,21 +128,21 @@
  
    * For system base on Debian  (Ubuntu, Kali etc.)
 
-          $ sudo apt-get install build-essential gnome-devel libx11-dev libxtst-dev
-          $ sudo apt-get install python3-pip liblzma-dev
-          $ sudo apt-get install xdotool
-          $ sudo apt install  tesseract-ocr libtesseract-dev meson
-          $ sudo pip3 install pytesseract tesseract pillow meson
-          $ sudo apt install libcanberra-gtk3-0  libcanberra-gtk3-dev  libcanberra-gtk3-module
-          $ sudo apt install libbsd-dev  #03-29新增
+          sudo apt-get install build-essential gnome-devel libx11-dev libxtst-dev
+          sudo apt-get install python3-pip liblzma-dev
+          sudo apt-get install xdotool
+          sudo apt install  tesseract-ocr libtesseract-dev meson
+          sudo pip3 install pytesseract tesseract pillow meson
+          sudo apt install libcanberra-gtk3-0  libcanberra-gtk3-dev  libcanberra-gtk3-module
+          sudo apt install libbsd-dev  #03-29新增
 
 
    * For Arch Linux 
 
-          $  sudo pacman -S gtk3  libxtst libx11  xdotool  python-pip  
-          $  sudo pacman -S tesseract meson
-          $  sudo pip3 install pytesseract tesseract pillow meson
-          $  sudo pacman -S libbsd #03-29新增
+          sudo pacman -S gtk3  libxtst libx11  xdotool  python-pip  
+          sudo pacman -S tesseract meson
+          sudo pip3 install pytesseract tesseract pillow meson
+          sudo pacman -S libbsd #03-29新增
 
           #图像识别相关依赖作者安装太久了，不知道有没有漏掉什么...
 
