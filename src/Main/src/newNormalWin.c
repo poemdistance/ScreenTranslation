@@ -373,8 +373,6 @@ gboolean on_button_press_cb (
 
 int detect_outside_click_action ( void *data ) {
 
-    pblue( "detect_outside_click_action, timeout_id: %d", timeout_id );
-
     WinData *wd = data;
     ConfigData *cd = WINDATA(data)->cd;
     CommunicationData *md = WINDATA(data)->md;
@@ -515,14 +513,10 @@ int focus_request(void *data) {
 
         g_source_remove ( timeout_id );
 
-        pbyellow( "focus_request: add detect_outside_click_action timmer" );
-
         timeout_id = g_timeout_add (
                 10,
                 detect_outside_click_action,
                 wd);
-
-        pbblue("detect_outside_click_action timmer return timeout_id=%d", timeout_id);
 
         return FALSE;
     }
