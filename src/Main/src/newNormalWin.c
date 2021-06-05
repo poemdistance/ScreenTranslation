@@ -1519,9 +1519,9 @@ void *newNormalWindow ( void *data ) {
 int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
 
     pbblue ( "Destroy window" );
-    CommunicationData *md = wd->md;
-    ShmData *sd = wd->sd;
-    AudioData *ad = wd->ad;
+    CommunicationData   *md = wd->md;
+    ShmData             *sd = wd->sd;
+    AudioData           *ad = wd->ad;
 
     memset ( AUDIO_EN(ad, ONLINE), '\0', 512 );
     memset ( AUDIO_AM(ad, ONLINE), '\0', 512 );
@@ -1544,6 +1544,9 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
 
     /* 已退出翻译结果窗口，重置标志变量*/
     md->inNewWin = 0;
+
+    /* 防止某些情况iconShow未复位导致图标无法弹出的问题*/
+    md->iconShowing = 0;
 
     wd->md->recallPreviousFlag = FALSE;
 
