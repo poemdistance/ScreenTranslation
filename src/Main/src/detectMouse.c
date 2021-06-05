@@ -242,9 +242,6 @@ void *detectMouse(void *arg) {
                 buttonPress = 1;
             }
 
-            if ( md->iconShowing )
-                printf("iconShowing=%d\n", md->iconShowing);
-
             static int printLock = 1;
             if ( md->startSlide ) {
                 if ( printLock ) {
