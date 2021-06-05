@@ -373,6 +373,8 @@ gboolean on_button_press_cb (
 
 int detect_outside_click_action ( void *data ) {
 
+    pblue( "detect_outside_click_action, timeout_id: %d", timeout_id );
+
     WinData *wd = data;
     ConfigData *cd = WINDATA(data)->cd;
     CommunicationData *md = WINDATA(data)->md;
@@ -506,16 +508,21 @@ int focus_request(void *data) {
     if ( focustimes <= 5 ) {
         focusOurWindow ( wd );
         focustimes++;
+        return TRUE;
     }
 
     if ( focustimes > 5 ) {
 
         g_source_remove ( timeout_id );
 
+        pbyellow( "focus_request: add detect_outside_click_action timmer" );
+
         timeout_id = g_timeout_add (
                 10,
                 detect_outside_click_action,
                 wd);
+
+        pbblue("detect_outside_click_action timmer return timeout_id=%d", timeout_id);
 
         return FALSE;
     }
@@ -1331,7 +1338,7 @@ void initObjectFromFile ( WinData *wd ) {
 
     g_signal_connect ( maximizeButton, "clicked", G_CALLBACK(on_maximize_button_clicked_cb), wd );
     g_signal_connect ( minimizeButton, "clicked", G_CALLBACK(on_minimize_button_clicked_cb), wd );
-    g_signal_connect ( destroyButton, "clicked", G_CALLBACK(destroyNormalWin), wd );
+    g_signal_connect ( destroyButton,  "clicked", G_CALLBACK(destroyNormalWin),              wd );
 
     gtk_window_set_decorated ( GTK_WINDOW(window), FALSE );
 }
@@ -1519,6 +1526,7 @@ void *newNormalWindow ( void *data ) {
 int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
 
     pbblue ( "Destroy window" );
+
     CommunicationData   *md = wd->md;
     ShmData             *sd = wd->sd;
     AudioData           *ad = wd->ad;
@@ -1540,7 +1548,7 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
 
     md->action = 0;
 
-    pbcyan ( "md->inNewWin 置零" );
+    pbcyan ( "md->inNewWin 置零, md->iconShowing 置零" );
 
     /* 已退出翻译结果窗口，重置标志变量*/
     md->inNewWin = 0;
@@ -1549,6 +1557,8 @@ int destroyNormalWin(GtkWidget *unKnowWidget, WinData *wd) {
     md->iconShowing = 0;
 
     wd->md->recallPreviousFlag = FALSE;
+
+    g_source_remove(timeout_id);
 
     gtk_widget_destroy(wd->window);
     gtk_main_quit();

@@ -30,8 +30,6 @@ void enter_event();
 
 void *guiEntrance(void *arg) {
 
-    pbblue ( "启动线程guiEntrance" );
-
     /*添加超时和单击销毁图标回调函数*/
     ClickData           cd;
     ConfigData          *config = ((Arg*)arg)->cd;
@@ -66,7 +64,7 @@ void *guiEntrance(void *arg) {
 
     pbmag ( "Icon offset: %d %d", config->iconOffsetX, config->iconOffsetY );
 
-    pbyellow ( "标志 iconShowing = 1" );
+    pbyellow ( "Creating entrance..." );
 
     /*入口图标销毁标志置0，表示处于显示状态*/
     md->iconShowing     = 1;
@@ -74,7 +72,6 @@ void *guiEntrance(void *arg) {
 
     gtk_init(NULL, NULL);
 
-    pbyellow ( "New gui entrance window" );
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
 
@@ -89,9 +86,6 @@ void *guiEntrance(void *arg) {
     GtkWidget *button = gtk_button_new();
 
     /*TODO:添加文件存在性检测*/
-    /*添加图标*/
-
-    pbyellow ( "new pixbuf from file" );
     GdkPixbuf *src   = gdk_pixbuf_new_from_file(expanduser("/home/$USER/.stran/tran.png"), NULL);
     GdkPixbuf *dst   = gdk_pixbuf_scale_simple(src, 30, 30, GDK_INTERP_BILINEAR);
     GtkWidget *image = gtk_image_new_from_pixbuf(dst);
@@ -114,7 +108,7 @@ void *guiEntrance(void *arg) {
     gint cx, cy;
     gtk_window_get_position(GTK_WINDOW(window), &cx, &cy);
 
-    pbyellow ( "Move Entrance icon" );
+    pbyellow ( "Moving Entrance icon" );
 
     gtk_window_move(
             GTK_WINDOW(window), 
@@ -122,7 +116,7 @@ void *guiEntrance(void *arg) {
             cy+iconOffsetY
             );
 
-    pbyellow ( "Show all" );
+    pbyellow ( "Showing entrance icon" );
     gtk_widget_show_all(window);
 
     timeout_id_1 = g_timeout_add(
@@ -153,7 +147,8 @@ void setNewWinFlag(GtkWidget *button, ClickData *cd ) {
     CommunicationData   *md     = cd->md;
     md->canNewWin               = 1;
     md->iconShowing             = 0;
-    pbyellow("iconShowing set to zero");
+
+    pbyellow("set md->canNewWin=1, md->iconShowing=0");
 
     /*退出时注意注销超时回调函数，否则下一次创建的
      * 入口图标可能刚好创建就超时导致不显示*/
@@ -175,7 +170,10 @@ int quit_test(void *arg) {
 
     /*入口图标已在quit_entry中销毁,返回FALSE不再调用此函数*/
     if ( !md->iconShowing )
+    {
+        pred( "Quit test: iconShowing already set to zero" );
         return FALSE;
+    }
 
     /*不在窗口上的单击定义为销毁窗口命令*/
     if ( md->iconShowing && !aboveWindow ) {
@@ -215,7 +213,10 @@ int quit_entry(void *arg) {
 
     /*入口图标已经在quit_test中销毁时返回FALSE不再调用*/
     if ( !md->iconShowing )
+    {
+        pred( "quit_entry: iconShowing already is zero" );
         return FALSE;
+    }
 
     if ( button &&  window &&  md->iconShowing && !aboveWindow) {
 
