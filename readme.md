@@ -143,6 +143,7 @@
           sudo pacman -S tesseract meson
           sudo pip3 install pytesseract tesseract pillow meson
           sudo pacman -S libbsd #03-29新增
+          sudo pacman -S python-setproctitle
 
           #图像识别相关依赖作者安装太久了，不知道有没有漏掉什么...
 
