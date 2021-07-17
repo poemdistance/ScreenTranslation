@@ -8,7 +8,7 @@ COMMON_HEADER = -I../CommonHeader/
 SHARED_LIB = -L../lib -lshared
 
 CFLAGS= -fno-stack-protector -Wall -lm -lX11 -lXtst -lXext \
-		-lpthread -lXfixes -ggdb -g -Wno-deprecated-declarations
+		-lpthread -lXfixes -Wno-deprecated-declarations
 
 LDLIBS = `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0 libbsd libbsd-ctor`
 
